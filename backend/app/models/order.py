@@ -1,8 +1,10 @@
 """Order model for customer orders management."""
 
+import uuid
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 import enum
 
 from app.core.database import Base
@@ -43,7 +45,7 @@ class Order(Base):
     
     __tablename__ = "orders"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     external_id = Column(String(100), unique=True, index=True)  # ID del sistema externo (TPV/ERP)
     
     # Customer Information
@@ -76,7 +78,7 @@ class Order(Base):
     # Status & Assignment
     status = Column(SQLEnum(OrderStatus), default=OrderStatus.PENDIENTE)
     priority = Column(String(20), default="normal")  # normal, vip, urgente
-    assigned_rider_id = Column(Integer, ForeignKey("riders.id"), index=True)
+    assigned_rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id"), index=True)
     
     # Timing
     ordered_at = Column(DateTime, default=datetime.utcnow, nullable=False)

@@ -1,8 +1,10 @@
 """Route model for delivery route tracking and analysis."""
 
+import uuid
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 import enum
 
 from app.core.database import Base
@@ -21,8 +23,8 @@ class Route(Base):
     
     __tablename__ = "routes"
     
-    id = Column(Integer, primary_key=True, index=True)
-    delivery_id = Column(Integer, ForeignKey("deliveries.id"), unique=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    delivery_id = Column(UUID(as_uuid=True), ForeignKey("deliveries.id"), unique=True, index=True)
     
     # Route Information
     status = Column(SQLEnum(RouteStatus), default=RouteStatus.PLANIFICADA)
@@ -74,8 +76,8 @@ class RoutePoint(Base):
     
     __tablename__ = "route_points"
     
-    id = Column(Integer, primary_key=True, index=True)
-    route_id = Column(Integer, ForeignKey("routes.id"), index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    route_id = Column(UUID(as_uuid=True), ForeignKey("routes.id"), index=True)
     
     # GPS Coordinates
     latitude = Column(Float, nullable=False)
@@ -115,8 +117,8 @@ class RouteDeviation(Base):
     
     __tablename__ = "route_deviations"
     
-    id = Column(Integer, primary_key=True, index=True)
-    route_id = Column(Integer, ForeignKey("routes.id"), index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    route_id = Column(UUID(as_uuid=True), ForeignKey("routes.id"), index=True)
     
     # Deviation Details
     deviation_type = Column(String(50))  # desvio_rota, parada_nao_programada, excesso_velocidade
