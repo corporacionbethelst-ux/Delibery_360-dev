@@ -1,6 +1,6 @@
 import asyncio
 from logging.config import fileConfig
-from sqlalchemy import pool
+from sqlalchemy import pool, create_engine
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
@@ -15,7 +15,9 @@ from app.models import (  # noqa: F401
 )
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC)
+# Usar DATABASE_URL_SYNC para Alembic (conexión síncrona)
+db_url_sync = settings.DATABASE_URL_SYNC or f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
+config.set_main_option("sqlalchemy.url", db_url_sync)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -53,7 +55,19 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
-    asyncio.run(run_async_migrations())
+    # Verificar si estamos en modo offline o si la URL es síncrona
+    url = config.get_main_option("sqlalchemy.url")
+    if url and not url.startswith("postgresql+async"):
+        # Modo síncrono para migraciones
+        connectable = create_engine(
+            url,
+            poolclass=pool.NullPool,
+        )
+        with connectable.connect() as connection:
+            do_run_migrations(connection)
+    else:
+        # Modo asíncrono
+        asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():
