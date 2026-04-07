@@ -1,8 +1,10 @@
 """Financial models for payments, costs, and liquidation."""
 
+import uuid
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Boolean, Text, Numeric
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Boolean, Text, Numeric
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 import enum
 
 from app.core.database import Base
@@ -38,10 +40,10 @@ class FinancialTransaction(Base):
     
     __tablename__ = "financial_transactions"
     
-    id = Column(Integer, primary_key=True, index=True)
-    rider_id = Column(Integer, ForeignKey("riders.id"), nullable=False, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
-    delivery_id = Column(Integer, ForeignKey("deliveries.id"), nullable=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id"), nullable=False, index=True)
+    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id"), nullable=True)
+    delivery_id = Column(UUID(as_uuid=True), ForeignKey("deliveries.id"), nullable=True)
     
     # Transaction info
     transaction_type = Column(SQLEnum(TransactionType), nullable=False)
@@ -70,7 +72,7 @@ class PaymentRule(Base):
     
     __tablename__ = "payment_rules"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String(100), nullable=False)
     description = Column(Text)
     
@@ -114,9 +116,9 @@ class DailyLiquidation(Base):
     
     __tablename__ = "daily_liquidations"
     
-    id = Column(Integer, primary_key=True, index=True)
-    rider_id = Column(Integer, ForeignKey("riders.id"), nullable=False, index=True)
-    payment_rule_id = Column(Integer, ForeignKey("payment_rules.id"))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id"), nullable=False, index=True)
+    payment_rule_id = Column(UUID(as_uuid=True), ForeignKey("payment_rules.id"))
     
     # Date
     liquidation_date = Column(DateTime, nullable=False, index=True)
@@ -168,9 +170,9 @@ class CostRecord(Base):
     
     __tablename__ = "cost_records"
     
-    id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), index=True)
-    delivery_id = Column(Integer, ForeignKey("deliveries.id"), index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id"), index=True)
+    delivery_id = Column(UUID(as_uuid=True), ForeignKey("deliveries.id"), index=True)
     
     # Costs
     rider_cost = Column(Numeric(10, 2), default=0.0)  # Pago al repartidor

@@ -1,8 +1,10 @@
 """Productivity models for performance tracking and analytics."""
 
+import uuid
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Boolean, Index
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Boolean, Index
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 import enum
 
 from app.core.database import Base
@@ -22,9 +24,9 @@ class ProductivityRecord(Base):
     
     __tablename__ = "productivity_records"
     
-    id = Column(Integer, primary_key=True, index=True)
-    rider_id = Column(Integer, ForeignKey("riders.id"), nullable=False, index=True)
-    shift_id = Column(Integer, ForeignKey("shifts.id"), index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id"), nullable=False, index=True)
+    shift_id = Column(UUID(as_uuid=True), ForeignKey("shifts.id"), index=True)
     
     # Date
     record_date = Column(DateTime, nullable=False, index=True)
