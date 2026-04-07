@@ -1,0 +1,6 @@
+version: "3.9"
+services:
+  backend:
+    image: delivery360/backend:latest
+  frontend:
+    image: delivery360/frontend:latest

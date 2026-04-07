@@ -1,0 +1,324 @@
+{
+  "timestamp": "2026-04-06T02:29:14+00:00",
+  "python_version": "3.12.10",
+  "results": {
+    "python_version": "3.12.10",
+    "system_packages": [
+      [
+        "Docker",
+        false,
+        "No instalado"
+      ],
+      [
+        "Docker Compose",
+        false,
+        "No instalado"
+      ],
+      [
+        "Git",
+        true,
+        "git version 2.39.5"
+      ],
+      [
+        "PostgreSQL client",
+        false,
+        "No instalado"
+      ],
+      [
+        "Redis client",
+        false,
+        "No instalado"
+      ]
+    ],
+    "python_packages": [
+      [
+        "fastapi",
+        true,
+        "0.111.0 (req: ==0.111.0)"
+      ],
+      [
+        "uvicorn",
+        true,
+        "0.30.1 (req: ==0.30.1)"
+      ],
+      [
+        "sqlalchemy",
+        true,
+        "2.0.31 (req: ==2.0.31)"
+      ],
+      [
+        "asyncpg",
+        true,
+        "0.29.0 (req: ==0.29.0)"
+      ],
+      [
+        "alembic",
+        true,
+        "1.13.2 (req: ==1.13.2)"
+      ],
+      [
+        "psycopg2-binary",
+        true,
+        "2.9.9 (dt dec pq3 ext lo64) (req: ==2.9.9) - no verificable"
+      ],
+      [
+        "redis",
+        true,
+        "5.0.7 (req: ==5.0.7)"
+      ],
+      [
+        "celery",
+        true,
+        "5.4.0 (req: ==5.4.0)"
+      ],
+      [
+        "passlib",
+        true,
+        "1.7.4 (req: ==1.7.4)"
+      ],
+      [
+        "python-jose",
+        true,
+        "3.3.0 (req: ==3.3.0)"
+      ],
+      [
+        "python-multipart",
+        true,
+        "0.0.9 (req: ==0.0.9)"
+      ],
+      [
+        "pydantic",
+        true,
+        "2.8.2 (req: ==2.8.2)"
+      ],
+      [
+        "pydantic-settings",
+        true,
+        "2.3.4 (req: ==2.3.4)"
+      ],
+      [
+        "email-validator",
+        true,
+        "2.2.0 (req: ==2.2.0)"
+      ],
+      [
+        "httpx",
+        true,
+        "0.27.0 (req: ==0.27.0)"
+      ],
+      [
+        "openpyxl",
+        true,
+        "3.1.5 (req: ==3.1.5)"
+      ],
+      [
+        "reportlab",
+        true,
+        "4.2.2 (req: ==4.2.2)"
+      ],
+      [
+        "prometheus-client",
+        true,
+        "desconocida (req: ==0.20.0) - no verificable"
+      ],
+      [
+        "structlog",
+        true,
+        "24.4.0 (req: ==24.4.0)"
+      ],
+      [
+        "python-dateutil",
+        true,
+        "2.9.0 (req: ==2.9.0)"
+      ],
+      [
+        "pytz",
+        true,
+        "2024.1 (req: ==2024.1)"
+      ],
+      [
+        "geopy",
+        true,
+        "2.4.1 (req: ==2.4.1)"
+      ],
+      [
+        "haversine",
+        true,
+        "desconocida (req: ==2.8.1) - no verificable"
+      ],
+      [
+        "pytest",
+        true,
+        "8.3.2 (req: ==8.3.2)"
+      ],
+      [
+        "pytest-asyncio",
+        true,
+        "0.23.8 (req: ==0.23.8)"
+      ],
+      [
+        "httpx",
+        true,
+        "0.27.0 (req: ==0.27.0)"
+      ]
+    ],
+    "directory_structure": [
+      [
+        "backend/app",
+        true,
+        "2 archivos Python"
+      ],
+      [
+        "backend/app/api/v1",
+        true,
+        "15 archivos Python"
+      ],
+      [
+        "backend/app/core",
+        true,
+        "7 archivos Python"
+      ],
+      [
+        "backend/app/models",
+        true,
+        "13 archivos Python"
+      ],
+      [
+        "backend/app/schemas",
+        true,
+        "11 archivos Python"
+      ],
+      [
+        "backend/app/services",
+        true,
+        "15 archivos Python"
+      ],
+      [
+        "backend/app/crud",
+        true,
+        "10 archivos Python"
+      ],
+      [
+        "backend/app/middleware",
+        true,
+        "5 archivos Python"
+      ],
+      [
+        "backend/app/utils",
+        true,
+        "8 archivos Python"
+      ],
+      [
+        "backend/app/workers",
+        true,
+        "10 archivos Python"
+      ],
+      [
+        "backend/alembic",
+        true,
+        "1 archivos Python"
+      ],
+      [
+        "frontend/src",
+        true,
+        "0 archivos Python"
+      ],
+      [
+        "frontend/src/app",
+        true,
+        "0 archivos Python"
+      ],
+      [
+        "frontend/src/components",
+        true,
+        "0 archivos Python"
+      ],
+      [
+        "frontend/src/lib",
+        true,
+        "0 archivos Python"
+      ],
+      [
+        "backend/requirements.txt",
+        true,
+        "905 bytes"
+      ],
+      [
+        "backend/app/main.py",
+        true,
+        "5912 bytes"
+      ],
+      [
+        "backend/Dockerfile",
+        true,
+        "695 bytes"
+      ],
+      [
+        "backend/docker-compose.yml",
+        true,
+        "3646 bytes"
+      ],
+      [
+        "backend/.env.example",
+        true,
+        "1242 bytes"
+      ],
+      [
+        "backend/alembic.ini",
+        true,
+        "646 bytes"
+      ],
+      [
+        "frontend/Dockerfile",
+        true,
+        "806 bytes"
+      ],
+      [
+        "frontend/package.json",
+        true,
+        "295 bytes"
+      ]
+    ],
+    "env_variables": [
+      [
+        ".env file",
+        true,
+        "Cargado correctamente"
+      ],
+      [
+        "SECRET_KEY",
+        true,
+        "you***"
+      ],
+      [
+        "DATABASE_URL",
+        true,
+        "pos***"
+      ],
+      [
+        "REDIS_URL",
+        true,
+        "red***"
+      ],
+      [
+        "JWT_ALGORITHM",
+        false,
+        "No definida"
+      ],
+      [
+        "ACCESS_TOKEN_EXPIRE_MINUTES",
+        true,
+        "***"
+      ]
+    ],
+    "database": {
+      "ok": false,
+      "message": "greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)"
+    },
+    "redis": {
+      "ok": false,
+      "message": "Error 111 connecting to localhost:6379. Connection refused."
+    },
+    "all_passed": true
+  }
+}
