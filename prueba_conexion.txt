@@ -1,0 +1,4 @@
+Repositorio Delivery360 - Prueba de Conexión Exitosa
+Fecha: 2026-04-08
+Estado: El sistema de archivos del repositorio es accesible y editable.
+Verificación: Este archivo confirma que la integración con el repositorio local funciona correctamente tras la limpieza del historial de Git.
