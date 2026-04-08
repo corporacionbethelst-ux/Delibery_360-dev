@@ -1,0 +1,636 @@
+================================================================================
+                    DELIVERY360 - INFORME COMPLETO DEL SISTEMA
+                              VERSION 2.0
+================================================================================
+
+FECHA DE GENERACION: 2025
+ESTADO DEL PROYECTO: FASE 1 COMPLETADA - BACKEND 75% - FRONTEND 15%
+
+================================================================================
+INDICE DE CONTENIDOS
+================================================================================
+
+1. RESUMEN EJECUTIVO
+2. FINALIDAD DEL PROYECTO
+3. VENTAJAS Y BENEFICIOS
+4. DESVENTAJAS Y LIMITACIONES ACTUALES
+5. POSIBLES FALLAS DETECTADAS
+6. ESTRUCTURA COMPLETA DEL PROYECTO
+7. CODIGO FUENTE POR ARCHIVO
+8. ESQUEMA SQL DE BASE DE DATOS
+9. PAQUETES Y DEPENDENCIAS
+10. FASES FALTANTES Y ROADMAP
+11. RECOMENDACIONES TECNICAS
+
+================================================================================
+1. RESUMEN EJECUTIVO
+================================================================================
+
+Delivery360 es un sistema enterprise de gestion de entregas con arquitectura
+moderna basada en microservicios. El proyecto utiliza FastAPI (Python) para
+el backend y Next.js (React/TypeScript) para el frontend.
+
+ESTADO ACTUAL:
+- Backend: 75% completado (estructura solida, modelos definidos, APIs creadas)
+- Frontend: 15% completado (solo scaffold base, componentes placeholder)
+- Infraestructura: 80% configurada (Docker, Kubernetes, Monitoring)
+- Documentacion: 20% completada
+
+TECNOLOGIAS PRINCIPALES:
+Backend: Python 3.11, FastAPI 0.111.0, SQLAlchemy 2.0, PostgreSQL 16, Redis 7
+Frontend: Next.js latest, React latest, TypeScript, Tailwind CSS
+Infraestructura: Docker, Kubernetes, Prometheus, Grafana, Sentry
+
+================================================================================
+2. FINALIDAD DEL PROYECTO
+================================================================================
+
+PROPOSITO PRINCIPAL:
+Proporcionar una plataforma integral para la gestion operativa de servicios
+de delivery, permitiendo la coordinacion eficiente entre clientes, repartidores
+y operadores del servicio.
+
+OBJETIVOS ESPECIFICOS:
+
+a) Gestion de Ordenes:
+   - Recepcion de pedidos desde multiples canales (app, web, ERP, TPV)
+   - Asignacion inteligente a repartidores disponibles
+   - Seguimiento en tiempo real del estado de entrega
+   - Calculo automatico de tiempos estimados (SLA)
+
+b) Gestion de Repartidores:
+   - Registro y validacion de documentos (CNH, antecedentes)
+   - Control de turnos (check-in/check-out)
+   - Monitoreo de ubicacion en tiempo real
+   - Sistema de gamificacion (niveles, badges, rankings)
+   - Calculo de ganancias y liquidaciones
+
+c) Operaciones:
+   - Dashboard operativo para supervisores
+   - Alertas automaticas por desvios de ruta o retrasos
+   - Reasignacion dinamica de ordenes
+   - Gestion de incidencias y fallas
+
+d) Analisis Financiero:
+   - Calculo de costos operativos por entrega
+   - Configuracion de reglas de pago flexibles
+   - Liquidacion automatica diaria/semanal
+   - Reportes de rentabilidad por zona/horario
+
+e) Cumplimiento Legal (LGPD):
+   - Auditoria completa de todas las acciones
+   - Consentimiento explicito para datos personales
+   - Retencion controlada de datos sensibles
+   - Enmascaramiento de informacion personal
+
+================================================================================
+3. VENTAJAS Y BENEFICIOS
+================================================================================
+
+VENTAJAS TECNICAS:
+
+a) Arquitectura Escalable:
+   - Diseño basado en microservicios
+   - Separacion clara de responsabilidades (Clean Architecture)
+   - Base de datos con UUIDs para distribucion futura
+   - Cache distribuido con Redis
+
+b) Alto Rendimiento:
+   - Backend asincrono con FastAPI (uno de los mas rapidos en Python)
+   - Consultas optimizadas con SQLAlchemy 2.0
+   - Connection pooling configurado
+   - Procesamiento background con Celery
+
+c) Seguridad Robusta:
+   - Autenticacion JWT con refresh tokens
+   - Hash de contrasenas con bcrypt
+   - Rate limiting por IP/usuario
+   - Auditoria completa de acciones
+   - Cumplimiento LGPD nativo
+
+d) Observabilidad Completa:
+   - Logs estructurados con Structlog
+   - Metricas en tiempo real con Prometheus
+   - Dashboards operativos con Grafana
+   - Tracking de errores con Sentry
+   - Health checks automatizados
+
+e) Flexibilidad Operativa:
+   - Multiples roles de usuario (superadmin, gerente, operador, repartidor)
+   - Configuracion dinamica de reglas de pago
+   - Integraciones externas via webhooks/APIs
+   - Soporte para multiples zonas operativas
+
+VENTAJAS DE NEGOCIO:
+
+a) Reduccion de Costos:
+   - Optimizacion automatica de rutas
+   - Asignacion inteligente reduce tiempos muertos
+   - Deteccion temprana de desvios y fallas
+   - Analisis de rentabilidad por operacion
+
+b) Mejora en Servicio al Cliente:
+   - Tiempos de entrega mas precisos
+   - Comunicacion proactiva de estados
+   - Prueba de entrega digital (foto/firma/OTP)
+   - Menor tasa de entregas fallidas
+
+c) Escalabilidad:
+   - Diseñado para crecer de ciudad a pais
+   - Soporte para miles de ordenes diarias
+   - Infraestructura cloud-ready
+   - Multi-tenant architecture ready
+
+d) Toma de Decisiones:
+   - Dashboards en tiempo real
+   - Reportes historicos detallados
+   - Analisis predictivo de demanda
+   - KPIs de rendimiento por repartidor/zona
+
+================================================================================
+4. DESVENTAJAS Y LIMITACIONES ACTUALES
+================================================================================
+
+LIMITACIONES DE DESARROLLO:
+
+a) Frontend Incompleto:
+   - Todos los componentes son placeholders
+   - Sin logica de negocio implementada
+   - Sin integracion con API backend
+   - Sin autenticacion funcional
+   - Dependencias criticas faltantes
+
+b) Testing Ausente:
+   - No hay tests unitarios implementados
+   - No hay tests de integracion
+   - No hay tests end-to-end
+   - Cobertura de codigo: 0%
+
+c) Documentacion Insuficiente:
+   - README principal basico
+   - Documentacion de API incompleta
+   - Guías de despliegue sin detalles
+   - Manual de usuario limitado
+
+d) Migraciones de Base de Datos:
+   - Alembic configurado pero sin migraciones generadas
+   - No hay versionado de esquema
+   - Dificil deploy en produccion
+
+e) Configuración de Entorno:
+   - Archivo .env no incluido (solo ejemplo)
+   - Variables sensibles hardcodeadas en algunos lugares
+   - Falta configuracion para produccion
+
+LIMITACIONES FUNCIONALES:
+
+a) Algoritmos Pendientes:
+   - Asignacion inteligente no implementada
+   - Optimizacion de rutas basica
+   - Prediccion de demanda no disponible
+   - Machine learning no integrado
+
+b) Integraciones Limitadas:
+   - Conectores ERP/TPV sin implementar
+   - Pasarelas de pago no configuradas
+   - Servicios de mapas sin API key
+   - Notificaciones push sin Firebase
+
+c) Caracteristicas Avanzadas:
+   - WebSocket para tiempo real incompleto
+   - Upload de archivos a S3 no implementado
+   - Reportes PDF/Excel basicos
+   - Gamificacion sin logica completa
+
+================================================================================
+5. POSIBLES FALLAS DETECTADAS
+================================================================================
+
+FALLAS CRITICAS:
+
+a) Inconsistencia en Modelo AuditLog y Notification:
+   UBICACION: /workspace/backend/app/models/audit_log.py, notification.py
+   PROBLEMA: Usan Column(Integer, primary_key=True) en lugar de UUID
+   IMPACTO: Inconsistencia con el resto de modelos que usan UUID
+   SOLUCION: Cambiar a UUID para mantener consistencia
+
+b) Modelos Duplicados:
+   UBICACION: /workspace/backend/app/models/all_models.py
+   PROBLEMA: Existen definiciones duplicadas de modelos principales
+   IMPACTO: Confusion sobre cual version usar, posible inconsistencia
+   SOLUCION: Eliminar all_models.py o consolidar con modelos individuales
+
+c) Relaciones Cruzadas Inconsistentes:
+   UBICACION: Varios archivos de modelos
+   PROBLEMA: Algunas relaciones back_populates no coinciden entre modelos
+   IMPACTO: Errores en tiempo de ejecucion al acceder a relaciones
+   SOLUCION: Revisar y unificar todas las relaciones bidireccionales
+
+FALLAS MEDIAS:
+
+a) Session Local como Singleton:
+   UBICACION: /workspace/backend/app/core/database.py
+   PROBLEMA: SessionLocal se crea como instancia global
+   IMPACTO: Posible contaminacion de sesiones entre requests
+   SOLUCION: Convertir a factory function
+
+b) Database URL Sync Vacia:
+   UBICACION: /workspace/backend/app/core/config.py
+   PROBLEMA: DATABASE_URL_SYNC tiene default vacio
+   IMPACTO: Workers de Celery fallaran al intentar conectar
+   SOLUCION: Agregar valor por defecto valido
+
+c) Importaciones Circulares Potenciales:
+   UBICACION: /workspace/backend/app/main.py
+   PROBLEMA: Importa todos los routers al inicio
+   IMPACTO: Posibles errores de importacion circular
+   SOLUCION: Usar importacion lazy o reorganizar modulos
+
+d) Falta de Validacion en Campos:
+   UBICACION: Varios schemas Pydantic
+   PROBLEMA: Campos criticos sin validacion de formato
+   IMPACTO: Datos invalidos pueden entrar al sistema
+   SOLUCION: Agregar validators con regex y restricciones
+
+FALLAS MENORES:
+
+a) Versiones "latest" en Frontend:
+   UBICACION: /workspace/frontend/package.json
+   PROBLEMA: Dependencias con version "latest"
+   IMPACTO: Builds no reproducibles, posibles breaking changes
+   SOLUCION: Especificar versiones exactas
+
+b) Contraseñas por Defecto en Docker:
+   UBICACION: /workspace/docker-compose.yml
+   PROBLEMA: Passwords hardcodeados como fallback
+   IMPACTO: Riesgo de seguridad en desarrollo
+   SOLUCION: Requerir variables de entorno obligatorias
+
+c) Logging de Datos Sensibles:
+   UBICACION: Middlewares y services
+   PROBLEMA: Posible log de passwords o datos personales
+   IMPACTO: Violacion de LGPD
+   SOLUCION: Implementar enmascaramiento automatico
+
+================================================================================
+6. ESTRUCTURA COMPLETA DEL PROYECTO
+================================================================================
+
+/workspace/
+|
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── api/
+│   │   │   └── v1/
+│   │   │       ├── __init__.py
+│   │   │       ├── auth.py
+│   │   │       ├── users.py
+│   │   │       ├── riders.py
+│   │   │       ├── orders.py
+│   │   │       ├── deliveries.py
+│   │   │       ├── shifts.py
+│   │   │       ├── productivity.py
+│   │   │       ├── financial.py
+│   │   │       ├── dashboard.py
+│   │   │       ├── routes.py
+│   │   │       ├── alerts.py
+│   │   │       ├── integrations.py
+│   │   │       └── audit.py
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── config.py
+│   │   │   ├── database.py
+│   │   │   ├── security.py
+│   │   │   ├── audit_logger.py
+│   │   │   ├── rate_limiter.py
+│   │   │   └── websocket.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py
+│   │   │   ├── rider.py
+│   │   │   ├── order.py
+│   │   │   ├── delivery.py
+│   │   │   ├── shift.py
+│   │   │   ├── financial.py
+│   │   │   ├── productivity.py
+│   │   │   ├── route.py
+│   │   │   ├── audit_log.py
+│   │   │   ├── notification.py
+│   │   │   ├── integration.py
+│   │   │   └── all_models.py
+│   │   ├── schemas/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py
+│   │   │   ├── user.py
+│   │   │   ├── rider.py
+│   │   │   ├── order.py
+│   │   │   ├── delivery.py
+│   │   │   ├── shift.py
+│   │   │   ├── financial.py
+│   │   │   ├── productivity.py
+│   │   │   ├── dashboard.py
+│   │   │   └── audit.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth_service.py
+│   │   │   ├── user_service.py
+│   │   │   ├── rider_service.py
+│   │   │   ├── order_service.py
+│   │   │   ├── delivery_service.py
+│   │   │   ├── shift_service.py
+│   │   │   ├── financial_service.py
+│   │   │   ├── productivity_service.py
+│   │   │   ├── dashboard_service.py
+│   │   │   ├── route_service.py
+│   │   │   ├── alert_service.py
+│   │   │   ├── notification_service.py
+│   │   │   ├── audit_service.py
+│   │   │   └── integration_service.py
+│   │   ├── crud/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py
+│   │   │   ├── user.py
+│   │   │   ├── rider.py
+│   │   │   ├── order.py
+│   │   │   ├── delivery.py
+│   │   │   ├── shift.py
+│   │   │   ├── financial.py
+│   │   │   ├── productivity.py
+│   │   │   └── route.py
+│   │   ├── middleware/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth_middleware.py
+│   │   │   ├── audit_middleware.py
+│   │   │   ├── cors_middleware.py
+│   │   │   └── rate_limit_middleware.py
+│   │   ├── utils/
+│   │   │   ├── __init__.py
+│   │   │   ├── validators.py
+│   │   │   ├── geolocation.py
+│   │   │   ├── time_calculator.py
+│   │   │   ├── cost_calculator.py
+│   │   │   ├── sla_checker.py
+│   │   │   ├── data_exporter.py
+│   │   │   └── lgpd_compliance.py
+│   │   ├── workers/
+│   │   │   ├── __init__.py
+│   │   │   ├── celery_config.py
+│   │   │   ├── notification_worker.py
+│   │   │   ├── alert_worker.py
+│   │   │   ├── report_worker.py
+│   │   │   ├── cleanup_worker.py
+│   │   │   ├── liquidation_worker.py
+│   │   │   ├── productivity_worker.py
+│   │   │   ├── sla_monitor_worker.py
+│   │   │   └── route_analysis_worker.py
+│   │   ├── integrations/
+│   │   │   ├── __init__.py
+│   │   │   ├── pos_connector.py
+│   │   │   ├── erp_connector.py
+│   │   │   └── webhook_handler.py
+│   │   └── monitoring/
+│   │       ├── __init__.py
+│   │       ├── health_check.py
+│   │       ├── health_checks.py
+│   │       ├── metrics.py
+│   │       ├── logging_config.py
+│   │       └── sentry_config.py
+│   ├── alembic/
+│   │   ├── env.py
+│   │   ├── script.py.mako
+│   │   └── versions/
+│   │       ├── 001_initial_models_uuid.py
+│   │       └── schema_completo.sql
+│   ├── scripts/
+│   │   ├── run_migrations.sh
+│   │   ├── seed_data.py
+│   │   └── setup_dev.sh
+│   ├── requirements.txt
+│   ├── pyproject.toml
+│   ├── alembic.ini
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── .env.example
+│   ├── FASE_1_COMPLETADA.md
+│   └── README.md
+|
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── (auth)/
+│   │   │   │   ├── login/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── register-rider/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── forgot-password/
+│   │   │   │       └── page.tsx
+│   │   │   ├── (dashboard)/
+│   │   │   │   ├── layout.tsx
+│   │   │   │   ├── manager/
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── orders/
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   ├── riders/
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   ├── financial/
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   ├── reports/
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   └── settings/
+│   │   │   │   │       └── page.tsx
+│   │   │   │   ├── operator/
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   │   ├── orders/
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   ├── deliveries/
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   ├── shifts/
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   ├── live-map/
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   └── alerts/
+│   │   │   │   │       └── page.tsx
+│   │   │   │   └── rider/
+│   │   │   │       ├── layout.tsx
+│   │   │   │       ├── page.tsx
+│   │   │   │       ├── my-orders/
+│   │   │   │       │   └── page.tsx
+│   │   │   │       ├── start-delivery/
+│   │   │   │       │   └── page.tsx
+│   │   │   │       ├── finish-delivery/
+│   │   │   │       │   └── page.tsx
+│   │   │   │       ├── earnings/
+│   │   │   │       │   └── page.tsx
+│   │   │   │       ├── productivity/
+│   │   │   │       │   └── page.tsx
+│   │   │   │       └── profile/
+│   │   │   │           └── page.tsx
+│   │   │   └── api/
+│   │   │       └── auth/
+│   │   │           └── [...nextauth]/
+│   │   │               └── route.ts
+│   │   ├── components/
+│   │   │   ├── dashboard/
+│   │   │   │   ├── ManagerDashboard.tsx
+│   │   │   │   ├── OperatorDashboard.tsx
+│   │   │   │   └── RiderDashboard.tsx
+│   │   │   ├── orders/
+│   │   │   │   ├── OrderList.tsx
+│   │   │   │   ├── OrderCard.tsx
+│   │   │   │   ├── OrderStatusBadge.tsx
+│   │   │   │   └── AssignRiderModal.tsx
+│   │   │   ├── riders/
+│   │   │   │   ├── RiderList.tsx
+│   │   │   │   ├── RiderCard.tsx
+│   │   │   │   ├── RiderRegistrationForm.tsx
+│   │   │   │   └── RiderProductivityChart.tsx
+│   │   │   ├── deliveries/
+│   │   │   │   ├── DeliveryTracker.tsx
+│   │   │   │   ├── StartDeliveryButton.tsx
+│   │   │   │   ├── FinishDeliveryForm.tsx
+│   │   │   │   └── ProofOfDelivery.tsx
+│   │   │   ├── maps/
+│   │   │   │   ├── LiveMap.tsx
+│   │   │   │   ├── RiderMarker.tsx
+│   │   │   │   ├── RouteViewer.tsx
+│   │   │   │   └── DeviationAlert.tsx
+│   │   │   ├── shifts/
+│   │   │   │   ├── ShiftControl.tsx
+│   │   │   │   ├── CheckInOut.tsx
+│   │   │   │   └── ShiftCalendar.tsx
+│   │   │   ├── financial/
+│   │   │   │   ├── DailyEarnings.tsx
+│   │   │   │   ├── FinancialConsolidated.tsx
+│   │   │   │   ├── CostCalculator.tsx
+│   │   │   │   └── PaymentRulesConfig.tsx
+│   │   │   ├── productivity/
+│   │   │   │   ├── SLAMeter.tsx
+│   │   │   │   ├── PerformanceRanking.tsx
+│   │   │   │   ├── OrdersPerHour.tsx
+│   │   │   │   ├── TimeMetrics.tsx
+│   │   │   │   └── ShiftComparison.tsx
+│   │   │   ├── alerts/
+│   │   │   │   ├── AlertPanel.tsx
+│   │   │   │   └── AlertNotification.tsx
+│   │   │   ├── audit/
+│   │   │   │   ├── AuditLogTable.tsx
+│   │   │   │   └── AccessHistory.tsx
+│   │   │   └── integrations/
+│   │   │       ├── TPVConnector.tsx
+│   │   │       ├── ERPImportExport.tsx
+│   │   │       └── WebhookConfig.tsx
+│   │   ├── contexts/
+│   │   │   ├── AuthContext.tsx
+│   │   │   ├── RoleContext.tsx
+│   │   │   └── WebSocketContext.tsx
+│   │   ├── hooks/
+│   │   │   ├── useRole.ts
+│   │   │   ├── useGeolocation.ts
+│   │   │   ├── useProductivity.ts
+│   │   │   └── useRealtimeUpdates.ts
+│   │   ├── lib/
+│   │   │   ├── api.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── websocket.ts
+│   │   │   ├── geolocation.ts
+│   │   │   ├── time-utils.ts
+│   │   │   ├── financial-utils.ts
+│   │   │   └── lgpd-utils.ts
+│   │   ├── stores/
+│   │   │   ├── authStore.ts
+│   │   │   ├── ordersStore.ts
+│   │   │   ├── ridersStore.ts
+│   │   │   ├── deliveriesStore.ts
+│   │   │   └── realtimeStore.ts
+│   │   └── types/
+│   │       ├── index.ts
+│   │       ├── user.ts
+│   │       ├── rider.ts
+│   │       ├── order.ts
+│   │       ├── delivery.ts
+│   │       ├── financial.ts
+│   │       └── productivity.ts
+│   ├── public/
+│   │   ├── manifest.json
+│   │   └── sw.js
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── tailwind.config.js
+│   ├── next.config.js
+│   └── Dockerfile
+|
+├── infrastructure/
+│   ├── docker/
+│   │   ├── backend.Dockerfile
+│   │   ├── frontend.Dockerfile
+│   │   ├── celery.Dockerfile
+│   │   └── nginx.conf
+│   ├── kubernetes/
+│   │   ├── namespace.yaml
+│   │   ├── configmap.yaml
+│   │   ├── secrets.yaml
+│   │   ├── postgres-statefulset.yaml
+│   │   ├── redis-statefulset.yaml
+│   │   ├── backend-deployment.yaml
+│   │   ├── frontend-deployment.yaml
+│   │   ├── celery-deployment.yaml
+│   │   ├── celery-beat-deployment.yaml
+│   │   ├── services.yaml
+│   │   ├── ingress.yaml
+│   │   ├── hpa.yaml
+│   │   └── network-policy.yaml
+│   ├── scripts/
+│   │   ├── deploy.sh
+│   │   ├── backup_db.sh
+│   │   ├── restore_db.sh
+│   │   └── health_check.sh
+│   └── terraform/
+│       ├── scripts/
+│       │   ├── init.sh
+│       │   ├── apply.sh
+│       │   └── destroy.sh
+│       └── [archivos de configuracion Terraform]
+|
+├── monitoring/
+│   ├── grafana/
+│   │   └── dashboards/
+│   │       ├── sla-monitoring.json
+│   │       ├── operations-dashboard.json
+│   │       ├── rider-productivity.json
+│   │       └── financial-metrics.json
+│   ├── prometheus/
+│   │   ├── prometheus.yml
+│   │   └── alerts.yml
+│   ├── logstash/
+│   │   └── pipeline.conf
+│   └── sentry/
+│       └── config.py
+|
+├── docs/
+│   ├── architecture.md
+│   ├── api-documentation.md
+│   ├── deployment-guide.md
+│   ├── lgpd-compliance.md
+│   └── user-manuals/
+│       ├── manager-guide.md
+│       ├── operator-guide.md
+│       └── rider-guide.md
+|
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── Makefile
+├── .gitignore
+├── LICENSE
+└── informe_de_sistema_v2.txt
+
+================================================================================
+7. CODIGO FUENTE POR ARCHIVO PRINCIPAL
+================================================================================
+
+------------------------------------------------------------------------------
+ARCHIVO: /workspace/backend/app/main.py
+------------------------------------------------------------------------------
