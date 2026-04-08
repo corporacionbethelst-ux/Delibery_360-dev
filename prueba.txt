@@ -1,3 +1,0 @@
-Archivo de prueba creado exitosamente.
-Este archivo confirma que el repositorio está accesible y listo para operaciones de escritura.
-Fecha: 2024
