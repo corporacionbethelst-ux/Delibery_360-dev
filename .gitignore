@@ -1,1 +1,6 @@
 Nothing should be ignored based on the provided file changes. The changes only include source/config files (.txt files), which should not be added to .gitignore according to rule #6.
+
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
