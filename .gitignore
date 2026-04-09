@@ -1,1 +1,7 @@
-Nothing should be ignored since the changes only include markdown documentation files (.md) which are source/config files.
+*.db
+node_modules/
+.next/
+__pycache__/
+*.pyc
+postgres_data/
+redis_data/
