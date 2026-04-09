@@ -1,1 +1,7 @@
-*.txt
+*.db
+node_modules/
+.next/
+__pycache__/
+*.pyc
+postgres_data/
+redis_data/
