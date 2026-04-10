@@ -1,259 +1,298 @@
 /**
- * API Client para Delivery360
- * Configuración de Axios con interceptors para autenticación JWT
+ * Delivery360 API Client
+ *
+ * Configuracion centralizada de Axios para todas las peticiones HTTP
+ * Manejo automatico de tokens, refresh y errores
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import axios, {
+  AxiosInstance,
+  AxiosError,
+  InternalAxiosRequestConfig,
+  AxiosResponse
+} from 'axios';
 
+// Tipos para los tokens
+interface TokenPair {
+  access_token: string;
+  refresh_token: string;
+}
+
+interface AuthTokens {
+  accessToken: string | null;
+  refreshToken: string | null;
+}
+
+// Configuracion base
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const REFRESH_THRESHOLD = parseInt(process.env.NEXT_PUBLIC_REFRESH_THRESHOLD || '300');
 
-// Tipos para las respuestas de autenticación
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
+// Crear instancia de Axios
+const apiClient: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000, // 30 segundos
+});
 
-export interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  user: {
-    id: string;
-    email: string;
-    full_name: string;
-    role: 'superadmin' | 'gerente' | 'operador' | 'repartidor';
-  };
-}
+// Estado de autenticacion en memoria
+let authTokens: AuthTokens = {
+  accessToken: null,
+  refreshToken: null,
+};
 
-export interface RefreshTokenResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-}
+// Flag para evitar multiples refresh simultaneos
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: Error) => void;
+}> = [];
 
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  success: boolean;
-}
+// Procesar la cola de peticiones fallidas
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
 
-class ApiClient {
-  private client: AxiosInstance;
-  private isRefreshing: boolean = false;
-  private failedQueue: Array<{
-    resolve: (value: unknown) => void;
-    reject: (reason?: unknown) => void;
-  }> = [];
+  failedQueue = [];
+};
 
-  constructor() {
-    this.client = axios.create({
-      baseURL: API_BASE_URL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 30000,
-    });
+// Obtener tokens desde localStorage
+export const getStoredTokens = (): AuthTokens => {
+  if (typeof window === 'undefined') return authTokens;
 
-    // Request Interceptor - Agrega token a cada petición
-    this.client.interceptors.request.use(
-      (config) => {
-        const token = this.getAccessToken();
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
+  try {
+    const accessToken = localStorage.getItem('access_token');
+    const refreshToken = localStorage.getItem('refresh_token');
 
-    // Response Interceptor - Maneja errores y refresh de token
-    this.client.interceptors.response.use(
-      (response) => response,
-      async (error: AxiosError) => {
-        const originalRequest = error.config as AxiosRequestConfig & {
-          _retry?: boolean;
-        };
+    authTokens = { accessToken, refreshToken };
+    return authTokens;
+  } catch (error) {
+    console.error('Error reading tokens from localStorage:', error);
+    return authTokens;
+  }
+};
 
-        // Si el error es 401 y no hemos reintentado
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          if (this.isRefreshing) {
-            return new Promise((resolve, reject) => {
-              this.failedQueue.push({ resolve, reject });
-            })
-              .then((token) => {
-                originalRequest.headers = originalRequest.headers || {};
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-                return this.client(originalRequest);
-              })
-              .catch((err) => Promise.reject(err));
-          }
+// Guardar tokens en localStorage
+export const storeTokens = (tokens: TokenPair): void => {
+  if (typeof window === 'undefined') return;
 
-          originalRequest._retry = true;
-          this.isRefreshing = true;
+  try {
+    localStorage.setItem('access_token', tokens.access_token);
+    localStorage.setItem('refresh_token', tokens.refresh_token);
+    authTokens = {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+    };
+  } catch (error) {
+    console.error('Error storing tokens to localStorage:', error);
+  }
+};
 
-          try {
-            const refreshToken = this.getRefreshToken();
-            if (!refreshToken) {
-              throw new Error('No refresh token available');
+// Eliminar tokens almacenados
+export const clearStoredTokens = (): void => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    authTokens = { accessToken: null, refreshToken: null };
+  } catch (error) {
+    console.error('Error clearing tokens from localStorage:', error);
+  }
+};
+
+// Interceptor de request - Agregar token de autorizacion
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    // Si no hay URL definida, usar la base
+    if (!config.url && config.baseURL) {
+      config.url = '/';
+    }
+
+    // Obtener tokens actualizados
+    const tokens = getStoredTokens();
+
+    // Agregar header de autorizacion si existe access token
+    if (tokens.accessToken && config.headers) {
+      config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+    }
+
+    return config;
+  },
+  (error: AxiosError) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor de response - Manejar errores y refresh automatico
+apiClient.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    // Si el error es 401 y no hemos intentado refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Si ya hay un refresh en curso, encolar la peticion
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
             }
+            return apiClient(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
 
-            const response = await axios.post<RefreshTokenResponse>(
-              `${API_BASE_URL}/auth/refresh`,
-              { refresh_token: refreshToken }
-            );
+      originalRequest._retry = true;
+      isRefreshing = true;
 
-            const { access_token, refresh_token } = response.data;
-            this.setTokens(access_token, refresh_token);
+      const tokens = getStoredTokens();
 
-            this.processQueue(null, access_token);
-            
-            originalRequest.headers = originalRequest.headers || {};
-            originalRequest.headers.Authorization = `Bearer ${access_token}`;
-            return this.client(originalRequest);
-          } catch (refreshError) {
-            this.processQueue(refreshError as Error, null);
-            this.clearTokens();
-            // Redirigir a login
-            if (typeof window !== 'undefined') {
-              window.location.href = '/login';
-            }
-            return Promise.reject(refreshError);
-          } finally {
-            this.isRefreshing = false;
-          }
+      if (!tokens.refreshToken) {
+        // No hay refresh token, redirigir a login
+        clearStoredTokens();
+        isRefreshing = false;
+        processQueue(new Error('No refresh token available'));
+
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
         }
 
         return Promise.reject(error);
       }
-    );
-  }
 
-  private processQueue(error: Error | null, token: string | null) {
-    this.failedQueue.forEach((prom) => {
-      if (error) {
-        prom.reject(error);
-      } else {
-        prom.resolve(token);
+      try {
+        // Intentar refresh del token
+        const response = await axios.post<TokenPair>(
+          `${API_BASE_URL}/auth/refresh`,
+          { refresh_token: tokens.refreshToken },
+          {
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+
+        const { access_token, refresh_token } = response.data;
+
+        // Guardar nuevos tokens
+        storeTokens({ access_token, refresh_token });
+
+        // Actualizar header de la peticion original
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        }
+
+        // Procesar cola de peticiones exitosamente
+        processQueue(null, access_token);
+
+        // Reintentar la peticion original
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        // Refresh fallo, limpiar tokens y redirigir a login
+        clearStoredTokens();
+        isRefreshing = false;
+        processQueue(refreshError as Error);
+
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// Metodos de autenticacion
+export const authApi = {
+  /**
+   * Login con email y password
+   */
+  login: async (email: string, password: string) => {
+    const response = await apiClient.post<TokenPair>('/auth/login', {
+      email,
+      password,
     });
-    this.failedQueue = [];
-  }
 
-  private getAccessToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('access_token');
-  }
-
-  private getRefreshToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('refresh_token');
-  }
-
-  private setTokens(accessToken: string, refreshToken: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('access_token', accessToken);
-      localStorage.setItem('refresh_token', refreshToken);
+    if (response.data.access_token && response.data.refresh_token) {
+      storeTokens(response.data);
     }
-  }
 
-  clearTokens(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-    }
-  }
-
-  // Métodos de Autenticación
-  async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await this.client.post<LoginResponse>('/auth/login', credentials);
-    const { access_token, refresh_token } = response.data;
-    this.setTokens(access_token, refresh_token);
-    
-    // Guardar información del usuario
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-    }
-    
     return response.data;
-  }
+  },
 
-  async logout(): Promise<void> {
-    try {
-      await this.client.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      this.clearTokens();
-    }
-  }
-
-  async registerRider(data: {
+  /**
+   * Registro de repartidor
+   */
+  registerRider: async (data: {
     email: string;
     password: string;
     full_name: string;
     phone: string;
     vehicle_type: string;
     license_plate?: string;
-  }): Promise<LoginResponse> {
-    const response = await this.client.post<LoginResponse>('/auth/register-rider', data);
-    const { access_token, refresh_token } = response.data;
-    this.setTokens(access_token, refresh_token);
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+  }) => {
+    const response = await apiClient.post<TokenPair>('/auth/register-rider', data);
+
+    if (response.data.access_token && response.data.refresh_token) {
+      storeTokens(response.data);
     }
-    
-    return response.data;
-  }
 
-  async getCurrentUser(): Promise<LoginResponse['user']> {
-    const response = await this.client.get<LoginResponse['user']>('/auth/me');
     return response.data;
-  }
+  },
 
-  // Métodos genéricos para otras APIs
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.get<ApiResponse<T>>(url, config);
-    return response.data;
-  }
+  /**
+   * Refresh de token
+   */
+  refresh: async (refreshToken: string) => {
+    const response = await apiClient.post<TokenPair>('/auth/refresh', {
+      refresh_token: refreshToken,
+    });
 
-  async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.post<ApiResponse<T>>(url, data, config);
-    return response.data;
-  }
-
-  async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.put<ApiResponse<T>>(url, data, config);
-    return response.data;
-  }
-
-  async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.patch<ApiResponse<T>>(url, data, config);
-    return response.data;
-  }
-
-  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.delete<ApiResponse<T>>(url, config);
-    return response.data;
-  }
-
-  getUser(): LoginResponse['user'] | null {
-    if (typeof window === 'undefined') return null;
-    const userStr = localStorage.getItem('user');
-    if (!userStr) return null;
-    try {
-      return JSON.parse(userStr);
-    } catch {
-      return null;
+    if (response.data.access_token && response.data.refresh_token) {
+      storeTokens(response.data);
     }
-  }
 
-  isAuthenticated(): boolean {
-    return !!this.getAccessToken();
-  }
-}
+    return response.data;
+  },
 
-// Exportar instancia singleton
-export const api = new ApiClient();
-export default api;
+  /**
+   * Logout - Limpia tokens locales
+   */
+  logout: () => {
+    clearStoredTokens();
+  },
+
+  /**
+   * Obtener informacion del usuario actual
+   */
+  me: async () => {
+    const response = await apiClient.get('/auth/me');
+    return response.data;
+  },
+};
+
+// Exportar instancia principal para uso directo
+export default apiClient;
+
+// Exportar metodos utilitarios
+export {
+  API_BASE_URL,
+  getStoredTokens,
+  storeTokens,
+  clearStoredTokens,
+};
