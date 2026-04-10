@@ -44,7 +44,7 @@ export default function RegisterRiderPage() {
 
   const vehicleType = watch('vehicle_type');
 
-  const onSubmit = async ( RegisterForm) => {
+  const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
     setError(null);
     try {
