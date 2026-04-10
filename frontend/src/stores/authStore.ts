@@ -4,7 +4,13 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { api, LoginRequest, LoginResponse } from '../lib/api';
+import { authApi, clearStoredTokens } from '../lib/api';
+
+// Tipos locales ya que api.ts no los exporta directamente
+interface LoginRequest {
+  email: string;
+  password: string;
+}
 
 interface User {
   id: string;
@@ -49,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (credentials: LoginRequest) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.login(credentials);
+          const response = await authApi.login(credentials.email, credentials.password);
           
           // Guardar usuario del response
           const user = response.user;
@@ -76,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         set({ isLoading: true });
         try {
-          await api.logout();
+          authApi.logout();
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
@@ -95,7 +101,7 @@ export const useAuthStore = create<AuthState>()(
       registerRider: async (data) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await api.registerRider(data);
+          const response = await authApi.registerRider(data);
           
           const user = response.user;
           localStorage.setItem('user', JSON.stringify(user));
@@ -126,7 +132,7 @@ export const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true });
         try {
-          const user = await api.getCurrentUser();
+          const user = await authApi.me();
           localStorage.setItem('user', JSON.stringify(user));
           
           set({
@@ -136,7 +142,7 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error) {
           console.error('Auth check failed:', error);
-          api.clearTokens();
+          clearStoredTokens();
           set({
             isAuthenticated: false,
             user: null,
