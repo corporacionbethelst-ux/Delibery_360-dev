@@ -1,0 +1,372 @@
+# Delivery360 - Manual de Dependencias e Instalación
+**Fecha:** Abril 2025 | **Versión:** 1.0
+
+---
+
+## 1. Requisitos Previos
+
+| Herramienta | Versión | Verificación |
+|-------------|---------|--------------|
+| Docker | 20.10+ | docker --version |
+| Docker Compose | 2.0+ | docker compose version |
+| Node.js | 18.x+ | node --version |
+| npm | 9.x+ | npm --version |
+| Python | 3.11+ | python --version |
+
+Espacio requerido: 2GB (Docker) o 4GB (manual)
+
+---
+
+## 2. Dependencias del Backend
+
+### Archivo: /workspace/backend/requirements.txt
+
+```
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+sqlalchemy==2.0.31
+asyncpg==0.29.0
+alembic==1.13.2
+psycopg2-binary==2.9.9
+redis==5.0.7
+celery==5.4.0
+bcrypt==4.0.1
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.9
+pydantic==2.8.2
+pydantic-settings==2.3.4
+email-validator==2.2.0
+httpx==0.27.0
+openpyxl==3.1.5
+reportlab==4.2.2
+prometheus-client==0.20.0
+structlog==24.4.0
+python-dateutil==2.9.0
+pytz==2024.1
+geopy==2.4.1
+haversine==2.8.1
+pytest==8.3.2
+pytest-asyncio==0.23.8
+```
+
+### Instalación Backend
+
+```bash
+cd /workspace/backend
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+pip install -r requirements.txt
+```
+
+### Variables .env (backend/.env)
+
+```
+ENVIRONMENT=development
+DEBUG=True
+DATABASE_URL=postgresql+async://delivery360:changeme123@localhost:5432/delivery360
+REDIS_URL=redis://:changeme123@localhost:6379/0
+JWT_SECRET_KEY=cambia_esta_clave_secreta_en_produccion_123456
+CORS_ORIGINS=["http://localhost:3000"]
+```
+
+---
+
+## 3. Dependencias del Frontend
+
+### Archivo: /workspace/frontend/package.json
+
+**dependencies:**
+- @hookform/resolvers, @radix-ui/react-slot, @types/leaflet
+- axios, clsx, date-fns, leaflet, lucide-react
+- next, react, react-dom, react-hook-form, react-leaflet
+- sonner, tailwind-merge, zod, zustand
+
+**devDependencies:**
+- @tailwindcss/postcss, @types/node, @types/react, @types/react-dom
+- autoprefixer, eslint, eslint-config-next, postcss
+- tailwindcss, typescript
+
+### Instalación Frontend
+
+```bash
+cd /workspace/frontend
+npm install
+```
+
+### Variables .env.local (frontend/.env.local)
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+```
+
+---
+
+## 4. Instalación con Docker Compose
+
+### Paso a paso:
+
+```bash
+# 1. Crear .env en raíz
+cd /workspace
+cat > .env << EOF
+POSTGRES_USER=delivery360
+POSTGRES_PASSWORD=changeme123
+POSTGRES_DB=delivery360
+REDIS_PASSWORD=changeme123
+JWT_SECRET_KEY=cambia_esta_clave_en_produccion
+ENVIRONMENT=development
+DEBUG=True
+EOF
+
+# 2. Iniciar servicios
+docker compose up -d
+
+# 3. Verificar
+docker compose ps
+
+# 4. Ver logs
+docker compose logs -f
+```
+
+### Servicios:
+
+| Servicio | Puerto | URL |
+|----------|--------|-----|
+| PostgreSQL | 5432 | localhost:5432 |
+| Redis | 6379 | localhost:6379 |
+| Backend | 8000 | http://localhost:8000 |
+| Frontend | 3000 | http://localhost:3000 |
+
+### Comandos útiles:
+
+```bash
+docker compose down          # Detener
+docker compose restart       # Reiniciar
+docker compose logs backend  # Logs backend
+docker compose logs frontend # Logs frontend
+```
+
+---
+
+## 5. Instalación Manual
+
+### Backend:
+
+```bash
+# Instalar PostgreSQL y Redis
+sudo apt-get install postgresql redis-server
+
+# Configurar DB
+sudo -u postgres psql
+CREATE USER delivery360 WITH PASSWORD 'changeme123';
+CREATE DATABASE delivery360 OWNER delivery360;
+\q
+
+# Instalar dependencias
+cd /workspace/backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Iniciar
+uvicorn app.main:app --reload --port 8000
+```
+
+### Frontend:
+
+```bash
+cd /workspace/frontend
+npm install
+npm run dev
+```
+
+---
+
+## 6. Verificación
+
+### Backend:
+```bash
+curl http://localhost:8000/health/check
+curl http://localhost:8000/docs
+```
+
+### Frontend:
+Abrir http://localhost:3000 en navegador
+
+---
+
+## 7. Cómo Probar el Backend
+
+### Desde Navegador:
+
+1. Swagger UI: http://localhost:8000/docs
+2. Health Check: http://localhost:8000/health/check
+3. Métricas: http://localhost:8000/metrics
+
+### Endpoints para probar:
+
+```bash
+# Login
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"test123"}'
+
+# Registro Rider
+curl -X POST http://localhost:8000/api/v1/auth/register-rider \
+  -H "Content-Type: application/json" \
+  -d '{"email":"rider@test.com","password":"123456","full_name":"Juan Perez","phone":"1234567890","vehicle_type":"motorcycle"}'
+```
+
+---
+
+## 8. Cómo Probar el Frontend
+
+### URLs disponibles:
+
+| Ruta | Descripción |
+|------|-------------|
+| http://localhost:3000/login | Login |
+| http://localhost:3000/register-rider | Registro |
+| http://localhost:3000/manager | Dashboard Gerente |
+| http://localhost:3000/operator | Dashboard Operador |
+| http://localhost:3000/rider | Dashboard Repartidor |
+
+### Flujo de prueba:
+
+1. Abrir http://localhost:3000/register-rider
+2. Completar formulario
+3. Verificar redirección
+4. Login con credenciales
+5. Explorar dashboard
+
+---
+
+## 9. Errores Comunes
+
+### ENOSPC (espacio lleno):
+```bash
+rm -rf /workspace/frontend/node_modules
+npm install
+docker system prune -a
+```
+
+### Conexión DB fallida:
+```bash
+docker compose ps postgres
+docker compose logs postgres
+```
+
+### Module not found:
+```bash
+cd /workspace/frontend
+rm -rf node_modules package-lock.json
+npm install
+```
+
+---
+
+## 10. Estado Actual del Proyecto
+
+### Según informe_de_sistema_v3.md:
+
+#### Backend: 100% COMPLETADO ✅
+
+**Completado:**
+- 13 modelos de datos con UUID
+- APIs REST completas
+- Autenticación JWT funcional
+- Migraciones Alembic
+- Celery workers
+- Monitoreo Prometheus/Grafana
+
+**Pendiente:**
+- Tests (cobertura 0%)
+- Algoritmos asignación inteligente
+- Integraciones externas
+
+#### Frontend: ~15% completado 🚧
+
+**Completado:**
+- Scaffold Next.js
+- 39 componentes placeholder
+- Layouts auth/dashboard
+- Contextos y stores base
+
+**Pendiente:**
+- Integración con API backend
+- Lógica de negocio
+- Stores completos
+- Mapas funcionales
+- Gráficos
+
+#### Errores Detectados en Frontend:
+
+1. **authStore.ts línea ~116:**
+   - ERROR: `api.getCurrentUser()` no existe
+   - FIX: Usar `authApi.me()`
+
+2. **authStore.ts línea ~121:**
+   - ERROR: `api.clearTokens()` no existe
+   - FIX: Usar `clearStoredTokens()`
+
+3. **authStore.ts imports:**
+   - ERROR: Importa tipos inexistentes
+   - FIX: Definir tipos localmente
+
+4. **register-rider/page.tsx línea ~47:**
+   - ERROR: `( RegisterForm)` mal definido
+   - FIX: `(data: RegisterForm)`
+
+5. **Componentes UI faltantes:**
+   - Button, Input, Card, Alert, Select
+   - Crear en /frontend/src/components/ui/
+
+6. **Stores incompletos:**
+   - ordersStore, ridersStore, deliveriesStore, realtimeStore
+   - Solo tienen placeholder
+
+### Fases del Proyecto:
+
+- FASE 1: Backend ✅ COMPLETADA
+- FASE 2: Frontend Integration 🚧 EN PROGRESO (15%)
+- FASE 3: Testing ❌ PENDIENTE
+- FASE 4: Integraciones ❌ PENDIENTE
+- FASE 5: Producción ❌ PENDIENTE
+
+### Próximo Paso: FASE 2
+
+**Tareas prioritarias:**
+1. Corregir authStore.ts
+2. Crear componentes UI base
+3. Implementar stores restantes
+4. Conectar componentes a APIs
+5. Implementar mapas Leaflet
+6. Implementar gráficos productividad
+
+---
+
+## Comandos Rápidos
+
+### Inicio Docker:
+```bash
+cd /workspace
+echo "POSTGRES_USER=delivery360" > .env
+echo "POSTGRES_PASSWORD=changeme123" >> .env
+echo "POSTGRES_DB=delivery360" >> .env
+echo "REDIS_PASSWORD=changeme123" >> .env
+echo "JWT_SECRET_KEY=clave_segura_123456" >> .env
+echo "ENVIRONMENT=development" >> .env
+docker compose up -d
+```
+
+### Verificar:
+```bash
+docker compose ps
+curl http://localhost:8000/health/check
+# Abrir http://localhost:3000
+```
+
+---
+Fin del manual
