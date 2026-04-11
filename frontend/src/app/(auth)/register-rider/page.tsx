@@ -75,7 +75,7 @@ export default function RegisterRiderPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle>Registro de Repartidor</cardTitle>
+          <CardTitle>Registro de Repartidor</CardTitle>
           <CardDescription>Únete a Delivery360 y comienza a ganar dinero hoy.</CardDescription>
         </CardHeader>
         <CardContent>
