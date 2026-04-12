@@ -1,5 +1,6 @@
 from backend.app.workers.celery_app import celery_app
 import asyncio
+from sqlalchemy import select, func
 
 
 # ── Liquidación diaria ────────────────────────────────────────────────────────
@@ -11,7 +12,6 @@ def run_daily_liquidation():
 async def _liquidate():
     from app.core.database import AsyncSessionLocal
     from app.models.all_models import Financial
-    from sqlalchemy import select
     from datetime import datetime, timezone, timedelta
 
     yesterday_start = (datetime.now(timezone.utc) - timedelta(days=1)).replace(hour=0, minute=0, second=0)
@@ -45,7 +45,6 @@ async def _calc_productivity():
     from app.models.rider import Rider, RiderStatus
     from app.models.order import Order, OrderStatus
     from app.models.all_models import Delivery, Productivity
-    from sqlalchemy import select, func
     from datetime import datetime, timezone, timedelta
 
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0)
