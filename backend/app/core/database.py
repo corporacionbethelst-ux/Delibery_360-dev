@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import DeclarativeBase, Session
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy import create_engine
 from app.core.config import settings
 
@@ -33,8 +33,9 @@ sync_engine = create_engine(
     max_overflow=20,
 )
 
-SessionLocal = Session(
+SessionLocal = sessionmaker(
     bind=sync_engine,
+    class_=Session,
     expire_on_commit=False,
     autocommit=False,
     autoflush=False,

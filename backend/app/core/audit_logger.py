@@ -3,6 +3,7 @@
 import logging
 from typing import Optional, Dict, Any
 from datetime import datetime
+from sqlalchemy import select
 from app.models.audit_log import AuditLog, AuditAction
 from app.core.database import AsyncSessionLocal
 
@@ -70,7 +71,6 @@ class AuditLogger:
     ) -> list:
         """Obtener historial de acciones de un usuario"""
         async with AsyncSessionLocal() as session:
-            from sqlalchemy import select
             stmt = select(AuditLog).where(AuditLog.user_id == user_id)\
                 .order_by(AuditLog.timestamp.desc())\
                 .limit(limit).offset(offset)
@@ -85,7 +85,6 @@ class AuditLogger:
     ) -> list:
         """Obtener historial de cambios de un recurso"""
         async with AsyncSessionLocal() as session:
-            from sqlalchemy import select
             stmt = select(AuditLog)\
                 .where(AuditLog.resource_type == resource_type)\
                 .where(AuditLog.resource_id == resource_id)\
@@ -104,7 +103,6 @@ class AuditLogger:
     ) -> list:
         """Buscar logs de auditoría con filtros"""
         async with AsyncSessionLocal() as session:
-            from sqlalchemy import select
             stmt = select(AuditLog)
             
             if action:

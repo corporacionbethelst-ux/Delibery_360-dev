@@ -10,6 +10,8 @@ import importlib.util
 from pathlib import Path
 from typing import List, Tuple, Optional
 import json
+import os
+from dotenv import load_dotenv
 
 class Color:
     """Colores para output en terminal"""
@@ -260,9 +262,6 @@ def check_directory_structure() -> List[Tuple[str, bool, str]]:
 
 def check_env_variables() -> List[Tuple[str, bool, str]]:
     """Verifica variables de entorno críticas"""
-    import os
-    from dotenv import load_dotenv
-    
     results = []
     
     # Cargar .env si existe
@@ -294,9 +293,6 @@ def check_env_variables() -> List[Tuple[str, bool, str]]:
 
 def check_database_connectivity() -> Tuple[bool, str]:
     """Verifica conectividad a la base de datos"""
-    import os
-    from dotenv import load_dotenv
-    
     env_file = Path('/workspace/backend/.env')
     if env_file.exists():
         load_dotenv(env_file)
@@ -318,9 +314,6 @@ def check_database_connectivity() -> Tuple[bool, str]:
 
 def check_redis_connectivity() -> Tuple[bool, str]:
     """Verifica conectividad a Redis"""
-    import os
-    from dotenv import load_dotenv
-    
     env_file = Path('/workspace/backend/.env')
     if env_file.exists():
         load_dotenv(env_file)

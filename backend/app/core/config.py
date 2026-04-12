@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
-    SECRET_KEY: str
+    SECRET_KEY: str = "your-secret-key-change-in-production-min-32-chars!"
 
     # API
     API_V1_STR: str = "/api/v1"
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = ""
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: str = "5432"
-    DATABASE_URL: str
+    DATABASE_URL: str = ""
     DATABASE_URL_SYNC: str = ""
 
     @property
