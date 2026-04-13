@@ -8,7 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
+import apiClient from '@/lib/api';
 import { 
   Truck, 
   Package, 
@@ -75,12 +75,12 @@ export default function ManagerDashboard() {
       setIsLoading(true);
       try {
         // Cargar estadísticas
-        const statsResponse = await api.get<DashboardStats>('/dashboard/stats');
+        const statsResponse = await apiClient.get<DashboardStats>('/dashboard/stats');
         setStats(statsResponse.data);
 
         // Cargar órdenes recientes
-        const ordersResponse = await api.get<{ orders: RecentOrder[] }>('/orders?limit=5&sort_by=created_at&sort_order=desc');
-        setRecentOrders(ordersResponse.data.orders || []);
+        const ordersResponse = await apiClient.get<RecentOrder[]>('/orders?limit=5&sort_by=created_at&sort_order=desc');
+        setRecentOrders(ordersResponse.data || []);
         
         setError(null);
       } catch (err) {
@@ -101,10 +101,10 @@ export default function ManagerDashboard() {
         });
         
         setRecentOrders([
-          { id: 'ORD-001', customer_name: 'Juan Pérez', status: 'en_transito', total_amount: 45.90, created_at: new Date().toISOString(), rider_name: 'Carlos R.' },
-          { id: 'ORD-002', customer_name: 'María García', status: 'lista_para_retiro', total_amount: 32.50, created_at: new Date(Date.now() - 300000).toISOString(), rider_name: 'Ana M.' },
-          { id: 'ORD-003', customer_name: 'Pedro López', status: 'en_preparacion', total_amount: 67.80, created_at: new Date(Date.now() - 600000).toISOString() },
-          { id: 'ORD-004', customer_name: 'Laura Sánchez', status: 'entregada', total_amount: 28.90, created_at: new Date(Date.now() - 900000).toISOString(), rider_name: 'Luis T.' },
+          { id: 'ORD-001', customer_name: 'Juan Pérez', status: 'en_ruta', total_amount: 45.90, created_at: new Date().toISOString(), rider_name: 'Carlos R.' },
+          { id: 'ORD-002', customer_name: 'María García', status: 'recolectado', total_amount: 32.50, created_at: new Date(Date.now() - 300000).toISOString(), rider_name: 'Ana M.' },
+          { id: 'ORD-003', customer_name: 'Pedro López', status: 'en_recoleccion', total_amount: 67.80, created_at: new Date(Date.now() - 600000).toISOString() },
+          { id: 'ORD-004', customer_name: 'Laura Sánchez', status: 'entregado', total_amount: 28.90, created_at: new Date(Date.now() - 900000).toISOString(), rider_name: 'Luis T.' },
           { id: 'ORD-005', customer_name: 'Roberto Díaz', status: 'pendiente', total_amount: 54.20, created_at: new Date(Date.now() - 1200000).toISOString() },
         ]);
       } finally {
@@ -264,9 +264,9 @@ export default function ManagerDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{order.customer_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        order.status === 'entregada' ? 'bg-green-100 text-green-800' :
-                        order.status === 'en_transito' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'en_preparacion' ? 'bg-yellow-100 text-yellow-800' :
+                        order.status === 'entregado' ? 'bg-green-100 text-green-800' :
+                        order.status === 'en_ruta' ? 'bg-blue-100 text-blue-800' :
+                        order.status === 'en_recoleccion' || order.status === 'recolectado' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {order.status.replace('_', ' ')}

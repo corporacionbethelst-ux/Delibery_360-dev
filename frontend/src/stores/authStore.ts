@@ -57,8 +57,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authApi.login(credentials.email, credentials.password);
           
-          // Guardar usuario del response
-          const user = response.user;
+          // Construir usuario desde la respuesta plana del backend
+          const user: User = {
+            id: response.user_id,
+            email: credentials.email,
+            full_name: response.full_name,
+            role: response.role as User['role'],
+          };
           localStorage.setItem('user', JSON.stringify(user));
           
           set({
@@ -103,7 +108,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authApi.registerRider(data);
           
-          const user = response.user;
+          // Construir usuario desde la respuesta plana del backend
+          const user: User = {
+            id: response.user_id,
+            email: data.email,
+            full_name: data.full_name,
+            role: response.role as User['role'],
+          };
           localStorage.setItem('user', JSON.stringify(user));
           
           set({

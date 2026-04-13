@@ -62,10 +62,10 @@ class Order(Base):
     delivery_instructions = Column(Text)  # Instrucciones adicionales
     
     # Geolocation
-    pickup_latitude = Column(Float)
-    pickup_longitude = Column(Float)
-    delivery_latitude = Column(Float)
-    delivery_longitude = Column(Float)
+    pickup_lat = Column(Float)
+    pickup_lng = Column(Float)
+    delivery_lat = Column(Float)
+    delivery_lng = Column(Float)
     
     # Order Details
     items = Column(JSON)  # Lista de productos
