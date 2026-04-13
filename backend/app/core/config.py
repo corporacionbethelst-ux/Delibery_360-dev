@@ -10,7 +10,12 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
-    SECRET_KEY: str = "CHANGE-THIS-SECRET-KEY-IN-PRODUCTION-MIN-32-CHARS-RANDOM!"
+    SECRET_KEY: str
+
+    @property
+    def is_secret_key_default(self) -> bool:
+        """Verificar si se está usando la clave secreta por defecto"""
+        return self.SECRET_KEY == "CHANGE-THIS-SECRET-KEY-IN-PRODUCTION-MIN-32-CHARS-RANDOM!"
 
     # API
     API_V1_STR: str = "/api/v1"
