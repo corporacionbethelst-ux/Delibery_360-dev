@@ -3,6 +3,55 @@
  * Exporta todos los tipos utilizados en el frontend
  */
 
+// Enums unificados para estados
+export enum OrderStatus {
+  PENDIENTE = 'pendiente',
+  ASIGNADO = 'asignado',
+  EN_PREPARACION = 'en_preparacion',
+  LISTO_PARA_RECOLECCION = 'listo_para_recoleccion',
+  EN_RECOLECCION = 'en_recoleccion',
+  RECOLECTADO = 'recolectado',
+  EN_RUTA = 'en_ruta',
+  EN_ENTREGA = 'en_entrega',
+  ENTREGADO = 'entregado',
+  CANCELADO = 'cancelado',
+  FALLIDO = 'fallido',
+}
+
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  [OrderStatus.PENDIENTE]: 'Pendiente',
+  [OrderStatus.ASIGNADO]: 'Asignado',
+  [OrderStatus.EN_PREPARACION]: 'En Preparación',
+  [OrderStatus.LISTO_PARA_RECOLECCION]: 'Listo para Recolección',
+  [OrderStatus.EN_RECOLECCION]: 'En Recolección',
+  [OrderStatus.RECOLECTADO]: 'Recolectado',
+  [OrderStatus.EN_RUTA]: 'En Ruta',
+  [OrderStatus.EN_ENTREGA]: 'En Entrega',
+  [OrderStatus.ENTREGADO]: 'Entregado',
+  [OrderStatus.CANCELADO]: 'Cancelado',
+  [OrderStatus.FALLIDO]: 'Fallido',
+};
+
+export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
+  [OrderStatus.PENDIENTE]: 'bg-gray-100 text-gray-800',
+  [OrderStatus.ASIGNADO]: 'bg-blue-100 text-blue-800',
+  [OrderStatus.EN_PREPARACION]: 'bg-yellow-100 text-yellow-800',
+  [OrderStatus.LISTO_PARA_RECOLECCION]: 'bg-orange-100 text-orange-800',
+  [OrderStatus.EN_RECOLECCION]: 'bg-purple-100 text-purple-800',
+  [OrderStatus.RECOLECTADO]: 'bg-indigo-100 text-indigo-800',
+  [OrderStatus.EN_RUTA]: 'bg-blue-100 text-blue-800',
+  [OrderStatus.EN_ENTREGA]: 'bg-cyan-100 text-cyan-800',
+  [OrderStatus.ENTREGADO]: 'bg-green-100 text-green-800',
+  [OrderStatus.CANCELADO]: 'bg-red-100 text-red-800',
+  [OrderStatus.FALLIDO]: 'bg-red-100 text-red-800',
+};
+
+export type UserRole = 'superadmin' | 'gerente' | 'operador' | 'repartidor';
+
+export type RiderStatus = 'pendiente' | 'activo' | 'inactivo' | 'suspendido';
+
+export type VehicleType = 'moto' | 'bicicleta' | 'auto' | 'pie';
+
 export interface User {
   id: string;
   email: string;
