@@ -13,6 +13,7 @@ from typing import AsyncGenerator
 
 from app.core.config import settings
 from app.core.database import engine, Base
+from app.core.exception_handlers import register_exception_handlers
 from app.api.v1 import (
     auth, users, riders, orders, deliveries, 
     shifts, productivity, financial, dashboard, 
@@ -58,7 +59,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     """
     Application factory pattern
-    Creates and configures the FastAPI application
+    Creates and configures the FastAPI application with full security
     """
     
     app = FastAPI(
@@ -71,53 +72,39 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
     
-    # Configure CORS
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-        expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
-    )
+    # Configure CORS con seguridad reforzada
+    from app.middleware.cors_middleware import setup_cors_middleware, get_security_headers
+    from fastapi.middleware.trustedhost import TrustedHostMiddleware
+    from starlette.middleware.base import BaseHTTPMiddleware
+    
+    setup_cors_middleware(app)
+    
+    # Agregar headers de seguridad en todas las respuestas
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        for header, value in get_security_headers().items():
+            response.headers[header] = value
+        return response
+    
+    # Middleware para hosts de confianza (solo producción)
+    if settings.ENVIRONMENT == "production":
+        app.add_middleware(
+            TrustedHostMiddleware,
+            allowed_hosts=[
+                "api.delivery360.com",
+                "*.delivery360.com",
+                "localhost",
+                "127.0.0.1"
+            ]
+        )
     
     # Add custom middleware
     app.add_middleware(RateLimitMiddleware)
     app.add_middleware(AuditLogMiddleware)
     
-    # Exception handlers
-    @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(
-        request: Request, 
-        exc: RequestValidationError
-    ) -> JSONResponse:
-        """Handle validation errors with detailed messages"""
-        logger.warning(f"Validation error: {exc.errors()}")
-        return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={
-                "success": False,
-                "error": "validation_error",
-                "message": "Errores de validación en los datos enviados",
-                "details": exc.errors()
-            }
-        )
-    
-    @app.exception_handler(Exception)
-    async def general_exception_handler(
-        request: Request, 
-        exc: Exception
-    ) -> JSONResponse:
-        """Handle unexpected exceptions"""
-        logger.error(f"Unexpected error: {str(exc)}", exc_info=True)
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "success": False,
-                "error": "internal_error",
-                "message": "Error interno del servidor. Por favor contacte al administrador."
-            }
-        )
+    # Register global exception handlers (reemplaza los handlers inline)
+    register_exception_handlers(app)
     
     # Include routers
     app.include_router(auth.router, prefix="/api/v1", tags=["Auth"]) 

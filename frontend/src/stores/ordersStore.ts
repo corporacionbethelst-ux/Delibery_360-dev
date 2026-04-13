@@ -1,5 +1,6 @@
 // Store de Orders con Zustand - Delivery360
 import { create } from 'zustand';
+import api from '@/lib/api';
 import type { Order, OrderFilters, OrderStats, OrderCreateInput, OrderUpdateInput } from '../types/order';
 
 interface OrdersState {
@@ -32,7 +33,7 @@ interface OrdersState {
   setFilters: (filters: Partial<OrderFilters>) => void;
   setStats: (stats: OrderStats) => void;
   
-  // Fetch actions (se implementan con API real)
+  // Fetch actions (API real)
   fetchOrders: (filters?: OrderFilters) => Promise<void>;
   fetchOrderById: (id: string) => Promise<void>;
   createOrder: (input: OrderCreateInput) => Promise<Order>;
@@ -91,49 +92,67 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   
   setStats: (stats) => set({ stats }),
   
-  // Implementaciones placeholder para fetch actions
+  // FETCH - API Real
   fetchOrders: async (filters) => {
     set({ isLoading: true, error: null });
     try {
-      // TODO: Implementar llamada a API real
-      // const response = await api.get('/orders', { params: filters });
-      console.log('Fetching orders with filters:', filters);
-      set({ isLoading: false });
-    } catch (error) {
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.riderId) params.append('rider_id', filters.riderId);
+      if (filters?.limit) params.append('limit', String(filters.limit));
+      if (filters?.offset !== undefined) params.append('offset', String(filters.offset));
+      
+      const response = await api.get(`/orders?${params.toString()}`);
+      const data = Array.isArray(response.data) ? response.data : [];
       set({ 
-        error: error instanceof Error ? error.message : 'Error al obtener pedidos',
+        orders: data,
+        pagination: {
+          ...get().pagination,
+          total: data.length,
+          totalPages: Math.ceil(data.length / get().pagination.pageSize),
+        },
         isLoading: false 
       });
+    } catch (error: any) {
+      set({ 
+        error: error.message || 'Error al obtener pedidos',
+        isLoading: false 
+      });
+      throw error;
     }
   },
   
   fetchOrderById: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      // TODO: Implementar llamada a API real
-      // const response = await api.get(`/orders/${id}`);
-      console.log('Fetching order:', id);
-      set({ isLoading: false });
-    } catch (error) {
+      const response = await api.get(`/orders/${id}`);
+      set({ selectedOrder: response.data, isLoading: false });
+    } catch (error: any) {
       set({ 
-        error: error instanceof Error ? error.message : 'Error al obtener pedido',
+        error: error.message || 'Error al obtener pedido',
         isLoading: false 
       });
+      throw error;
     }
   },
   
   createOrder: async (input) => {
     set({ isCreating: true, error: null });
     try {
-      // TODO: Implementar llamada a API real
-      // const response = await api.post('/orders', input);
-      console.log('Creating order:', input);
-      const newOrder: Order = {} as Order; // Placeholder
-      set({ isCreating: false });
+      const response = await api.post('/orders', input);
+      const newOrder: Order = response.data;
+      set((state) => ({ 
+        orders: [newOrder, ...state.orders],
+        pagination: {
+          ...state.pagination,
+          total: state.pagination.total + 1,
+        },
+        isCreating: false 
+      }));
       return newOrder;
-    } catch (error) {
+    } catch (error: any) {
       set({ 
-        error: error instanceof Error ? error.message : 'Error al crear pedido',
+        error: error.message || 'Error al crear pedido',
         isCreating: false 
       });
       throw error;
@@ -143,14 +162,13 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   updateOrderStatus: async (id, status) => {
     set({ isUpdating: true, error: null });
     try {
-      // TODO: Implementar llamada a API real
-      // await api.patch(`/orders/${id}/status`, { status });
-      console.log('Updating order status:', id, status);
-      get().updateOrder(id, { status });
+      const response = await api.patch(`/orders/${id}/status?new_status=${status}`);
+      const updatedOrder: Order = response.data;
+      get().updateOrder(id, updatedOrder);
       set({ isUpdating: false });
-    } catch (error) {
+    } catch (error: any) {
       set({ 
-        error: error instanceof Error ? error.message : 'Error al actualizar estado',
+        error: error.message || 'Error al actualizar estado',
         isUpdating: false 
       });
       throw error;
@@ -160,14 +178,13 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   assignRider: async (orderId, riderId) => {
     set({ isUpdating: true, error: null });
     try {
-      // TODO: Implementar llamada a API real
-      // await api.post(`/orders/${orderId}/assign`, { riderId });
-      console.log('Assigning rider:', riderId, 'to order:', orderId);
-      get().updateOrder(orderId, { assignedRiderId: riderId });
+      const response = await api.patch(`/orders/${orderId}/assign`, { rider_id: riderId });
+      const updatedOrder: Order = response.data;
+      get().updateOrder(orderId, updatedOrder);
       set({ isUpdating: false });
-    } catch (error) {
+    } catch (error: any) {
       set({ 
-        error: error instanceof Error ? error.message : 'Error al asignar repartidor',
+        error: error.message || 'Error al asignar repartidor',
         isUpdating: false 
       });
       throw error;
@@ -177,14 +194,12 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   deleteOrder: async (id) => {
     set({ isUpdating: true, error: null });
     try {
-      // TODO: Implementar llamada a API real
-      // await api.delete(`/orders/${id}`);
-      console.log('Deleting order:', id);
+      await api.delete(`/orders/${id}`);
       get().removeOrder(id);
       set({ isUpdating: false });
-    } catch (error) {
+    } catch (error: any) {
       set({ 
-        error: error instanceof Error ? error.message : 'Error al eliminar pedido',
+        error: error.message || 'Error al eliminar pedido',
         isUpdating: false 
       });
       throw error;

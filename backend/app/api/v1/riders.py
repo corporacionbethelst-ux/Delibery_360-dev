@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timezone
 import uuid
 
@@ -12,6 +12,19 @@ from app.models.user import User, UserRole
 from app.api.v1.auth import get_current_user, require_role
 
 router = APIRouter(prefix="/riders")
+
+
+class RiderCreate(BaseModel):
+    email: str
+    password: str
+    full_name: str
+    phone: str
+    vehicle_type: str
+    vehicle_plate: Optional[str] = None
+    vehicle_model: Optional[str] = None
+    operating_zone: Optional[str] = None
+    cpf: Optional[str] = None
+    cnh: Optional[str] = None
 
 
 class RiderUpdate(BaseModel):
@@ -26,6 +39,14 @@ class RiderUpdate(BaseModel):
 class LocationUpdate(BaseModel):
     lat: float
     lng: float
+
+
+class RejectRider(BaseModel):
+    reason: str
+
+
+class ApproveRider(BaseModel):
+    observations: Optional[str] = None
 
 
 def _rider_to_dict(r: Rider, include_user: bool = False) -> dict:
@@ -48,6 +69,48 @@ def _rider_to_dict(r: Rider, include_user: bool = False) -> dict:
         "approved_at": r.approved_at.isoformat() if r.approved_at else None,
     }
     return d
+
+
+@router.post("", status_code=201)
+async def create_rider(
+    body: RiderCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
+):
+    # Verificar si ya existe un usuario con ese email
+    from app.models.user import User as UserModel
+    result = await db.execute(select(UserModel).where(UserModel.email == body.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
+    
+    # Crear usuario con rol RIDER
+    from app.core.security import get_password_hash
+    user = UserModel(
+        email=body.email,
+        password_hash=get_password_hash(body.password),
+        full_name=body.full_name,
+        phone=body.phone,
+        role=UserRole.RIDER
+    )
+    db.add(user)
+    await db.flush()
+    
+    # Crear perfil de repartidor
+    rider = Rider(
+        user_id=user.id,
+        vehicle_type=VehicleType(body.vehicle_type),
+        vehicle_plate=body.vehicle_plate,
+        vehicle_model=body.vehicle_model,
+        operating_zone=body.operating_zone,
+        cpf=body.cpf,
+        cnh=body.cnh,
+        status=RiderStatus.PENDIENTE
+    )
+    db.add(rider)
+    await db.commit()
+    await db.refresh(rider)
+    
+    return _rider_to_dict(rider, include_user=True)
 
 
 @router.get("")
@@ -115,6 +178,7 @@ async def update_rider(
 @router.patch("/{rider_id}/approve")
 async def approve_rider(
     rider_id: str,
+    body: ApproveRider = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
@@ -125,8 +189,61 @@ async def approve_rider(
 
     rider.status = RiderStatus.ACTIVO
     rider.approved_at = datetime.now(timezone.utc)
+    if body and body.observations:
+        # Guardar observaciones si se proporcionan
+        pass
     await db.commit()
     return {"message": "Repartidor aprobado exitosamente", "rider_id": rider_id}
+
+
+@router.post("/{rider_id}/reject")
+async def reject_rider(
+    rider_id: str,
+    body: RejectRider,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
+):
+    result = await db.execute(select(Rider).where(Rider.id == uuid.UUID(rider_id)))
+    rider = result.scalar_one_or_none()
+    if not rider:
+        raise HTTPException(status_code=404, detail="Repartidor no encontrado")
+
+    rider.status = RiderStatus.RECHAZADO
+    rider.rejection_reason = body.reason
+    await db.commit()
+    return {"message": "Repartidor rechazado", "rider_id": rider_id}
+
+
+@router.delete("/{rider_id}")
+async def delete_rider(
+    rider_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
+):
+    result = await db.execute(select(Rider).where(Rider.id == uuid.UUID(rider_id)))
+    rider = result.scalar_one_or_none()
+    if not rider:
+        raise HTTPException(status_code=404, detail="Repartidor no encontrado")
+
+    # Eliminar el rider (cascade eliminará el usuario asociado si está configurado)
+    await db.delete(rider)
+    await db.commit()
+    return {"message": "Repartidor eliminado exitosamente", "rider_id": rider_id}
+
+
+@router.get("/documents/pending")
+async def get_pending_documents(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
+):
+    """Obtener lista de repartidores con documentos pendientes de aprobación"""
+    result = await db.execute(
+        select(Rider).where(
+            Rider.status == RiderStatus.PENDIENTE
+        ).order_by(Rider.created_at.desc())
+    )
+    riders = result.scalars().all()
+    return [_rider_to_dict(r) for r in riders]
 
 
 @router.patch("/{rider_id}/location")
