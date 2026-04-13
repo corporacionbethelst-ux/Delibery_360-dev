@@ -1,10 +1,8 @@
-```
 # Compiled and build artifacts
 *.pyc
 __pycache__/
 *.o
 *.obj
-*.class
 *.exe
 *.dll
 *.so
@@ -20,16 +18,16 @@ venv/
 node_modules/
 .mypy_cache/
 .pytest_cache/
-.coverage
-coverage/
-htmlcov/
 .gradle/
+julia-*/
+zig*/
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
 *.swo
+*.out
 
 # Environment
 .env
@@ -43,6 +41,11 @@ htmlcov/
 # System files
 .DS_Store
 Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
 # Compressed files
 *.zip
@@ -66,5 +69,4 @@ Thumbs.db
 *.tar.gz
 *.tar.bz2
 *.tar.xz
-*.tar.zst
-```
+*.tar.zstNothing needs to be added to .gitignore since only a Python source file was modified and no build artifacts, dependencies, or temporary files were detected in the changes.
