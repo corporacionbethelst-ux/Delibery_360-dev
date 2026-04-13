@@ -23,6 +23,7 @@ class TokenResponse(BaseModel):
     user_id: str
     role: str
     full_name: str
+    email: Optional[str] = None
 
 
 class RefreshRequest(BaseModel):
@@ -93,6 +94,7 @@ async def login(
         user_id=str(user.id),
         role=user.role.value,
         full_name=user.full_name,
+        email=user.email,
     )
 
 
@@ -117,6 +119,7 @@ async def refresh_token(
         user_id=str(user.id),
         role=user.role.value,
         full_name=user.full_name,
+        email=user.email,
     )
 
 

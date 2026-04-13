@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
-    SECRET_KEY: str = "your-secret-key-change-in-production-min-32-chars!"
+    SECRET_KEY: str = "CHANGE-THIS-SECRET-KEY-IN-PRODUCTION-MIN-32-CHARS-RANDOM!"
 
     # API
     API_V1_STR: str = "/api/v1"
