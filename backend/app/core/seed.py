@@ -42,16 +42,16 @@ async def seed_database():
             print("\n👤 Verificando superusuario...")
             
             existing_admin = await session.execute(
-                User.query.filter_by(email="admin@delivery360.com")
+                select(User).where(User.email == "admin@delivery360.com")
             )
             admin_user = existing_admin.scalar_one_or_none()
             
             if not admin_user:
                 admin_user = User(
                     email="admin@delivery360.com",
-                    password=get_password_hash("Admin1234!"),
+                    hashed_password=get_password_hash("Admin1234!"),
                     full_name="Administrador Principal",
-                    role="superadmin",
+                    role=UserRole.SUPERADMIN,
                     is_active=True,
                     phone="+5511999999999",
                 )
@@ -69,35 +69,35 @@ async def seed_database():
                     "email": "gerente@delivery360.com",
                     "password": "Gerente123!",
                     "full_name": "Juan Gerente",
-                    "role": "gerente",
+                    "role": UserRole.GERENTE,
                     "phone": "+5511988888888",
                 },
                 {
                     "email": "operador@delivery360.com",
                     "password": "Operador123!",
                     "full_name": "María Operadora",
-                    "role": "operador",
+                    "role": UserRole.OPERADOR,
                     "phone": "+5511977777777",
                 },
                 {
                     "email": "repartidor@delivery360.com",
                     "password": "Rider123!",
                     "full_name": "Carlos Repartidor",
-                    "role": "repartidor",
+                    "role": UserRole.REPARTIDOR,
                     "phone": "+5511966666666",
                 },
             ]
             
             for user_data in test_users:
                 existing_user = await session.execute(
-                    User.query.filter_by(email=user_data["email"])
+                    select(User).where(User.email == user_data["email"])
                 )
                 user = existing_user.scalar_one_or_none()
                 
                 if not user:
                     user = User(
                         email=user_data["email"],
-                        password=get_password_hash(user_data["password"]),
+                        hashed_password=get_password_hash(user_data["password"]),
                         full_name=user_data["full_name"],
                         role=user_data["role"],
                         is_active=True,
@@ -114,24 +114,22 @@ async def seed_database():
             print("\n🚴 Verificando repartidores de prueba...")
             
             rider_user = await session.execute(
-                User.query.filter_by(email="repartidor@delivery360.com")
+                select(User).where(User.email == "repartidor@delivery360.com")
             )
             rider_user_obj = rider_user.scalar_one_or_none()
             
             if rider_user_obj:
                 existing_rider = await session.execute(
-                    Rider.query.filter_by(user_id=rider_user_obj.id)
+                    select(Rider).where(Rider.user_id == rider_user_obj.id)
                 )
                 rider = existing_rider.scalar_one_or_none()
                 
                 if not rider:
+                    from app.models.rider import RiderStatus, VehicleType
                     rider = Rider(
                         user_id=rider_user_obj.id,
-                        vehicle_type="bicicleta",
-                        vehicle_plate="N/A",
-                        is_available=True,
-                        rating=5.0,
-                        total_deliveries=0,
+                        vehicle_type=VehicleType.MOTO,
+                        status=RiderStatus.ACTIVO,
                     )
                     session.add(rider)
                     print("  ✅ Repartidor de prueba creado")
@@ -139,46 +137,6 @@ async def seed_database():
                     print("  ℹ️  Repartidor ya existe")
                 
                 await session.commit()
-            
-            # 4. Crear órdenes de prueba (opcional)
-            print("\n📦 Verificando órdenes de prueba...")
-            
-            existing_orders = await session.execute(Order.query.limit(1))
-            order = existing_orders.scalar_one_or_none()
-            
-            if not order:
-                # Crear algunas órdenes de prueba
-                test_orders = [
-                    {
-                        "customer_name": "Cliente Test 1",
-                        "customer_address": "Av. Paulista 1000, São Paulo",
-                        "customer_phone": "+5511911111111",
-                        "total_amount": 45.90,
-                        "status": OrderStatus.pendiente,
-                        "pickup_address": "Restaurante Test, Rua Augusta 500",
-                        "pickup_phone": "+5511922222222",
-                        "items": [{"name": "Pizza Grande", "quantity": 1, "price": 45.90}],
-                    },
-                    {
-                        "customer_name": "Cliente Test 2",
-                        "customer_address": "Rua Oscar Freire 800, São Paulo",
-                        "customer_phone": "+5511933333333",
-                        "total_amount": 32.50,
-                        "status": OrderStatus.en_preparacion,
-                        "pickup_address": "Hamburguesería Test, Av. Faria Lima 1200",
-                        "pickup_phone": "+5511944444444",
-                        "items": [{"name": "Hamburguesa Doble", "quantity": 2, "price": 16.25}],
-                    },
-                ]
-                
-                for order_data in test_orders:
-                    order = Order(**order_data)
-                    session.add(order)
-                
-                await session.commit()
-                print(f"  ✅ {len(test_orders)} órdenes de prueba creadas")
-            else:
-                print("  ℹ️  Ya existen órdenes en la base de datos")
             
             print("\n" + "="*50)
             print("🎉 ¡Seed completado exitosamente!")
