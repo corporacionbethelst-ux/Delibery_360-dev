@@ -34,11 +34,9 @@ zig*/
 .env.local
 *.env.*
 
-# Editors and IDE
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # System files
 .DS_Store
