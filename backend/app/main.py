@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     """
     Application factory pattern
-    Creates and configures the FastAPI application
+    Creates and configures the FastAPI application with full security
     """
     
     app = FastAPI(
@@ -72,15 +72,32 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
     
-    # Configure CORS
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-        expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
-    )
+    # Configure CORS con seguridad reforzada
+    from app.middleware.cors_middleware import setup_cors_middleware, get_security_headers
+    from fastapi.middleware.trustedhost import TrustedHostMiddleware
+    from starlette.middleware.base import BaseHTTPMiddleware
+    
+    setup_cors_middleware(app)
+    
+    # Agregar headers de seguridad en todas las respuestas
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        for header, value in get_security_headers().items():
+            response.headers[header] = value
+        return response
+    
+    # Middleware para hosts de confianza (solo producción)
+    if settings.ENVIRONMENT == "production":
+        app.add_middleware(
+            TrustedHostMiddleware,
+            allowed_hosts=[
+                "api.delivery360.com",
+                "*.delivery360.com",
+                "localhost",
+                "127.0.0.1"
+            ]
+        )
     
     # Add custom middleware
     app.add_middleware(RateLimitMiddleware)
