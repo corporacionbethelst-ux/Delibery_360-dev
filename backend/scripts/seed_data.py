@@ -5,14 +5,13 @@ Idempotente: no duplica datos si ya existen.
 """
 import asyncio
 import sys
-import os
+import secrets
 sys.path.insert(0, "/app")
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy import select, text
+from sqlalchemy import select
 from datetime import datetime, timezone, timedelta
 import random
-import uuid
 
 from app.core.config import settings
 from app.core.security import hash_password
@@ -44,11 +43,12 @@ async def seed():
         print("► Iniciando carga de datos de prueba...")
 
         # ── 2. Usuarios base ────────────────────────────────────────────────
+        admin_password = settings.FIRST_SUPERUSER_PASSWORD or secrets.token_urlsafe(16)
         users_data = [
-            (settings.FIRST_SUPERUSER_EMAIL, settings.FIRST_SUPERUSER_PASSWORD, settings.FIRST_SUPERUSER_NAME, UserRole.SUPERADMIN),
-            ("gerente@logrider.com",  "Gerente1234!", "Carlos Mendoza",    UserRole.GERENTE),
-            ("operador@logrider.com", "Operador1234!", "Ana González",     UserRole.OPERADOR),
-            ("operador2@logrider.com","Operador1234!", "Luis Ramírez",     UserRole.OPERADOR),
+            (settings.FIRST_SUPERUSER_EMAIL, admin_password, settings.FIRST_SUPERUSER_NAME, UserRole.SUPERADMIN),
+            ("gerente@logrider.com",  secrets.token_urlsafe(12), "Carlos Mendoza",    UserRole.GERENTE),
+            ("operador@logrider.com", secrets.token_urlsafe(12), "Ana González",     UserRole.OPERADOR),
+            ("operador2@logrider.com", secrets.token_urlsafe(12), "Luis Ramírez",     UserRole.OPERADOR),
         ]
 
         users = []
@@ -70,11 +70,11 @@ async def seed():
 
         # ── 3. Repartidores ─────────────────────────────────────────────────
         riders_data = [
-            ("rider1@logrider.com", "Rider1234!", "Pedro Souza",    VehicleType.MOTO,      "MTP-1234", "Honda CG 160"),
-            ("rider2@logrider.com", "Rider1234!", "Maria Silva",    VehicleType.MOTO,      "MTP-5678", "Yamaha Factor"),
-            ("rider3@logrider.com", "Rider1234!", "João Costa",     VehicleType.BICICLETA, None,        "Bike Caloi"),
-            ("rider4@logrider.com", "Rider1234!", "Ana Ferreira",   VehicleType.MOTO,      "MTP-9012", "Honda Biz"),
-            ("rider5@logrider.com", "Rider1234!", "Carlos Lima",    VehicleType.AUTO,      "ABC-3456", "Fiat Uno"),
+            ("rider1@logrider.com", secrets.token_urlsafe(12), "Pedro Souza",    VehicleType.MOTO,      "MTP-1234", "Honda CG 160"),
+            ("rider2@logrider.com", secrets.token_urlsafe(12), "Maria Silva",    VehicleType.MOTO,      "MTP-5678", "Yamaha Factor"),
+            ("rider3@logrider.com", secrets.token_urlsafe(12), "João Costa",     VehicleType.BICICLETA, None,        "Bike Caloi"),
+            ("rider4@logrider.com", secrets.token_urlsafe(12), "Ana Ferreira",   VehicleType.MOTO,      "MTP-9012", "Honda Biz"),
+            ("rider5@logrider.com", secrets.token_urlsafe(12), "Carlos Lima",    VehicleType.AUTO,      "ABC-3456", "Fiat Uno"),
         ]
 
         riders = []
@@ -245,10 +245,8 @@ async def seed():
         print("═" * 50)
         print("✅ SEED COMPLETADO CON ÉXITO")
         print("═" * 50)
-        print(f"  Admin:    {settings.FIRST_SUPERUSER_EMAIL} / {settings.FIRST_SUPERUSER_PASSWORD}")
-        print(f"  Gerente:  gerente@logrider.com / Gerente1234!")
-        print(f"  Operador: operador@logrider.com / Operador1234!")
-        print(f"  Rider:    rider1@logrider.com / Rider1234!")
+        print(f"  Admin:    {settings.FIRST_SUPERUSER_EMAIL} / [usar FIRST_SUPERUSER_PASSWORD o contraseña generada]")
+        print("  Usuarios de prueba creados con contraseñas temporales seguras")
         print("  Docs API: http://localhost:8000/docs")
         print("═" * 50)
 
