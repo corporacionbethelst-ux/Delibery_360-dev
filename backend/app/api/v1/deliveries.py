@@ -50,6 +50,20 @@ def _parse_uuid(value: str, field_name: str) -> uuid.UUID:
         raise HTTPException(status_code=400, detail=f"{field_name} inválido")
 
 
+def _ensure_status_transition(
+    delivery: Delivery,
+    *,
+    allowed_from: tuple[DeliveryStatus, ...],
+    action: str,
+) -> None:
+    if delivery.status not in allowed_from:
+        allowed = ", ".join(state.value for state in allowed_from)
+        raise HTTPException(
+            status_code=400,
+            detail=f"No se puede {action} en estado {delivery.status.value}. Estados permitidos: {allowed}",
+        )
+
+
 def _delivery_to_dict(d: Delivery) -> dict:
     return {
         "id": str(d.id),
@@ -185,6 +199,11 @@ async def start_delivery(
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
     await _ensure_rider_delivery_access(db, current_user, delivery)
+    _ensure_status_transition(
+        delivery,
+        allowed_from=(DeliveryStatus.INICIADA, DeliveryStatus.EN_PICKUP),
+        action="iniciar ruta",
+    )
 
     if body.lat is not None:
         delivery.current_latitude = body.lat
@@ -211,6 +230,11 @@ async def complete_delivery(
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
     await _ensure_rider_delivery_access(db, current_user, delivery)
+    _ensure_status_transition(
+        delivery,
+        allowed_from=(DeliveryStatus.EN_ROUTE, DeliveryStatus.EN_DESTINO),
+        action="completar entrega",
+    )
 
     if body.otp_code and delivery.proof_otp and body.otp_code != delivery.proof_otp:
         raise HTTPException(status_code=400, detail="OTP incorrecto")
@@ -255,6 +279,17 @@ async def fail_delivery(
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
     await _ensure_rider_delivery_access(db, current_user, delivery)
+    _ensure_status_transition(
+        delivery,
+        allowed_from=(
+            DeliveryStatus.PENDIENTE,
+            DeliveryStatus.INICIADA,
+            DeliveryStatus.EN_PICKUP,
+            DeliveryStatus.EN_ROUTE,
+            DeliveryStatus.EN_DESTINO,
+        ),
+        action="marcar como fallida",
+    )
 
     delivery.status = DeliveryStatus.FALLIDA
     delivery.has_issues = True
