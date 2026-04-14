@@ -178,6 +178,23 @@ async def create_order(
     return _order_to_dict(order)
 
 
+@router.get("/stats/summary")
+async def orders_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    today = datetime.now(timezone.utc).date()
+    result = await db.execute(
+        select(Order.status, func.count(Order.id))
+        .where(func.date(Order.created_at) == today)
+        .group_by(Order.status)
+    )
+    rows = result.all()
+    summary = {r[0].value: r[1] for r in rows}
+    total = sum(summary.values())
+    return {"today": summary, "total_today": total}
+
+
 @router.get("/{order_id}")
 async def get_order(
     order_id: str,
@@ -264,20 +281,3 @@ async def update_status(
 
     await db.commit()
     return _order_to_dict(order)
-
-
-@router.get("/stats/summary")
-async def orders_summary(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    today = datetime.now(timezone.utc).date()
-    result = await db.execute(
-        select(Order.status, func.count(Order.id))
-        .where(func.date(Order.created_at) == today)
-        .group_by(Order.status)
-    )
-    rows = result.all()
-    summary = {r[0].value: r[1] for r in rows}
-    total = sum(summary.values())
-    return {"today": summary, "total_today": total}
