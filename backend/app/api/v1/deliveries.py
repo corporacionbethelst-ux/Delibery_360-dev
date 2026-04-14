@@ -63,6 +63,11 @@ def _delivery_to_dict(d: Delivery) -> dict:
     }
 
 
+async def _get_rider_for_user(db: AsyncSession, user_id) -> Optional[Rider]:
+    result = await db.execute(select(Rider).where(Rider.user_id == user_id))
+    return result.scalar_one_or_none()
+
+
 @router.get("")
 async def list_deliveries(
     status: Optional[str] = Query(None),
@@ -157,6 +162,11 @@ async def start_delivery(
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
+    if current_user.role == UserRole.REPARTIDOR:
+        rider = await _get_rider_for_user(db, current_user.id)
+        if not rider or delivery.rider_id != rider.id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para iniciar esta entrega")
+
     if body.lat is not None:
         delivery.current_latitude = body.lat
     if body.lng is not None:
@@ -180,6 +190,11 @@ async def complete_delivery(
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
+
+    if current_user.role == UserRole.REPARTIDOR:
+        rider = await _get_rider_for_user(db, current_user.id)
+        if not rider or delivery.rider_id != rider.id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para completar esta entrega")
 
     if body.otp_code and delivery.proof_otp and body.otp_code != delivery.proof_otp:
         raise HTTPException(status_code=400, detail="OTP incorrecto")
@@ -222,6 +237,11 @@ async def fail_delivery(
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
+
+    if current_user.role == UserRole.REPARTIDOR:
+        rider = await _get_rider_for_user(db, current_user.id)
+        if not rider or delivery.rider_id != rider.id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para fallar esta entrega")
 
     delivery.status = DeliveryStatus.FALLIDA
     delivery.has_issues = True

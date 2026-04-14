@@ -105,7 +105,7 @@ async def list_orders(
         try:
             q = q.where(Order.status == OrderStatus(status))
         except ValueError:
-            pass
+            raise HTTPException(status_code=400, detail=f"Estado inválido: {status}")
     if rider_id:
         q = q.where(Order.assigned_rider_id == uuid.UUID(rider_id))
 
@@ -218,6 +218,12 @@ async def update_status(
         target = OrderStatus(new_status)
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Estado inválido: {new_status}")
+
+    if current_user.role == UserRole.REPARTIDOR:
+        rider_result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
+        rider = rider_result.scalar_one_or_none()
+        if not rider or order.assigned_rider_id != rider.id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para actualizar este pedido")
 
     current_status = cast(OrderStatus, order.status)
     allowed = VALID_TRANSITIONS.get(current_status, [])

@@ -22,9 +22,14 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.user import User
 from app.models.rider import Rider
-from app.models.order import Order, OrderStatus
 from app.models.enums import UserRole
-from sqlalchemy import select, text
+from sqlalchemy import select
+
+
+def _get_seed_password(configured_password: str | None, length: int = 16) -> str:
+    """Retorna contraseña configurada o genera una temporal segura."""
+    return configured_password or secrets.token_urlsafe(length)
+
 
 async def seed_database():
     """Inicializar la base de datos con datos básicos"""
@@ -44,7 +49,7 @@ async def seed_database():
             print("\n👤 Verificando superusuario...")
             
             admin_email = settings.FIRST_SUPERUSER_EMAIL
-            admin_password = settings.FIRST_SUPERUSER_PASSWORD or secrets.token_urlsafe(16)
+            admin_password = _get_seed_password(settings.FIRST_SUPERUSER_PASSWORD, length=16)
 
             existing_admin = await session.execute(
                 select(User).where(User.email == admin_email)
@@ -72,21 +77,21 @@ async def seed_database():
             test_users = [
                 {
                     "email": "gerente@delivery360.com",
-                    "password": secrets.token_urlsafe(12),
+                    "password": _get_seed_password(None, length=12),
                     "full_name": "Juan Gerente",
                     "role": UserRole.GERENTE,
                     "phone": "+5511988888888",
                 },
                 {
                     "email": "operador@delivery360.com",
-                    "password": secrets.token_urlsafe(12),
+                    "password": _get_seed_password(None, length=12),
                     "full_name": "María Operadora",
                     "role": UserRole.OPERADOR,
                     "phone": "+5511977777777",
                 },
                 {
                     "email": "repartidor@delivery360.com",
-                    "password": secrets.token_urlsafe(12),
+                    "password": _get_seed_password(None, length=12),
                     "full_name": "Carlos Repartidor",
                     "role": UserRole.REPARTIDOR,
                     "phone": "+5511966666666",
