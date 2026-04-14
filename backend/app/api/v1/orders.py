@@ -80,6 +80,19 @@ def _generate_order_number() -> str:
     return f"LR-{suffix}"
 
 
+async def _get_rider_for_user(db: AsyncSession, user_id) -> Optional[Rider]:
+    rider_result = await db.execute(select(Rider).where(Rider.user_id == user_id))
+    return rider_result.scalar_one_or_none()
+
+
+async def _ensure_rider_order_access(db: AsyncSession, current_user: User, order: Order) -> None:
+    if current_user.role != UserRole.REPARTIDOR:
+        return
+    rider = await _get_rider_for_user(db, current_user.id)
+    if not rider or order.assigned_rider_id != rider.id:
+        raise HTTPException(status_code=403, detail="No tienes permiso para acceder a este pedido")
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 @router.get("")
 async def list_orders(
@@ -165,6 +178,7 @@ async def get_order(
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    await _ensure_rider_order_access(db, current_user, order)
     return _order_to_dict(order)
 
 
@@ -219,6 +233,7 @@ async def update_status(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Estado inválido: {new_status}")
 
+    await _ensure_rider_order_access(db, current_user, order)
     if current_user.role == UserRole.REPARTIDOR:
         rider_result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
         rider = rider_result.scalar_one_or_none()
