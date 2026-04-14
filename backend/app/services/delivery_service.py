@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from app.models.delivery import Delivery, DeliveryStatus
-from app.models.order import Order, OrderStatus
+from app.models.order import OrderStatus
 from app.schemas.delivery import ProofOfDeliveryCreate
 from app.crud.delivery import delivery as delivery_crud
 from app.crud.order import order as order_crud

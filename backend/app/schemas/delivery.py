@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 import uuid
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
 
 from app.models.delivery import DeliveryStatus
 
