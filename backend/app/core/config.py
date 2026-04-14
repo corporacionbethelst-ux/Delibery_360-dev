@@ -104,4 +104,4 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]

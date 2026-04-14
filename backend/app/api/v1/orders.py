@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, cast
 from datetime import datetime, timezone
 import uuid
 import random
@@ -95,10 +95,10 @@ async def list_orders(
 
     # Repartidor solo ve sus pedidos
     if current_user.role == UserRole.REPARTIDOR:
-        result = await db.execute(
+        rider_result = await db.execute(
             select(Rider).where(Rider.user_id == current_user.id)
         )
-        rider = result.scalar_one_or_none()
+        rider = rider_result.scalar_one_or_none()
         if rider:
             q = q.where(Order.assigned_rider_id == rider.id)
 
@@ -111,8 +111,8 @@ async def list_orders(
         q = q.where(Order.assigned_rider_id == uuid.UUID(rider_id))
 
     q = q.order_by(Order.created_at.desc()).limit(limit).offset(offset)
-    result = await db.execute(q)
-    orders = result.scalars().all()
+    orders_result = await db.execute(q)
+    orders: List[Order] = list(orders_result.scalars().all())
     return [_order_to_dict(o) for o in orders]
 
 
@@ -220,7 +220,8 @@ async def update_status(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Estado inválido: {new_status}")
 
-    allowed = VALID_TRANSITIONS.get(order.status, [])
+    current_status = cast(OrderStatus, order.status)
+    allowed = VALID_TRANSITIONS.get(current_status, [])
     if target not in allowed:
         raise HTTPException(
             status_code=400,
