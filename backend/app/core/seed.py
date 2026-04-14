@@ -39,7 +39,7 @@ async def seed_database():
     print("✅ Tablas creadas verificadas")
     
     # Obtener sesión de base de datos
-    async for session in get_db_session():
+    async with AsyncSessionLocal() as session:
         try:
             # 1. Crear superusuario si no existe
             print("\n👤 Verificando superusuario...")
@@ -157,8 +157,6 @@ async def seed_database():
             await session.rollback()
             print(f"\n❌ Error durante el seed: {str(e)}")
             raise
-        finally:
-            await session.close()
 
 
 if __name__ == "__main__":
