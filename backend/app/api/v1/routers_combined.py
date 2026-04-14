@@ -43,6 +43,20 @@ def _parse_uuid(value: str, field_name: str) -> uuid.UUID:
         raise HTTPException(status_code=400, detail=f"{field_name} inválido")
 
 
+async def _ensure_rider_scope(
+    db: AsyncSession,
+    current_user: User,
+    rider_id: uuid.UUID,
+) -> None:
+    """Si el usuario es repartidor, solo puede operar sobre su propio rider_id."""
+    if current_user.role != UserRole.REPARTIDOR:
+        return
+    result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
+    rider = result.scalar_one_or_none()
+    if not rider or rider.id != rider_id:
+        raise HTTPException(status_code=403, detail="No tienes permiso para acceder a este recurso")
+
+
 @deliveries_router.get("")
 async def list_deliveries(
     rider_id: Optional[str] = Query(None),
@@ -220,7 +234,9 @@ async def list_shifts(
 ):
     q = select(Shift)
     if rider_id:
-        q = q.where(Shift.rider_id == _parse_uuid(rider_id, "rider_id"))
+        rider_uuid = _parse_uuid(rider_id, "rider_id")
+        await _ensure_rider_scope(db, current_user, rider_uuid)
+        q = q.where(Shift.rider_id == rider_uuid)
     result = await db.execute(q.order_by(Shift.checkin_at.desc()).limit(100))
     items = result.scalars().all()
     return [
@@ -246,7 +262,11 @@ financial_router = APIRouter(prefix="/financial")
 
 @financial_router.get("/summary")
 async def financial_summary(
-@@ -256,76 +266,76 @@ async def financial_summary(
+@@ -252,80 +278,86 @@ async def financial_summary(
+        select(
+            func.count(Financial.id),
+            func.sum(Financial.total_amount),
+            func.sum(Financial.operational_cost),
             func.avg(Financial.total_amount),
         ).where(Financial.period_date >= start)
     )
@@ -268,11 +288,14 @@ async def rider_earnings(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    rider_uuid = _parse_uuid(rider_id, "rider_id")
+    await _ensure_rider_scope(db, current_user, rider_uuid)
+
     now = datetime.now(timezone.utc)
     start = now.replace(hour=0, minute=0, second=0) if period == "today" else now - timedelta(days=30)
     result = await db.execute(
         select(func.sum(Financial.total_amount), func.count(Financial.id))
-        .where(Financial.rider_id == _parse_uuid(rider_id, "rider_id"), Financial.period_date >= start)
+        .where(Financial.rider_id == rider_uuid, Financial.period_date >= start)
     )
     row = result.one()
     return {
@@ -295,9 +318,12 @@ async def rider_productivity(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    rider_uuid = _parse_uuid(rider_id, "rider_id")
+    await _ensure_rider_scope(db, current_user, rider_uuid)
+
     result = await db.execute(
         select(Productivity)
-        .where(Productivity.rider_id == _parse_uuid(rider_id, "rider_id"))
+        .where(Productivity.rider_id == rider_uuid)
         .order_by(Productivity.date.desc())
         .limit(30)
     )
@@ -323,7 +349,9 @@ async def performance_ranking(
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
     today = datetime.now(timezone.utc).date()
-@@ -346,175 +356,179 @@ async def performance_ranking(
+@@ -344,177 +376,184 @@ async def performance_ranking(
+            "sla_pct": p.sla_compliance_pct,
+            "score": p.performance_score,
         }
         for i, p in enumerate(items)
     ]
@@ -347,16 +375,19 @@ async def add_gps_point(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    rider_uuid = _parse_uuid(rider_id, "rider_id")
+    await _ensure_rider_scope(db, current_user, rider_uuid)
+
     result = await db.execute(
         select(Route)
-        .where(Route.rider_id == _parse_uuid(rider_id, "rider_id"), Route.ended_at.is_(None))
+        .where(Route.rider_id == rider_uuid, Route.ended_at.is_(None))
         .order_by(Route.started_at.desc())
     )
     route = result.scalar_one_or_none()
 
     if not route:
         route = Route(
-            rider_id=_parse_uuid(rider_id, "rider_id"),
+            rider_id=rider_uuid,
             gps_points=[],
             started_at=datetime.now(timezone.utc),
         )
@@ -367,7 +398,7 @@ async def add_gps_point(
     points.append({"lat": point.lat, "lng": point.lng, "ts": datetime.now(timezone.utc).isoformat()})
     route.gps_points = points
 
-    result2 = await db.execute(select(Rider).where(Rider.id == _parse_uuid(rider_id, "rider_id")))
+    result2 = await db.execute(select(Rider).where(Rider.id == rider_uuid))
     rider = result2.scalar_one_or_none()
     if rider:
         rider.last_lat = point.lat
@@ -503,7 +534,7 @@ async def get_audit_logs(
         {
             "id": str(a.id),
             "user_id": str(a.user_id) if a.user_id else None,
-@@ -543,39 +557,39 @@ async def list_integrations(
+@@ -543,39 +582,39 @@ async def list_integrations(
     items = result.scalars().all()
     return [
         {
@@ -542,4 +573,3 @@ async def list_users(
             "created_at": u.created_at.isoformat(),
         }
         for u in items
-    ]
