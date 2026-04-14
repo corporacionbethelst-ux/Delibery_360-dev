@@ -56,6 +56,17 @@ def _parse_uuid(value: str, field_name: str) -> uuid.UUID:
         raise HTTPException(status_code=400, detail=f"{field_name} inválido")
 
 
+def _parse_vehicle_type(value: str) -> VehicleType:
+    try:
+        return VehicleType(value)
+    except ValueError:
+        allowed = ", ".join(v.value for v in VehicleType)
+        raise HTTPException(
+            status_code=400,
+            detail=f"vehicle_type inválido. Valores permitidos: {allowed}",
+        )
+
+
 async def _get_rider_for_user(db: AsyncSession, user_id) -> Optional[Rider]:
     result = await db.execute(select(Rider).where(Rider.user_id == user_id))
     return result.scalar_one_or_none()
@@ -106,7 +117,7 @@ async def create_rider(
     # Crear perfil de repartidor
     rider = Rider(
         user_id=user.id,
-        vehicle_type=VehicleType(body.vehicle_type),
+        vehicle_type=_parse_vehicle_type(body.vehicle_type),
         vehicle_plate=body.vehicle_plate,
         vehicle_model=body.vehicle_model,
         operating_zone=body.operating_zone,
@@ -137,7 +148,7 @@ async def list_riders(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Estado inválido: {effective_status}")
     if is_online is not None:
-        q = q.where(Rider.is_online == is_online)
+        q = q.where(Rider.is_online.is_(is_online))
     result = await db.execute(q.order_by(Rider.created_at.desc()))
     return [_rider_to_dict(r) for r in result.scalars().all()]
 
@@ -152,6 +163,21 @@ async def get_my_rider_profile(
     if not rider:
         raise HTTPException(status_code=404, detail="Perfil de repartidor no encontrado")
     return _rider_to_dict(rider)
+
+
+@router.get("/documents/pending")
+async def get_pending_documents(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
+):
+    """Obtener lista de repartidores con documentos pendientes de aprobación"""
+    result = await db.execute(
+        select(Rider).where(
+            Rider.status == RiderStatus.PENDIENTE
+        ).order_by(Rider.created_at.desc())
+    )
+    riders = result.scalars().all()
+    return [_rider_to_dict(r) for r in riders]
 
 
 @router.get("/{rider_id}")
@@ -181,7 +207,11 @@ async def update_rider(
         raise HTTPException(status_code=404, detail="Repartidor no encontrado")
     await _ensure_rider_self_scope(db, current_user, rider)
 
-    for field, value in body.model_dump(exclude_none=True).items():
+    payload = body.model_dump(exclude_none=True)
+    if "vehicle_type" in payload:
+        payload["vehicle_type"] = _parse_vehicle_type(payload["vehicle_type"])
+
+    for field, value in payload.items():
         setattr(rider, field, value)
     await db.commit()
     return _rider_to_dict(rider)
@@ -245,21 +275,6 @@ async def delete_rider(
     await db.delete(rider)
     await db.commit()
     return {"message": "Repartidor eliminado exitosamente", "rider_id": rider_id}
-
-
-@router.get("/documents/pending")
-async def get_pending_documents(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
-):
-    """Obtener lista de repartidores con documentos pendientes de aprobación"""
-    result = await db.execute(
-        select(Rider).where(
-            Rider.status == RiderStatus.PENDIENTE
-        ).order_by(Rider.created_at.desc())
-    )
-    riders = result.scalars().all()
-    return [_rider_to_dict(r) for r in riders]
 
 
 @router.patch("/{rider_id}/location")
