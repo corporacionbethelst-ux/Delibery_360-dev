@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func
 from pydantic import BaseModel
 from typing import Optional, List, cast
 from datetime import datetime, timezone

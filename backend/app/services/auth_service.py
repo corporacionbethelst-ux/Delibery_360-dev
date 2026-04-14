@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.schemas.auth import TokenData, LoginRequest
 
 
@@ -69,7 +69,11 @@ class AuthService:
     ) -> Optional[User]:
         """Autentica usuario con email y contraseña"""
         result = await db.execute(
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
+            select(User).where(User.email == email, User.is_deleted.is_(False))
+=======
             select(User).where(User.email == email, User.is_deleted == False)
+>>>>>>> main
         )
         user = result.scalar_one_or_none()
         if not user:
@@ -131,7 +135,11 @@ class AuthService:
             )
 
         result = await db.execute(
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
+            select(User).where(User.id == user_uuid, User.is_deleted.is_(False))
+=======
             select(User).where(User.id == user_uuid, User.is_deleted == False)
+>>>>>>> main
         )
         user = result.scalar_one_or_none()
         if not user or not user.is_active:

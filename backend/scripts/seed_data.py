@@ -1,49 +1,60 @@
 """
-seed_data.py — Carga datos iniciales en la base de datos.
+seed_data.py — Carga datos iniciales mínimos y compatibles con el contrato actual.
 Ejecutado automáticamente por docker-compose al iniciar.
 Idempotente: no duplica datos si ya existen.
 """
+
 import asyncio
+import random
+import secrets
 import sys
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
+from datetime import datetime, timedelta, timezone
+=======
 import os
 import secrets
 sys.path.insert(0, "/app")
+>>>>>>> main
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy import select, text
-from datetime import datetime, timezone, timedelta
-import random
-import uuid
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+sys.path.insert(0, "/app")
 
 from app.core.config import settings
-from app.core.security import hash_password
-from app.models.user import User, UserRole
-from app.models.rider import Rider, RiderStatus, VehicleType
-from app.models.order import Order, OrderStatus, OrderPriority
-from app.models.all_models import (
-    Delivery, Shift, ShiftStatus,
-    Financial, PaymentRuleType,
-    Productivity
-)
 from app.core.database import Base
+from app.core.security import hash_password
+from app.models.delivery import Delivery, DeliveryStatus
+from app.models.order import Order, OrderPriority, OrderStatus
+from app.models.rider import Rider, RiderStatus, VehicleType
+from app.models.user import User, UserRole
+
 
 engine = create_async_engine(settings.DATABASE_URL, echo=False)
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
-async def seed():
+async def seed() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     async with SessionLocal() as db:
-        # ── 1. Verificar si ya existe el superadmin ─────────────────────────
-        existing = await db.execute(select(User).where(User.email == settings.FIRST_SUPERUSER_EMAIL))
-        if existing.scalar_one_or_none():
+        existing_admin = await db.execute(
+            select(User).where(User.email == settings.FIRST_SUPERUSER_EMAIL)
+        )
+        if existing_admin.scalar_one_or_none():
             print("✓ Base de datos ya inicializada. Omitiendo seed.")
             return
 
-        print("► Iniciando carga de datos de prueba...")
+        print("► Iniciando seed compatible con contrato actual...")
 
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
+        admin_password = settings.FIRST_SUPERUSER_PASSWORD or secrets.token_urlsafe(16)
+        users_data = [
+            (settings.FIRST_SUPERUSER_EMAIL, admin_password, settings.FIRST_SUPERUSER_NAME, UserRole.SUPERADMIN),
+            ("gerente@logrider.com", secrets.token_urlsafe(12), "Carlos Mendoza", UserRole.GERENTE),
+            ("operador@logrider.com", secrets.token_urlsafe(12), "Ana González", UserRole.OPERADOR),
+=======
         # ── 2. Usuarios base ────────────────────────────────────────────────
         admin_password = settings.FIRST_SUPERUSER_PASSWORD or secrets.token_urlsafe(16)
         users_data = [
@@ -51,11 +62,12 @@ async def seed():
             ("gerente@logrider.com",  secrets.token_urlsafe(12), "Carlos Mendoza",    UserRole.GERENTE),
             ("operador@logrider.com", secrets.token_urlsafe(12), "Ana González",     UserRole.OPERADOR),
             ("operador2@logrider.com", secrets.token_urlsafe(12), "Luis Ramírez",     UserRole.OPERADOR),
+>>>>>>> main
         ]
 
-        users = []
+        users: list[User] = []
         for email, pwd, name, role in users_data:
-            u = User(
+            user = User(
                 email=email,
                 hashed_password=hash_password(pwd),
                 full_name=name,
@@ -64,192 +76,147 @@ async def seed():
                 lgpd_consent=True,
                 lgpd_consent_date=datetime.now(timezone.utc),
             )
-            db.add(u)
-            users.append(u)
+            db.add(user)
+            users.append(user)
 
         await db.flush()
-        print(f"  ✓ {len(users)} usuarios creados")
 
-        # ── 3. Repartidores ─────────────────────────────────────────────────
+        riders: list[Rider] = []
         riders_data = [
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
+            ("rider1@logrider.com", "Pedro Souza", VehicleType.MOTO),
+            ("rider2@logrider.com", "Maria Silva", VehicleType.BICICLETA),
+            ("rider3@logrider.com", "João Costa", VehicleType.AUTO),
+=======
             ("rider1@logrider.com", secrets.token_urlsafe(12), "Pedro Souza",    VehicleType.MOTO,      "MTP-1234", "Honda CG 160"),
             ("rider2@logrider.com", secrets.token_urlsafe(12), "Maria Silva",    VehicleType.MOTO,      "MTP-5678", "Yamaha Factor"),
             ("rider3@logrider.com", secrets.token_urlsafe(12), "João Costa",     VehicleType.BICICLETA, None,        "Bike Caloi"),
             ("rider4@logrider.com", secrets.token_urlsafe(12), "Ana Ferreira",   VehicleType.MOTO,      "MTP-9012", "Honda Biz"),
             ("rider5@logrider.com", secrets.token_urlsafe(12), "Carlos Lima",    VehicleType.AUTO,      "ABC-3456", "Fiat Uno"),
+>>>>>>> main
         ]
 
-        riders = []
-        for email, pwd, name, vtype, plate, model in riders_data:
-            u = User(
+        for idx, (email, name, vehicle_type) in enumerate(riders_data, start=1):
+            rider_user = User(
                 email=email,
-                hashed_password=hash_password(pwd),
+                hashed_password=hash_password(secrets.token_urlsafe(12)),
                 full_name=name,
                 role=UserRole.REPARTIDOR,
                 is_active=True,
                 lgpd_consent=True,
                 lgpd_consent_date=datetime.now(timezone.utc),
             )
-            db.add(u)
+            db.add(rider_user)
             await db.flush()
 
-            r = Rider(
-                user_id=u.id,
+            rider = Rider(
+                user_id=rider_user.id,
                 status=RiderStatus.ACTIVO,
-                vehicle_type=vtype,
-                vehicle_plate=plate,
-                vehicle_model=model,
+                vehicle_type=vehicle_type,
+                vehicle_plate=f"SEED-{idx:04d}",
+                vehicle_model="Seed Vehicle",
                 operating_zone="Centro",
                 is_online=random.choice([True, False]),
-                last_lat=-23.5505 + random.uniform(-0.05, 0.05),
-                last_lng=-46.6333 + random.uniform(-0.05, 0.05),
-                last_location_at=datetime.now(timezone.utc),
-                level=random.randint(1, 5),
-                total_points=random.randint(100, 2000),
                 approved_at=datetime.now(timezone.utc),
             )
-            db.add(r)
-            riders.append(r)
+            db.add(rider)
+            riders.append(rider)
 
         await db.flush()
-        print(f"  ✓ {len(riders)} repartidores creados")
 
-        # ── 4. Pedidos históricos (últimos 7 días) ──────────────────────────
         addresses = [
             ("Rua Augusta, 1500, São Paulo", -23.5506, -46.6570),
-            ("Av. Paulista, 900, São Paulo",  -23.5629, -46.6544),
-            ("Rua Oscar Freire, 300",         -23.5629, -46.6699),
-            ("Av. Faria Lima, 2000",          -23.5784, -46.6957),
-            ("Rua Consolação, 200",           -23.5482, -46.6574),
+            ("Av. Paulista, 900, São Paulo", -23.5629, -46.6544),
+            ("Rua Consolação, 200, São Paulo", -23.5482, -46.6574),
         ]
-        contacts = ["João Silva", "Maria Santos", "Pedro Lima", "Ana Costa", "Carlos Mendes"]
-        statuses_dist = [OrderStatus.ENTREGADO] * 15 + [OrderStatus.EN_RUTA] * 3 + \
-                        [OrderStatus.ASIGNADO] * 3 + [OrderStatus.CREADO] * 2 + [OrderStatus.FALLIDO] * 2
+        order_statuses = [OrderStatus.ENTREGADO, OrderStatus.EN_RUTA, OrderStatus.ASIGNADO, OrderStatus.PENDIENTE]
 
-        orders_created = []
-        for i in range(25):
+        orders: list[Order] = []
+        for i in range(12):
             pickup = random.choice(addresses)
             delivery = random.choice(addresses)
+            status = random.choice(order_statuses)
             rider = random.choice(riders)
-            status = random.choice(statuses_dist)
-            days_ago = random.randint(0, 7)
-            created = datetime.now(timezone.utc) - timedelta(days=days_ago, hours=random.randint(0, 8))
+            created_at = datetime.now(timezone.utc) - timedelta(days=random.randint(0, 5), hours=random.randint(0, 8))
+            delivered_at = created_at + timedelta(minutes=random.randint(30, 90)) if status == OrderStatus.ENTREGADO else None
 
-            o = Order(
-                order_number=f"LR-{str(i+1).zfill(5)}",
+            order = Order(
+                external_id=f"SEED-{i+1:05d}",
+                customer_name=f"Cliente Seed {i+1}",
+                customer_phone=f"+55119{random.randint(10000000, 99999999)}",
+                customer_email=f"cliente{i+1}@example.com",
                 pickup_address=pickup[0],
+                pickup_name="Restaurante Seed",
+                pickup_phone="+5511999999999",
+                delivery_address=delivery[0],
+                delivery_reference="Portería",
+                delivery_instructions="Tocar timbre",
                 pickup_lat=pickup[1],
                 pickup_lng=pickup[2],
-                pickup_contact="Restaurante Bom Sabor",
-                delivery_address=delivery[0],
                 delivery_lat=delivery[1],
                 delivery_lng=delivery[2],
-                delivery_contact=random.choice(contacts),
-                delivery_phone=f"+55119{random.randint(10000000,99999999)}",
-                declared_value=round(random.uniform(20, 200), 2),
-                priority=random.choice(list(OrderPriority)),
-                sla_minutes=60,
+                items={"count": random.randint(1, 5), "description": "Pedido de prueba"},
+                subtotal=round(random.uniform(20, 120), 2),
+                delivery_fee=round(random.uniform(3, 12), 2),
+                total=round(random.uniform(25, 140), 2),
+                payment_method=random.choice(["efectivo", "tarjeta", "pix"]),
+                payment_status="pendiente",
                 status=status,
-                rider_id=rider.id if status != OrderStatus.CREADO else None,
-                created_at=created,
-                assigned_at=created + timedelta(minutes=5) if status != OrderStatus.CREADO else None,
-                delivered_at=created + timedelta(minutes=random.randint(30, 90)) if status == OrderStatus.ENTREGADO else None,
-                estimated_delivery_at=created + timedelta(minutes=60),
-                sla_breached=random.choice([True, False, False, False]),
-                source=random.choice(["manual", "ifood", "ubereats"]),
+                priority=random.choice([p.value for p in OrderPriority]),
+                assigned_rider_id=rider.id if status != OrderStatus.PENDIENTE else None,
+                ordered_at=created_at,
+                accepted_at=created_at + timedelta(minutes=5) if status != OrderStatus.PENDIENTE else None,
+                delivered_at=delivered_at,
+                estimated_delivery_time=created_at + timedelta(minutes=60),
+                sla_deadline=created_at + timedelta(minutes=75),
+                source="seed",
+                integration_id=f"INT-SEED-{i+1:05d}",
+                created_at=created_at,
+                updated_at=datetime.now(timezone.utc),
             )
-            db.add(o)
-            orders_created.append((o, rider))
+            db.add(order)
+            orders.append(order)
 
         await db.flush()
-        print(f"  ✓ {len(orders_created)} pedidos creados")
 
-        # ── 5. Entregas para pedidos completados ────────────────────────────
-        deliveries_count = 0
-        for o, rider in orders_created:
-            if o.status == OrderStatus.ENTREGADO and o.delivered_at:
-                dur = (o.delivered_at - o.created_at).total_seconds() / 60
-                d = Delivery(
-                    order_id=o.id,
-                    rider_id=rider.id,
-                    otp_verified=True,
-                    pickup_at=o.assigned_at,
-                    delivered_at=o.delivered_at,
-                    duration_minutes=round(dur, 1),
-                    distance_km=round(random.uniform(1.5, 8.0), 2),
-                    on_time=not o.sla_breached,
-                    customer_rating=random.randint(3, 5),
-                )
-                db.add(d)
-                deliveries_count += 1
+        deliveries_created = 0
+        for order in orders:
+            if order.status != OrderStatus.ENTREGADO or not order.assigned_rider_id:
+                continue
 
-        await db.flush()
-        print(f"  ✓ {deliveries_count} entregas registradas")
-
-        # ── 6. Turnos activos ───────────────────────────────────────────────
-        for rider in riders[:3]:
-            shift = Shift(
-                rider_id=rider.id,
-                checkin_at=datetime.now(timezone.utc) - timedelta(hours=3),
-                status=ShiftStatus.ACTIVO,
-                total_orders=random.randint(3, 10),
-                total_earnings=round(random.uniform(50, 200), 2),
+            delivery = Delivery(
+                order_id=order.id,
+                rider_id=order.assigned_rider_id,
+                status=DeliveryStatus.COMPLETADA,
+                started_at=(order.accepted_at or order.ordered_at),
+                completed_at=order.delivered_at,
+                current_latitude=order.delivery_lat,
+                current_longitude=order.delivery_lng,
+                proof_notes="Entrega seed completada",
+                customer_name_received=order.customer_name,
+                sla_expected_minutes=75,
+                sla_actual_minutes=45,
+                sla_compliant=True,
             )
-            db.add(shift)
-
-        print("  ✓ 3 turnos activos creados")
-
-        # ── 7. Métricas de productividad ────────────────────────────────────
-        for rider in riders:
-            for days_ago in range(7):
-                date = datetime.now(timezone.utc) - timedelta(days=days_ago)
-                total = random.randint(5, 20)
-                on_time = int(total * random.uniform(0.7, 1.0))
-                p = Productivity(
-                    rider_id=rider.id,
-                    date=date,
-                    total_orders=total,
-                    orders_on_time=on_time,
-                    avg_delivery_time_min=round(random.uniform(25, 55), 1),
-                    orders_per_hour=round(random.uniform(1.5, 4.0), 2),
-                    sla_compliance_pct=round(on_time / total * 100, 1),
-                    total_distance_km=round(random.uniform(20, 80), 1),
-                    total_earnings=round(random.uniform(80, 300), 2),
-                    performance_score=round(random.uniform(60, 100), 1),
-                )
-                db.add(p)
-
-        print("  ✓ Métricas de productividad generadas (7 días)")
-
-        # ── 8. Registros financieros ────────────────────────────────────────
-        for o, rider in orders_created:
-            if o.status == OrderStatus.ENTREGADO:
-                f = Financial(
-                    rider_id=rider.id,
-                    order_id=o.id,
-                    rule_type=PaymentRuleType.HIBRIDA,
-                    base_amount=5.0,
-                    distance_bonus=round(random.uniform(1, 4), 2),
-                    time_bonus=round(random.uniform(0, 2), 2),
-                    volume_bonus=0.0,
-                    total_amount=round(random.uniform(6, 12), 2),
-                    operational_cost=round(random.uniform(1, 3), 2),
-                    period_date=o.created_at,
-                    liquidated=True,
-                    liquidated_at=o.created_at + timedelta(hours=24),
-                )
-                f.margin = round(f.total_amount - f.operational_cost, 2)
-                db.add(f)
+            db.add(delivery)
+            deliveries_created += 1
 
         await db.commit()
-        print("  ✓ Registros financieros creados")
-        print()
+
         print("═" * 50)
         print("✅ SEED COMPLETADO CON ÉXITO")
         print("═" * 50)
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
+        print(f"  Admin: {settings.FIRST_SUPERUSER_EMAIL} / [usar FIRST_SUPERUSER_PASSWORD o temporal generado]")
+        print(f"  Usuarios creados: {len(users) + len(riders_data)}")
+        print(f"  Riders creados: {len(riders)}")
+        print(f"  Orders creadas: {len(orders)}")
+        print(f"  Deliveries creadas: {deliveries_created}")
+=======
         print(f"  Admin:    {settings.FIRST_SUPERUSER_EMAIL} / [usar FIRST_SUPERUSER_PASSWORD o contraseña generada]")
         print("  Usuarios de prueba creados con contraseñas temporales seguras")
         print("  Docs API: http://localhost:8000/docs")
+>>>>>>> main
         print("═" * 50)
 
 
