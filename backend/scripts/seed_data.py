@@ -28,6 +28,11 @@ engine = create_async_engine(settings.DATABASE_URL, echo=False)
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
+def _seed_password(configured_password: str | None = None, length: int = 12) -> str:
+    """Genera contraseña segura temporal o reutiliza valor configurado."""
+    return configured_password or secrets.token_urlsafe(length)
+
+
 async def seed() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -42,11 +47,11 @@ async def seed() -> None:
 
         print("► Iniciando seed compatible con contrato actual...")
 
-        admin_password = settings.FIRST_SUPERUSER_PASSWORD or secrets.token_urlsafe(16)
+        admin_password = _seed_password(settings.FIRST_SUPERUSER_PASSWORD, length=16)
         users_data = [
             (settings.FIRST_SUPERUSER_EMAIL, admin_password, settings.FIRST_SUPERUSER_NAME, UserRole.SUPERADMIN),
-            ("gerente@logrider.com", secrets.token_urlsafe(12), "Carlos Mendoza", UserRole.GERENTE),
-            ("operador@logrider.com", secrets.token_urlsafe(12), "Ana González", UserRole.OPERADOR),
+            ("gerente@logrider.com", _seed_password(length=12), "Carlos Mendoza", UserRole.GERENTE),
+            ("operador@logrider.com", _seed_password(length=12), "Ana González", UserRole.OPERADOR),
         ]
 
         users: list[User] = []
@@ -75,7 +80,7 @@ async def seed() -> None:
         for idx, (email, name, vehicle_type) in enumerate(riders_data, start=1):
             rider_user = User(
                 email=email,
-                hashed_password=hash_password(secrets.token_urlsafe(12)),
+                hashed_password=hash_password(_seed_password(length=12)),
                 full_name=name,
                 role=UserRole.REPARTIDOR,
                 is_active=True,

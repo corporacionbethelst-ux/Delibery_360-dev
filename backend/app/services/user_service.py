@@ -14,10 +14,15 @@ from app.services.auth_service import auth_service
 
 class UserService:
     """Servicio para gestión de usuarios"""
+
+    @staticmethod
+    def _not_deleted_filter():
+        """Filtro común para usuarios activos lógicamente."""
+        return User.is_deleted.is_(False)
     
     async def get_user(self, db: AsyncSession, user_id: uuid.UUID) -> User:
         """Obtiene usuario por ID"""
-        result = await db.execute(select(User).where(User.id == user_id, User.is_deleted.is_(False)))
+        result = await db.execute(select(User).where(User.id == user_id, self._not_deleted_filter()))
         user = result.scalar_one_or_none()
         if not user:
             raise HTTPException(
@@ -29,7 +34,7 @@ class UserService:
     async def get_user_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
         """Obtiene usuario por email"""
         result = await db.execute(
-            select(User).where(User.email == email, User.is_deleted.is_(False))
+            select(User).where(User.email == email, self._not_deleted_filter())
         )
         return result.scalar_one_or_none()
     
@@ -104,7 +109,7 @@ class UserService:
         is_active: Optional[bool] = None
     ) -> List[User]:
         """Lista usuarios con filtros"""
-        q = select(User).where(User.is_deleted.is_(False))
+        q = select(User).where(self._not_deleted_filter())
         if role is not None:
             q = q.where(User.role == role)
         if is_active is not None:

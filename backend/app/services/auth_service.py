@@ -60,6 +60,11 @@ class AuthService:
             return TokenData(user_id=user_id, role=role)
         except JWTError:
             return None
+
+    @staticmethod
+    def _not_deleted_filter():
+        """Filtro común para usuarios no eliminados."""
+        return User.is_deleted.is_(False)
     
     async def authenticate_user(
         self, 
@@ -69,7 +74,7 @@ class AuthService:
     ) -> Optional[User]:
         """Autentica usuario con email y contraseña"""
         result = await db.execute(
-            select(User).where(User.email == email, User.is_deleted.is_(False))
+            select(User).where(User.email == email, self._not_deleted_filter())
         )
         user = result.scalar_one_or_none()
         if not user:
@@ -131,7 +136,7 @@ class AuthService:
             )
 
         result = await db.execute(
-            select(User).where(User.id == user_uuid, User.is_deleted.is_(False))
+            select(User).where(User.id == user_uuid, self._not_deleted_filter())
         )
         user = result.scalar_one_or_none()
         if not user or not user.is_active:
