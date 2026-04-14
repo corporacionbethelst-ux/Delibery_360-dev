@@ -1,190 +1,114 @@
 """
-Delivery360 - API Endpoints para Entregas
+Delivery360 - API Endpoints para Entregas (alineado al contrato de dominio actual)
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import datetime, timezone
 import uuid
+from typing import Optional
 
-from app.core.database import get_db
-from app.models.delivery import Delivery, DeliveryStatus, ProofOfDelivery, TrackingEvent
-from app.models.rider import Rider
-from app.models.order import Order
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.v1.auth import get_current_user, require_role
+from app.core.database import get_db
+from app.models.delivery import Delivery, DeliveryStatus
+from app.models.order import Order, OrderStatus
+from app.models.rider import Rider, RiderStatus
 from app.models.user import User, UserRole
 
 router = APIRouter(prefix="/deliveries")
 
 
-# ── Schemas ───────────────────────────────────────────────────────────────────
 class DeliveryAssign(BaseModel):
     rider_id: str
 
 
-class DeliveryProof(BaseModel):
-    recipient_name: str
-    recipient_signature: Optional[str] = None
-    photo_url: Optional[str] = None
+class DeliveryStart(BaseModel):
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+
+
+class DeliveryComplete(BaseModel):
+    otp_code: Optional[str] = None
     notes: Optional[str] = None
+    customer_name_received: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
 
 
-class DeliveryCancel(BaseModel):
-    reason: str
+class DeliveryFail(BaseModel):
+    issue_type: str
+    issue_description: Optional[str] = None
 
 
 def _delivery_to_dict(d: Delivery) -> dict:
     return {
         "id": str(d.id),
-        "order_id": str(d.order_id) if d.order_id else None,
-        "rider_id": str(d.rider_id) if d.rider_id else None,
-        "rider_name": d.rider_name,
-        "customer_name": d.customer_name,
-        "status": d.status.value,
-        "priority": d.priority.value if d.priority else None,
-        "address": {
-            "street": d.street,
-            "city": d.city,
-            "state": d.state,
-            "zip_code": d.zip_code,
-            "latitude": d.latitude,
-            "longitude": d.longitude,
-        },
-        "current_location": {
-            "latitude": d.current_lat,
-            "longitude": d.current_lng,
-            "last_update": d.last_location_update.isoformat() if d.last_location_update else None,
-        } if d.current_lat and d.current_lng else None,
-        "tracking": [
-            {
-                "id": str(t.id),
-                "event_type": t.event_type,
-                "description": t.description,
-                "timestamp": t.timestamp.isoformat() if t.timestamp else None,
-                "location": {
-                    "latitude": t.latitude,
-                    "longitude": t.longitude,
-                } if t.latitude and t.longitude else None,
-            }
-            for t in (d.tracking or [])
-        ],
-        "proof_of_delivery": {
-            "recipient_name": d.recipient_name,
-            "recipient_signature": d.recipient_signature,
-            "photo_url": d.photo_url,
-            "notes": d.notes,
-            "timestamp": d.proof_timestamp.isoformat() if d.proof_timestamp else None,
-        } if d.recipient_name else None,
-        "sla_deadline": d.sla_deadline.isoformat() if d.sla_deadline else None,
-        "created_at": d.created_at.isoformat() if d.created_at else None,
-        "assigned_at": d.assigned_at.isoformat() if d.assigned_at else None,
+        "order_id": str(d.order_id),
+        "rider_id": str(d.rider_id),
+        "status": d.status.value if hasattr(d.status, "value") else str(d.status),
         "started_at": d.started_at.isoformat() if d.started_at else None,
-        "finished_at": d.finished_at.isoformat() if d.finished_at else None,
-        "cancelled_at": d.cancelled_at.isoformat() if d.cancelled_at else None,
-        "cancel_reason": d.cancel_reason,
+        "completed_at": d.completed_at.isoformat() if d.completed_at else None,
+        "current_latitude": d.current_latitude,
+        "current_longitude": d.current_longitude,
+        "proof_otp": d.proof_otp,
+        "proof_notes": d.proof_notes,
+        "customer_name_received": d.customer_name_received,
+        "sla_expected_minutes": d.sla_expected_minutes,
+        "sla_actual_minutes": d.sla_actual_minutes,
+        "sla_compliant": d.sla_compliant,
+        "created_at": d.created_at.isoformat() if d.created_at else None,
     }
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
+async def _get_rider_for_user(db: AsyncSession, user_id) -> Optional[Rider]:
+    result = await db.execute(select(Rider).where(Rider.user_id == user_id))
+    return result.scalar_one_or_none()
+
+
+async def _ensure_rider_delivery_access(db: AsyncSession, current_user: User, delivery: Delivery) -> None:
+    """Restringe acceso de repartidores a sus propias entregas."""
+    if current_user.role != UserRole.REPARTIDOR:
+        return
+    rider = await _get_rider_for_user(db, current_user.id)
+    if not rider or delivery.rider_id != rider.id:
+        raise HTTPException(status_code=403, detail="No tienes permiso para acceder a esta entrega")
+
+
 @router.get("")
 async def list_deliveries(
     status: Optional[str] = Query(None),
     rider_id: Optional[str] = Query(None),
     order_id: Optional[str] = Query(None),
-    zone: Optional[str] = Query(None),
-    priority: Optional[str] = Query(None),
-    date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None),
-    search: Optional[str] = Query(None),
     limit: int = Query(50, le=200),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Listar entregas con filtros"""
     q = select(Delivery)
-    
-    # Repartidor solo ve sus entregas
+
     if current_user.role == UserRole.REPARTIDOR:
-        result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
-        rider = result.scalar_one_or_none()
+        rider_result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
+        rider = rider_result.scalar_one_or_none()
         if rider:
             q = q.where(Delivery.rider_id == rider.id)
-    
+
     if status:
         try:
             q = q.where(Delivery.status == DeliveryStatus(status))
         except ValueError:
-            pass
+            raise HTTPException(status_code=400, detail=f"Estado inválido: {status}")
     if rider_id:
         q = q.where(Delivery.rider_id == uuid.UUID(rider_id))
     if order_id:
         q = q.where(Delivery.order_id == uuid.UUID(order_id))
-    if zone:
-        q = q.where(Delivery.zone == zone)
-    if priority:
-        try:
-            q = q.where(Delivery.priority == priority)
-        except ValueError:
-            pass
-    
+
     q = q.order_by(Delivery.created_at.desc()).limit(limit).offset(offset)
-    result = await db.execute(q)
-    deliveries = result.scalars().all()
-    
-    # Count total
-    count_q = select(Delivery)
-    if status:
-        try:
-            count_q = count_q.where(Delivery.status == DeliveryStatus(status))
-        except ValueError:
-            pass
-    if rider_id:
-        count_q = count_q.where(Delivery.rider_id == uuid.UUID(rider_id))
-    if order_id:
-        count_q = count_q.where(Delivery.order_id == uuid.UUID(order_id))
-    
-    count_result = await db.execute(count_q)
-    total = len(count_result.scalars().all())
-    
-    return {"items": [_delivery_to_dict(d) for d in deliveries], "total": total}
-
-
-@router.get("/active")
-async def list_active_deliveries(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Obtener entregas activas (EN_CAMINO, RECOGIDO)"""
-    q = select(Delivery).where(
-        Delivery.status.in_([DeliveryStatus.EN_CAMINO, DeliveryStatus.RECOGIDO])
-    )
-    
-    if current_user.role == UserRole.REPARTIDOR:
-        result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
-        rider = result.scalar_one_or_none()
-        if rider:
-            q = q.where(Delivery.rider_id == rider.id)
-    
-    result = await db.execute(q)
-    deliveries = result.scalars().all()
-    return [_delivery_to_dict(d) for d in deliveries]
-
-
-@router.get("/pending")
-async def list_pending_deliveries(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Obtener entregas pendientes de asignación"""
-    q = select(Delivery).where(Delivery.status == DeliveryStatus.PENDIENTE)
-    
-    result = await db.execute(q)
-    deliveries = result.scalars().all()
-    return [_delivery_to_dict(d) for d in deliveries]
+    rows = await db.execute(q)
+    items = rows.scalars().all()
+    return [_delivery_to_dict(d) for d in items]
 
 
 @router.get("/{delivery_id}")
@@ -193,11 +117,11 @@ async def get_delivery(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Obtener detalles de una entrega"""
     result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
+    await _ensure_rider_delivery_access(db, current_user, delivery)
     return _delivery_to_dict(delivery)
 
 
@@ -208,57 +132,29 @@ async def assign_delivery(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
-    """Asignar entrega a un repartidor"""
     result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
     if delivery.status != DeliveryStatus.PENDIENTE:
-        raise HTTPException(status_code=400, detail=f"No se puede asignar una entrega en estado {delivery.status.value}")
-    
+        raise HTTPException(status_code=400, detail=f"No se puede asignar en estado {delivery.status.value}")
+
     rider_result = await db.execute(select(Rider).where(Rider.id == uuid.UUID(body.rider_id)))
     rider = rider_result.scalar_one_or_none()
     if not rider or rider.status != RiderStatus.ACTIVO:
         raise HTTPException(status_code=400, detail="Repartidor no disponible")
-    
+
     delivery.rider_id = rider.id
-    delivery.rider_name = rider.user.full_name if rider.user else None
-    delivery.status = DeliveryStatus.ASIGNADO
-    delivery.assigned_at = datetime.now(timezone.utc)
-    
-    # Agregar evento de tracking
-    tracking_event = TrackingEvent(
-        event_type="ASIGNADO",
-        description=f"Entrega asignada a {rider.user.full_name if rider.user else 'Repartidor'}",
-        timestamp=datetime.now(timezone.utc),
-    )
-    if not delivery.tracking:
-        delivery.tracking = []
-    delivery.tracking.append(tracking_event)
-    
-    await db.commit()
-    await db.refresh(delivery)
-    return _delivery_to_dict(delivery)
+    delivery.status = DeliveryStatus.INICIADA
+    delivery.started_at = datetime.now(timezone.utc)
 
+    order_result = await db.execute(select(Order).where(Order.id == delivery.order_id))
+    order = order_result.scalar_one_or_none()
+    if order:
+        order.assigned_rider_id = rider.id
+        order.status = OrderStatus.ASIGNADO
+        order.accepted_at = datetime.now(timezone.utc)
 
-@router.post("/{delivery_id}/unassign")
-async def unassign_delivery(
-    delivery_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
-):
-    """Desasignar entrega"""
-    result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
-    delivery = result.scalar_one_or_none()
-    if not delivery:
-        raise HTTPException(status_code=404, detail="Entrega no encontrada")
-    if delivery.status not in [DeliveryStatus.ASIGNADO, DeliveryStatus.PENDIENTE]:
-        raise HTTPException(status_code=400, detail=f"No se puede desasignar una entrega en estado {delivery.status.value}")
-    
-    delivery.rider_id = None
-    delivery.rider_name = None
-    delivery.status = DeliveryStatus.PENDIENTE
-    
     await db.commit()
     await db.refresh(delivery)
     return _delivery_to_dict(delivery)
@@ -267,102 +163,99 @@ async def unassign_delivery(
 @router.post("/{delivery_id}/start")
 async def start_delivery(
     delivery_id: str,
+    body: DeliveryStart,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Iniciar entrega (repartidor marca como iniciada)"""
     result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
-    if delivery.status != DeliveryStatus.ASIGNADO:
-        raise HTTPException(status_code=400, detail=f"No se puede iniciar una entrega en estado {delivery.status.value}")
-    
-    delivery.status = DeliveryStatus.EN_CAMINO
-    delivery.started_at = datetime.now(timezone.utc)
-    
-    # Agregar evento de tracking
-    tracking_event = TrackingEvent(
-        event_type="INICIADA",
-        description="Entrega iniciada - En camino al destino",
-        timestamp=datetime.now(timezone.utc),
-    )
-    if not delivery.tracking:
-        delivery.tracking = []
-    delivery.tracking.append(tracking_event)
-    
+
+    await _ensure_rider_delivery_access(db, current_user, delivery)
+
+    if body.lat is not None:
+        delivery.current_latitude = body.lat
+    if body.lng is not None:
+        delivery.current_longitude = body.lng
+    delivery.status = DeliveryStatus.EN_ROUTE
+    delivery.started_at = delivery.started_at or datetime.now(timezone.utc)
+
     await db.commit()
     await db.refresh(delivery)
     return _delivery_to_dict(delivery)
 
 
-@router.post("/{delivery_id}/finish")
-async def finish_delivery(
+@router.post("/{delivery_id}/complete")
+async def complete_delivery(
     delivery_id: str,
-    proof: DeliveryProof,
+    body: DeliveryComplete,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Finalizar entrega con prueba de entrega"""
     result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
-    if delivery.status != DeliveryStatus.EN_CAMINO:
-        raise HTTPException(status_code=400, detail=f"No se puede finalizar una entrega en estado {delivery.status.value}")
-    
-    delivery.status = DeliveryStatus.FINALIZADO
-    delivery.finished_at = datetime.now(timezone.utc)
-    delivery.recipient_name = proof.recipient_name
-    delivery.recipient_signature = proof.recipient_signature
-    delivery.photo_url = proof.photo_url
-    delivery.notes = proof.notes
-    delivery.proof_timestamp = datetime.now(timezone.utc)
-    
-    # Agregar evento de tracking
-    tracking_event = TrackingEvent(
-        event_type="ENTREGADO",
-        description=f"Entrega finalizada - Recibido por {proof.recipient_name}",
-        timestamp=datetime.now(timezone.utc),
-    )
-    if not delivery.tracking:
-        delivery.tracking = []
-    delivery.tracking.append(tracking_event)
-    
+
+    await _ensure_rider_delivery_access(db, current_user, delivery)
+
+    if body.otp_code and delivery.proof_otp and body.otp_code != delivery.proof_otp:
+        raise HTTPException(status_code=400, detail="OTP incorrecto")
+
+    now = datetime.now(timezone.utc)
+    delivery.status = DeliveryStatus.COMPLETADA
+    delivery.completed_at = now
+    delivery.proof_notes = body.notes
+    delivery.customer_name_received = body.customer_name_received
+    if body.lat is not None:
+        delivery.current_latitude = body.lat
+    if body.lng is not None:
+        delivery.current_longitude = body.lng
+
+    if delivery.started_at:
+        elapsed_minutes = max(0, int((now - delivery.started_at).total_seconds() / 60))
+        delivery.sla_actual_minutes = elapsed_minutes
+        if delivery.sla_expected_minutes is not None:
+            delivery.sla_compliant = elapsed_minutes <= delivery.sla_expected_minutes
+
+    order_result = await db.execute(select(Order).where(Order.id == delivery.order_id))
+    order = order_result.scalar_one_or_none()
+    if order:
+        order.status = OrderStatus.ENTREGADO
+        order.delivered_at = now
+
     await db.commit()
     await db.refresh(delivery)
     return _delivery_to_dict(delivery)
 
 
-@router.post("/{delivery_id}/cancel")
-async def cancel_delivery(
+@router.post("/{delivery_id}/fail")
+async def fail_delivery(
     delivery_id: str,
-    body: DeliveryCancel,
+    body: DeliveryFail,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR, UserRole.REPARTIDOR)),
+    current_user: User = Depends(get_current_user),
 ):
-    """Cancelar entrega"""
     result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
-    if delivery.status in [DeliveryStatus.FINALIZADO, DeliveryStatus.CANCELADO]:
-        raise HTTPException(status_code=400, detail=f"No se puede cancelar una entrega {delivery.status.value}")
-    
-    delivery.status = DeliveryStatus.CANCELADO
-    delivery.cancelled_at = datetime.now(timezone.utc)
-    delivery.cancel_reason = body.reason
-    
-    # Agregar evento de tracking
-    tracking_event = TrackingEvent(
-        event_type="CANCELADO",
-        description=f"Entrega cancelada: {body.reason}",
-        timestamp=datetime.now(timezone.utc),
-    )
-    if not delivery.tracking:
-        delivery.tracking = []
-    delivery.tracking.append(tracking_event)
-    
+
+    await _ensure_rider_delivery_access(db, current_user, delivery)
+
+    delivery.status = DeliveryStatus.FALLIDA
+    delivery.has_issues = True
+    delivery.issue_type = body.issue_type
+    delivery.issue_description = body.issue_description
+
+    order_result = await db.execute(select(Order).where(Order.id == delivery.order_id))
+    order = order_result.scalar_one_or_none()
+    if order:
+        order.status = OrderStatus.FALLIDO
+        order.failure_reason = body.issue_type
+        order.failure_notes = body.issue_description
+
     await db.commit()
     await db.refresh(delivery)
     return _delivery_to_dict(delivery)
