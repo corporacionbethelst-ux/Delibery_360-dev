@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from pydantic import BaseModel
 from typing import Optional, List, Any
 from datetime import datetime, timezone
@@ -115,15 +115,17 @@ async def create_rider(
 
 @router.get("")
 async def list_riders(
-    status: Optional[str] = Query(None),
+    status: Optional[str] = Query(None, description="Alias legacy"),
+    status_filter: Optional[str] = Query(None, description="Filtro preferido"),
     is_online: Optional[bool] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
     q = select(Rider)
-    if status:
+    effective_status = status_filter or status
+    if effective_status:
         try:
-            q = q.where(Rider.status == RiderStatus(status))
+            q = q.where(Rider.status == RiderStatus(effective_status))
         except ValueError:
             pass
     if is_online is not None:

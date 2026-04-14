@@ -4,19 +4,21 @@ Cada uno se monta en main.py por separado.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime, timezone, timedelta
 import uuid
+import random
+import string
 
 from app.core.database import get_db
 from app.models.all_models import (
     Delivery, Shift, ShiftStatus, Financial,
-    Route, AuditLog, Notification, Integration, Productivity
+    Route, AuditLog, Integration, Productivity
 )
 from app.models.order import Order, OrderStatus
-from app.models.rider import Rider, RiderStatus
+from app.models.rider import Rider
 from app.models.user import User, UserRole
 from app.api.v1.auth import get_current_user, require_role
 
@@ -78,7 +80,6 @@ async def start_delivery(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="La entrega ya fue iniciada")
 
-    import random, string
     otp = "".join(random.choices(string.digits, k=6))
     if not order.assigned_rider_id:
         raise HTTPException(status_code=400, detail="El pedido no tiene repartidor asignado")
@@ -370,7 +371,7 @@ async def add_gps_point(
 ):
     result = await db.execute(
         select(Route)
-        .where(Route.rider_id == uuid.UUID(rider_id), Route.ended_at == None)
+        .where(Route.rider_id == uuid.UUID(rider_id), Route.ended_at.is_(None))
         .order_by(Route.started_at.desc())
     )
     route = result.scalar_one_or_none()
@@ -430,7 +431,7 @@ async def manager_dashboard(
         )
     )
     active_riders = await db.execute(
-        select(func.count(Rider.id)).where(Rider.is_online == True)
+        select(func.count(Rider.id)).where(Rider.is_online.is_(True))
     )
     avg_time = await db.execute(
         select(func.avg(Delivery.duration_minutes)).where(
@@ -462,7 +463,7 @@ async def operator_dashboard(
         select(Order).where(Order.status.in_([OrderStatus.PENDIENTE, OrderStatus.ASIGNADO])).limit(20)
     )
     in_route = await db.execute(
-        select(Rider).where(Rider.is_online == True, Rider.last_lat != None).limit(50)
+        select(Rider).where(Rider.is_online.is_(True), Rider.last_lat.is_not(None)).limit(50)
     )
     return {
         "pending_orders": [
@@ -571,7 +572,7 @@ async def list_users(
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
     result = await db.execute(
-        select(User).where(User.is_deleted == False).order_by(User.created_at.desc())
+        select(User).where(User.is_deleted.is_(False)).order_by(User.created_at.desc())
     )
     items = result.scalars().all()
     return [

@@ -3,7 +3,6 @@ Conector para sistemas POS (Point of Sale)
 """
 import httpx
 from typing import Dict, Any, Optional
-from datetime import datetime
 
 
 class POSConnector:

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         try:
             return json.loads(self.BACKEND_CORS_ORIGINS)
-        except:
+        except (json.JSONDecodeError, TypeError):
             return ["http://localhost:3000"]
 
     # Database

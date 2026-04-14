@@ -22,15 +22,9 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.user import User
 from app.models.rider import Rider
-<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
-from app.models.enums import UserRole
-from sqlalchemy import select
-=======
 from app.models.order import Order, OrderStatus
 from app.models.enums import UserRole
 from sqlalchemy import select, text
->>>>>>> main
-
 
 async def seed_database():
     """Inicializar la base de datos con datos básicos"""

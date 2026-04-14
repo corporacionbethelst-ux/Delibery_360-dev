@@ -14,14 +14,16 @@ from app.services.auth_service import auth_service
 
 class UserService:
     """Servicio para gestión de usuarios"""
+
+    @staticmethod
+    def _not_deleted_filter():
+        """Filtro común para usuarios activos lógicamente."""
+        return User.is_deleted.is_(False)
     
     async def get_user(self, db: AsyncSession, user_id: uuid.UUID) -> User:
         """Obtiene usuario por ID"""
-<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
-        result = await db.execute(select(User).where(User.id == user_id, User.is_deleted.is_(False)))
-=======
         result = await db.execute(select(User).where(User.id == user_id, User.is_deleted == False))
->>>>>>> main
+
         user = result.scalar_one_or_none()
         if not user:
             raise HTTPException(
@@ -33,11 +35,8 @@ class UserService:
     async def get_user_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
         """Obtiene usuario por email"""
         result = await db.execute(
-<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
-            select(User).where(User.email == email, User.is_deleted.is_(False))
-=======
             select(User).where(User.email == email, User.is_deleted == False)
->>>>>>> main
+
         )
         return result.scalar_one_or_none()
     
@@ -112,11 +111,8 @@ class UserService:
         is_active: Optional[bool] = None
     ) -> List[User]:
         """Lista usuarios con filtros"""
-<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-xh6d6p
-        q = select(User).where(User.is_deleted.is_(False))
-=======
         q = select(User).where(User.is_deleted == False)
->>>>>>> main
+
         if role is not None:
             q = q.where(User.role == role)
         if is_active is not None:
