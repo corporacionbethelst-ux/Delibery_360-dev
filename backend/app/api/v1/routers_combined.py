@@ -4,19 +4,21 @@ Cada uno se monta en main.py por separado.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime, timezone, timedelta
 import uuid
+import random
+import string
 
 from app.core.database import get_db
 from app.models.all_models import (
     Delivery, Shift, ShiftStatus, Financial,
-    Route, AuditLog, Notification, Integration, Productivity
+    Route, AuditLog, Integration, Productivity
 )
 from app.models.order import Order, OrderStatus
-from app.models.rider import Rider, RiderStatus
+from app.models.rider import Rider
 from app.models.user import User, UserRole
 from app.api.v1.auth import get_current_user, require_role
 
@@ -78,19 +80,20 @@ async def start_delivery(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="La entrega ya fue iniciada")
 
-    import random, string
     otp = "".join(random.choices(string.digits, k=6))
+    if not order.assigned_rider_id:
+        raise HTTPException(status_code=400, detail="El pedido no tiene repartidor asignado")
 
     delivery = Delivery(
         order_id=order.id,
-        rider_id=order.rider_id,
+        rider_id=order.assigned_rider_id,
         otp_code=otp,
         pickup_at=datetime.now(timezone.utc),
     )
     db.add(delivery)
 
-    order.status = OrderStatus.EN_RUTA
-    order.in_route_at = datetime.now(timezone.utc)
+    order.status = OrderStatus.EN_RUTA  # type: ignore[assignment]
+    order.picked_up_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     await db.commit()
 
     return {"otp_code": otp, "message": "Entrega iniciada. Comparte el OTP con el cliente."}
@@ -127,9 +130,9 @@ async def complete_delivery(
     result2 = await db.execute(select(Order).where(Order.id == delivery.order_id))
     order = result2.scalar_one_or_none()
     if order:
-        order.status = OrderStatus.ENTREGADO
-        order.delivered_at = now
-        delivery.on_time = now <= order.estimated_delivery_at if order.estimated_delivery_at else True
+        order.status = OrderStatus.ENTREGADO  # type: ignore[assignment]
+        order.delivered_at = now  # type: ignore[assignment]
+        delivery.on_time = now <= order.estimated_delivery_time if order.estimated_delivery_time else True
 
     await db.commit()
     return {"message": "Entrega completada exitosamente", "duration_minutes": delivery.duration_minutes}
@@ -368,7 +371,7 @@ async def add_gps_point(
 ):
     result = await db.execute(
         select(Route)
-        .where(Route.rider_id == uuid.UUID(rider_id), Route.ended_at == None)
+        .where(Route.rider_id == uuid.UUID(rider_id), Route.ended_at.is_(None))
         .order_by(Route.started_at.desc())
     )
     route = result.scalar_one_or_none()
@@ -422,11 +425,13 @@ async def manager_dashboard(
     sla_breached = await db.execute(
         select(func.count(Order.id)).where(
             func.date(Order.created_at) == today,
-            Order.sla_breached == True,
+            Order.delivered_at.is_not(None),
+            Order.sla_deadline.is_not(None),
+            Order.delivered_at > Order.sla_deadline,
         )
     )
     active_riders = await db.execute(
-        select(func.count(Rider.id)).where(Rider.is_online == True)
+        select(func.count(Rider.id)).where(Rider.is_online.is_(True))
     )
     avg_time = await db.execute(
         select(func.avg(Delivery.duration_minutes)).where(
@@ -455,15 +460,15 @@ async def operator_dashboard(
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
     pending = await db.execute(
-        select(Order).where(Order.status.in_([OrderStatus.CREADO, OrderStatus.ASIGNADO])).limit(20)
+        select(Order).where(Order.status.in_([OrderStatus.PENDIENTE, OrderStatus.ASIGNADO])).limit(20)
     )
     in_route = await db.execute(
-        select(Rider).where(Rider.is_online == True, Rider.last_lat != None).limit(50)
+        select(Rider).where(Rider.is_online.is_(True), Rider.last_lat.is_not(None)).limit(50)
     )
     return {
         "pending_orders": [
-            {"id": str(o.id), "number": o.order_number, "status": o.status.value,
-             "address": o.delivery_address, "priority": o.priority.value}
+            {"id": str(o.id), "number": o.external_id, "status": o.status.value,
+             "address": o.delivery_address, "priority": o.priority}
             for o in pending.scalars().all()
         ],
         "riders_online": [
@@ -486,13 +491,15 @@ async def get_alerts(
 ):
     breached = await db.execute(
         select(Order).where(
-            Order.sla_breached == True,
+            Order.delivered_at.is_not(None),
+            Order.sla_deadline.is_not(None),
+            Order.delivered_at > Order.sla_deadline,
             Order.status.notin_([OrderStatus.ENTREGADO, OrderStatus.CANCELADO]),
         ).limit(20)
     )
     return {
         "sla_breaches": [
-            {"order_id": str(o.id), "number": o.order_number, "address": o.delivery_address}
+            {"order_id": str(o.id), "number": o.external_id, "address": o.delivery_address}
             for o in breached.scalars().all()
         ]
     }
@@ -565,7 +572,7 @@ async def list_users(
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
     result = await db.execute(
-        select(User).where(User.is_deleted == False).order_by(User.created_at.desc())
+        select(User).where(User.is_deleted.is_(False)).order_by(User.created_at.desc())
     )
     items = result.scalars().all()
     return [

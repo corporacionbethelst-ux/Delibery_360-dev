@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, Any
 from datetime import datetime, timezone
 import uuid
 
@@ -50,7 +50,7 @@ class ApproveRider(BaseModel):
 
 
 def _rider_to_dict(r: Rider, include_user: bool = False) -> dict:
-    d = {
+    d: dict[str, Any] = {
         "id": str(r.id),
         "user_id": str(r.user_id),
         "status": r.status.value,
@@ -115,15 +115,17 @@ async def create_rider(
 
 @router.get("")
 async def list_riders(
-    status: Optional[str] = Query(None),
+    status: Optional[str] = Query(None, description="Alias legacy"),
+    status_filter: Optional[str] = Query(None, description="Filtro preferido"),
     is_online: Optional[bool] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
     q = select(Rider)
-    if status:
+    effective_status = status_filter or status
+    if effective_status:
         try:
-            q = q.where(Rider.status == RiderStatus(status))
+            q = q.where(Rider.status == RiderStatus(effective_status))
         except ValueError:
             pass
     if is_online is not None:
@@ -178,7 +180,7 @@ async def update_rider(
 @router.patch("/{rider_id}/approve")
 async def approve_rider(
     rider_id: str,
-    body: ApproveRider = None,
+    body: Optional[ApproveRider] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
@@ -208,8 +210,12 @@ async def reject_rider(
     if not rider:
         raise HTTPException(status_code=404, detail="Repartidor no encontrado")
 
-    rider.status = RiderStatus.RECHAZADO
-    rider.rejection_reason = body.reason
+    rider.status = RiderStatus.SUSPENDIDO
+    rider.documents = {
+        **(rider.documents or {}),
+        "rejection_reason": body.reason,
+        "rejected_at": datetime.now(timezone.utc).isoformat(),
+    }
     await db.commit()
     return {"message": "Repartidor rechazado", "rider_id": rider_id}
 
