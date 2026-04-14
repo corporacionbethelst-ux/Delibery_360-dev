@@ -80,17 +80,19 @@ async def start_delivery(
 
     import random, string
     otp = "".join(random.choices(string.digits, k=6))
+    if not order.assigned_rider_id:
+        raise HTTPException(status_code=400, detail="El pedido no tiene repartidor asignado")
 
     delivery = Delivery(
         order_id=order.id,
-        rider_id=order.rider_id,
+        rider_id=order.assigned_rider_id,
         otp_code=otp,
         pickup_at=datetime.now(timezone.utc),
     )
     db.add(delivery)
 
     order.status = OrderStatus.EN_RUTA
-    order.in_route_at = datetime.now(timezone.utc)
+    order.picked_up_at = datetime.now(timezone.utc)
     await db.commit()
 
     return {"otp_code": otp, "message": "Entrega iniciada. Comparte el OTP con el cliente."}
@@ -129,7 +131,7 @@ async def complete_delivery(
     if order:
         order.status = OrderStatus.ENTREGADO
         order.delivered_at = now
-        delivery.on_time = now <= order.estimated_delivery_at if order.estimated_delivery_at else True
+        delivery.on_time = now <= order.estimated_delivery_time if order.estimated_delivery_time else True
 
     await db.commit()
     return {"message": "Entrega completada exitosamente", "duration_minutes": delivery.duration_minutes}
@@ -422,7 +424,9 @@ async def manager_dashboard(
     sla_breached = await db.execute(
         select(func.count(Order.id)).where(
             func.date(Order.created_at) == today,
-            Order.sla_breached == True,
+            Order.delivered_at.is_not(None),
+            Order.sla_deadline.is_not(None),
+            Order.delivered_at > Order.sla_deadline,
         )
     )
     active_riders = await db.execute(
@@ -455,15 +459,15 @@ async def operator_dashboard(
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
     pending = await db.execute(
-        select(Order).where(Order.status.in_([OrderStatus.CREADO, OrderStatus.ASIGNADO])).limit(20)
+        select(Order).where(Order.status.in_([OrderStatus.PENDIENTE, OrderStatus.ASIGNADO])).limit(20)
     )
     in_route = await db.execute(
         select(Rider).where(Rider.is_online == True, Rider.last_lat != None).limit(50)
     )
     return {
         "pending_orders": [
-            {"id": str(o.id), "number": o.order_number, "status": o.status.value,
-             "address": o.delivery_address, "priority": o.priority.value}
+            {"id": str(o.id), "number": o.external_id, "status": o.status.value,
+             "address": o.delivery_address, "priority": o.priority}
             for o in pending.scalars().all()
         ],
         "riders_online": [
@@ -486,13 +490,15 @@ async def get_alerts(
 ):
     breached = await db.execute(
         select(Order).where(
-            Order.sla_breached == True,
+            Order.delivered_at.is_not(None),
+            Order.sla_deadline.is_not(None),
+            Order.delivered_at > Order.sla_deadline,
             Order.status.notin_([OrderStatus.ENTREGADO, OrderStatus.CANCELADO]),
         ).limit(20)
     )
     return {
         "sla_breaches": [
-            {"order_id": str(o.id), "number": o.order_number, "address": o.delivery_address}
+            {"order_id": str(o.id), "number": o.external_id, "address": o.delivery_address}
             for o in breached.scalars().all()
         ]
     }
