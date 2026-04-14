@@ -80,8 +80,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
 
     # Seed superuser
-    FIRST_SUPERUSER_EMAIL: str = "admin@logrider.com"
-    FIRST_SUPERUSER_PASSWORD: str = "Admin1234!"
+    FIRST_SUPERUSER_EMAIL: str = "admin@delivery360.com"
+    FIRST_SUPERUSER_PASSWORD: Optional[str] = None
     FIRST_SUPERUSER_NAME: str = "Administrador"
 
     # Monitoring & Logging
