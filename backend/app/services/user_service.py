@@ -22,7 +22,8 @@ class UserService:
     
     async def get_user(self, db: AsyncSession, user_id: uuid.UUID) -> User:
         """Obtiene usuario por ID"""
-        result = await db.execute(select(User).where(User.id == user_id, self._not_deleted_filter()))
+        result = await db.execute(select(User).where(User.id == user_id, User.is_deleted == False))
+
         user = result.scalar_one_or_none()
         if not user:
             raise HTTPException(
@@ -34,7 +35,8 @@ class UserService:
     async def get_user_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
         """Obtiene usuario por email"""
         result = await db.execute(
-            select(User).where(User.email == email, self._not_deleted_filter())
+            select(User).where(User.email == email, User.is_deleted == False)
+
         )
         return result.scalar_one_or_none()
     
@@ -109,7 +111,8 @@ class UserService:
         is_active: Optional[bool] = None
     ) -> List[User]:
         """Lista usuarios con filtros"""
-        q = select(User).where(self._not_deleted_filter())
+        q = select(User).where(User.is_deleted == False)
+
         if role is not None:
             q = q.where(User.role == role)
         if is_active is not None:

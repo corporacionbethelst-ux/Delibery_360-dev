@@ -74,7 +74,8 @@ class AuthService:
     ) -> Optional[User]:
         """Autentica usuario con email y contraseña"""
         result = await db.execute(
-            select(User).where(User.email == email, self._not_deleted_filter())
+            select(User).where(User.email == email, User.is_deleted == False)
+
         )
         user = result.scalar_one_or_none()
         if not user:
@@ -136,7 +137,8 @@ class AuthService:
             )
 
         result = await db.execute(
-            select(User).where(User.id == user_uuid, self._not_deleted_filter())
+            select(User).where(User.id == user_uuid, User.is_deleted == False)
+
         )
         user = result.scalar_one_or_none()
         if not user or not user.is_active:
