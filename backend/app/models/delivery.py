@@ -20,6 +20,12 @@ class DeliveryStatus(str, enum.Enum):
     COMPLETADA = "completada"  # Entrega exitosa
     FALLIDA = "fallida"  # Entrega falló
 
+    # Aliases para compatibilidad con nomenclatura legacy
+    PENDING = "pendiente"
+    IN_PROGRESS = "iniciada"
+    COMPLETED = "completada"
+    FAILED = "fallida"
+
 
 class ProofType(str, enum.Enum):
     """Types of proof of delivery."""

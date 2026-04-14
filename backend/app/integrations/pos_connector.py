@@ -73,7 +73,8 @@ class POSConnector:
             headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
             
             try:
-                response = await client.delete(
+                response = await client.request(
+                    "DELETE",
                     f"{self.base_url}/orders/{order_id}",
                     json={"reason": reason},
                     headers=headers

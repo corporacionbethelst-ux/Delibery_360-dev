@@ -10,6 +10,7 @@ Este script crea:
 """
 
 import asyncio
+import secrets
 import sys
 from pathlib import Path
 
@@ -17,11 +18,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.core.database import get_db_session, engine, Base
+from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.user import User
 from app.models.rider import Rider
 from app.models.order import Order, OrderStatus
-from sqlalchemy import text
+from app.models.enums import UserRole
+from sqlalchemy import select, text
 
 
 async def seed_database():
@@ -41,15 +44,18 @@ async def seed_database():
             # 1. Crear superusuario si no existe
             print("\n👤 Verificando superusuario...")
             
+            admin_email = settings.FIRST_SUPERUSER_EMAIL
+            admin_password = settings.FIRST_SUPERUSER_PASSWORD or secrets.token_urlsafe(16)
+
             existing_admin = await session.execute(
-                select(User).where(User.email == "admin@delivery360.com")
+                select(User).where(User.email == admin_email)
             )
             admin_user = existing_admin.scalar_one_or_none()
             
             if not admin_user:
                 admin_user = User(
-                    email="admin@delivery360.com",
-                    hashed_password=get_password_hash("Admin1234!"),
+                    email=admin_email,
+                    hashed_password=get_password_hash(admin_password),
                     full_name="Administrador Principal",
                     role=UserRole.SUPERADMIN,
                     is_active=True,
@@ -57,7 +63,7 @@ async def seed_database():
                 )
                 session.add(admin_user)
                 await session.commit()
-                print("✅ Superusuario creado: admin@delivery360.com / Admin1234!")
+                print(f"✅ Superusuario creado: {admin_email} / [contraseña segura generada o definida por env]")
             else:
                 print("ℹ️  Superusuario ya existe")
             
@@ -67,21 +73,21 @@ async def seed_database():
             test_users = [
                 {
                     "email": "gerente@delivery360.com",
-                    "password": "Gerente123!",
+                    "password": secrets.token_urlsafe(12),
                     "full_name": "Juan Gerente",
                     "role": UserRole.GERENTE,
                     "phone": "+5511988888888",
                 },
                 {
                     "email": "operador@delivery360.com",
-                    "password": "Operador123!",
+                    "password": secrets.token_urlsafe(12),
                     "full_name": "María Operadora",
                     "role": UserRole.OPERADOR,
                     "phone": "+5511977777777",
                 },
                 {
                     "email": "repartidor@delivery360.com",
-                    "password": "Rider123!",
+                    "password": secrets.token_urlsafe(12),
                     "full_name": "Carlos Repartidor",
                     "role": UserRole.REPARTIDOR,
                     "phone": "+5511966666666",
@@ -104,7 +110,7 @@ async def seed_database():
                         phone=user_data["phone"],
                     )
                     session.add(user)
-                    print(f"  ✅ Usuario creado: {user_data['email']} / {user_data['password']}")
+                    print(f"  ✅ Usuario creado: {user_data['email']} / [contraseña temporal generada]")
                 else:
                     print(f"  ℹ️  Usuario ya existe: {user_data['email']}")
             
@@ -142,10 +148,8 @@ async def seed_database():
             print("🎉 ¡Seed completado exitosamente!")
             print("="*50)
             print("\n📋 Credenciales de acceso:")
-            print("   - Admin: admin@delivery360.com / Admin1234!")
-            print("   - Gerente: gerente@delivery360.com / Gerente123!")
-            print("   - Operador: operador@delivery360.com / Operador123!")
-            print("   - Repartidor: repartidor@delivery360.com / Rider123!")
+            print(f"   - Admin: {admin_email} / [usar FIRST_SUPERUSER_PASSWORD o revisar logs de seed]")
+            print("   - Usuarios de prueba: contraseñas temporales generadas en runtime")
             print("\n🚀 Puedes iniciar el sistema ahora.")
             print("="*50 + "\n")
             
