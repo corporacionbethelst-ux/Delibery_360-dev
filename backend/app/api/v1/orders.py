@@ -114,12 +114,10 @@ async def list_orders(
 
     # Repartidor solo ve sus pedidos
     if current_user.role == UserRole.REPARTIDOR:
-        rider_result = await db.execute(
-            select(Rider).where(Rider.user_id == current_user.id)
-        )
-        rider = rider_result.scalar_one_or_none()
-        if rider:
-            q = q.where(Order.assigned_rider_id == rider.id)
+        rider = await _get_rider_for_user(db, current_user.id)
+        if not rider:
+            raise HTTPException(status_code=404, detail="Perfil de repartidor no encontrado")
+        q = q.where(Order.assigned_rider_id == rider.id)
 
     if status:
         try:
@@ -127,7 +125,12 @@ async def list_orders(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Estado inválido: {status}")
     if rider_id:
-        q = q.where(Order.assigned_rider_id == _parse_uuid(rider_id, "rider_id"))
+        rider_uuid = _parse_uuid(rider_id, "rider_id")
+        if current_user.role == UserRole.REPARTIDOR:
+            rider = await _get_rider_for_user(db, current_user.id)
+            if not rider or rider.id != rider_uuid:
+                raise HTTPException(status_code=403, detail="No tienes permiso para filtrar por ese rider_id")
+        q = q.where(Order.assigned_rider_id == rider_uuid)
 
     q = q.order_by(Order.created_at.desc()).limit(limit).offset(offset)
     orders_result = await db.execute(q)
