@@ -17,7 +17,7 @@ from pathlib import Path
 # Agregar el directorio raíz del backend al path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.core.database import AsyncSessionLocal, engine, Base
+from app.core.database import get_db_session, engine, Base
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.user import User
