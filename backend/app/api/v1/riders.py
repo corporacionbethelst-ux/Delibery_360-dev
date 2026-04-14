@@ -49,6 +49,13 @@ class ApproveRider(BaseModel):
     observations: Optional[str] = None
 
 
+def _parse_uuid(value: str, field_name: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"{field_name} inválido")
+
+
 def _rider_to_dict(r: Rider, include_user: bool = False) -> dict:
     d: dict[str, Any] = {
         "id": str(r.id),
@@ -152,7 +159,7 @@ async def get_rider(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Rider).where(Rider.id == uuid.UUID(rider_id)))
+    result = await db.execute(select(Rider).where(Rider.id == _parse_uuid(rider_id, "rider_id")))
     rider = result.scalar_one_or_none()
     if not rider:
         raise HTTPException(status_code=404, detail="Repartidor no encontrado")
@@ -166,7 +173,7 @@ async def update_rider(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Rider).where(Rider.id == uuid.UUID(rider_id)))
+    result = await db.execute(select(Rider).where(Rider.id == _parse_uuid(rider_id, "rider_id")))
     rider = result.scalar_one_or_none()
     if not rider:
         raise HTTPException(status_code=404, detail="Repartidor no encontrado")
@@ -184,7 +191,7 @@ async def approve_rider(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
-    result = await db.execute(select(Rider).where(Rider.id == uuid.UUID(rider_id)))
+    result = await db.execute(select(Rider).where(Rider.id == _parse_uuid(rider_id, "rider_id")))
     rider = result.scalar_one_or_none()
     if not rider:
         raise HTTPException(status_code=404, detail="Repartidor no encontrado")
@@ -205,7 +212,7 @@ async def reject_rider(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
-    result = await db.execute(select(Rider).where(Rider.id == uuid.UUID(rider_id)))
+    result = await db.execute(select(Rider).where(Rider.id == _parse_uuid(rider_id, "rider_id")))
     rider = result.scalar_one_or_none()
     if not rider:
         raise HTTPException(status_code=404, detail="Repartidor no encontrado")
@@ -226,7 +233,7 @@ async def delete_rider(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
-    result = await db.execute(select(Rider).where(Rider.id == uuid.UUID(rider_id)))
+    result = await db.execute(select(Rider).where(Rider.id == _parse_uuid(rider_id, "rider_id")))
     rider = result.scalar_one_or_none()
     if not rider:
         raise HTTPException(status_code=404, detail="Repartidor no encontrado")

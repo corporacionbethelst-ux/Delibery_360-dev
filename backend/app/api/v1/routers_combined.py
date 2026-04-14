@@ -573,3 +573,4 @@ async def list_users(
             "created_at": u.created_at.isoformat(),
         }
         for u in items
+    ]
