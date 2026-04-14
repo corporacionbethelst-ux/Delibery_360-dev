@@ -43,6 +43,13 @@ class DeliveryFail(BaseModel):
     issue_description: Optional[str] = None
 
 
+def _parse_uuid(value: str, field_name: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"{field_name} inválido")
+
+
 def _delivery_to_dict(d: Delivery) -> dict:
     return {
         "id": str(d.id),
@@ -68,7 +75,6 @@ async def _get_rider_for_user(db: AsyncSession, user_id) -> Optional[Rider]:
     return result.scalar_one_or_none()
 
 
-<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-gl1qff
 async def _ensure_rider_delivery_access(db: AsyncSession, current_user: User, delivery: Delivery) -> None:
     """Restringe acceso de repartidores a sus propias entregas."""
     if current_user.role != UserRole.REPARTIDOR:
@@ -78,8 +84,6 @@ async def _ensure_rider_delivery_access(db: AsyncSession, current_user: User, de
         raise HTTPException(status_code=403, detail="No tienes permiso para acceder a esta entrega")
 
 
-=======
->>>>>>> main
 @router.get("")
 async def list_deliveries(
     status: Optional[str] = Query(None),
@@ -104,9 +108,9 @@ async def list_deliveries(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Estado inválido: {status}")
     if rider_id:
-        q = q.where(Delivery.rider_id == uuid.UUID(rider_id))
+        q = q.where(Delivery.rider_id == _parse_uuid(rider_id, "rider_id"))
     if order_id:
-        q = q.where(Delivery.order_id == uuid.UUID(order_id))
+        q = q.where(Delivery.order_id == _parse_uuid(order_id, "order_id"))
 
     q = q.order_by(Delivery.created_at.desc()).limit(limit).offset(offset)
     rows = await db.execute(q)
@@ -120,7 +124,7 @@ async def get_delivery(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
+    result = await db.execute(select(Delivery).where(Delivery.id == _parse_uuid(delivery_id, "delivery_id")))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
@@ -135,14 +139,14 @@ async def assign_delivery(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
-    result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
+    result = await db.execute(select(Delivery).where(Delivery.id == _parse_uuid(delivery_id, "delivery_id")))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
     if delivery.status != DeliveryStatus.PENDIENTE:
         raise HTTPException(status_code=400, detail=f"No se puede asignar en estado {delivery.status.value}")
 
-    rider_result = await db.execute(select(Rider).where(Rider.id == uuid.UUID(body.rider_id)))
+    rider_result = await db.execute(select(Rider).where(Rider.id == _parse_uuid(body.rider_id, "rider_id")))
     rider = rider_result.scalar_one_or_none()
     if not rider or rider.status != RiderStatus.ACTIVO:
         raise HTTPException(status_code=400, detail="Repartidor no disponible")
@@ -170,19 +174,12 @@ async def start_delivery(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
+    result = await db.execute(select(Delivery).where(Delivery.id == _parse_uuid(delivery_id, "delivery_id")))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
-<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-gl1qff
     await _ensure_rider_delivery_access(db, current_user, delivery)
-=======
-    if current_user.role == UserRole.REPARTIDOR:
-        rider = await _get_rider_for_user(db, current_user.id)
-        if not rider or delivery.rider_id != rider.id:
-            raise HTTPException(status_code=403, detail="No tienes permiso para iniciar esta entrega")
->>>>>>> main
 
     if body.lat is not None:
         delivery.current_latitude = body.lat
@@ -203,19 +200,12 @@ async def complete_delivery(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
+    result = await db.execute(select(Delivery).where(Delivery.id == _parse_uuid(delivery_id, "delivery_id")))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
-<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-gl1qff
     await _ensure_rider_delivery_access(db, current_user, delivery)
-=======
-    if current_user.role == UserRole.REPARTIDOR:
-        rider = await _get_rider_for_user(db, current_user.id)
-        if not rider or delivery.rider_id != rider.id:
-            raise HTTPException(status_code=403, detail="No tienes permiso para completar esta entrega")
->>>>>>> main
 
     if body.otp_code and delivery.proof_otp and body.otp_code != delivery.proof_otp:
         raise HTTPException(status_code=400, detail="OTP incorrecto")
@@ -254,19 +244,12 @@ async def fail_delivery(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Delivery).where(Delivery.id == uuid.UUID(delivery_id)))
+    result = await db.execute(select(Delivery).where(Delivery.id == _parse_uuid(delivery_id, "delivery_id")))
     delivery = result.scalar_one_or_none()
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
-<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-gl1qff
     await _ensure_rider_delivery_access(db, current_user, delivery)
-=======
-    if current_user.role == UserRole.REPARTIDOR:
-        rider = await _get_rider_for_user(db, current_user.id)
-        if not rider or delivery.rider_id != rider.id:
-            raise HTTPException(status_code=403, detail="No tienes permiso para fallar esta entrega")
->>>>>>> main
 
     delivery.status = DeliveryStatus.FALLIDA
     delivery.has_issues = True
