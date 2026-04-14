@@ -152,16 +152,13 @@ cp .env.example .env.local
 npm run dev
 ```
 
-## 👤 Credenciales de Prueba
+## 👤 Credenciales Iniciales
 
-Después de ejecutar el seed, puedes acceder con:
+Después de ejecutar el seed:
 
-| Rol | Email | Contraseña |
-|-----|-------|-----------|
-| Superadmin | admin@delivery360.com | Admin1234! |
-| Gerente | gerente@delivery360.com | Gerente123! |
-| Operador | operador@delivery360.com | Operador123! |
-| Repartidor | repartidor@delivery360.com | Rider123! |
+- El correo del superadmin se toma de `FIRST_SUPERUSER_EMAIL`.
+- La contraseña del superadmin se toma de `FIRST_SUPERUSER_PASSWORD` (si no existe, se genera una contraseña temporal segura).
+- Las cuentas de prueba se crean con contraseñas temporales aleatorias.
 
 ## 📡 Endpoints API Principales
 

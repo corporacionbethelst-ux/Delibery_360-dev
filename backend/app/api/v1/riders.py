@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime, timezone
 import uuid
 
@@ -50,7 +50,7 @@ class ApproveRider(BaseModel):
 
 
 def _rider_to_dict(r: Rider, include_user: bool = False) -> dict:
-    d = {
+    d: dict[str, Any] = {
         "id": str(r.id),
         "user_id": str(r.user_id),
         "status": r.status.value,
@@ -178,7 +178,7 @@ async def update_rider(
 @router.patch("/{rider_id}/approve")
 async def approve_rider(
     rider_id: str,
-    body: ApproveRider = None,
+    body: Optional[ApproveRider] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
@@ -208,8 +208,12 @@ async def reject_rider(
     if not rider:
         raise HTTPException(status_code=404, detail="Repartidor no encontrado")
 
-    rider.status = RiderStatus.RECHAZADO
-    rider.rejection_reason = body.reason
+    rider.status = RiderStatus.SUSPENDIDO
+    rider.documents = {
+        **(rider.documents or {}),
+        "rejection_reason": body.reason,
+        "rejected_at": datetime.now(timezone.utc).isoformat(),
+    }
     await db.commit()
     return {"message": "Repartidor rechazado", "rider_id": rider_id}
 
