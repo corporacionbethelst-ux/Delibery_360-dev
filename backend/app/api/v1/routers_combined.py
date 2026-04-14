@@ -65,7 +65,17 @@ async def list_deliveries(
     current_user: User = Depends(get_current_user),
 ):
     q = select(Delivery)
-    if rider_id:
+    if current_user.role == UserRole.REPARTIDOR:
+        result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
+        current_rider = result.scalar_one_or_none()
+        if not current_rider:
+            raise HTTPException(status_code=404, detail="Perfil de repartidor no encontrado")
+        if rider_id:
+            requested_rider = _parse_uuid(rider_id, "rider_id")
+            if requested_rider != current_rider.id:
+                raise HTTPException(status_code=403, detail="No tienes permiso para consultar entregas de otro rider")
+        q = q.where(Delivery.rider_id == current_rider.id)
+    elif rider_id:
         q = q.where(Delivery.rider_id == _parse_uuid(rider_id, "rider_id"))
     result = await db.execute(q.order_by(Delivery.created_at.desc()).limit(limit))
     items = result.scalars().all()
@@ -262,7 +272,7 @@ financial_router = APIRouter(prefix="/financial")
 
 @financial_router.get("/summary")
 async def financial_summary(
-@@ -252,80 +278,86 @@ async def financial_summary(
+@@ -252,80 +288,86 @@ async def financial_summary(
         select(
             func.count(Financial.id),
             func.sum(Financial.total_amount),
@@ -349,7 +359,7 @@ async def performance_ranking(
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
     today = datetime.now(timezone.utc).date()
-@@ -344,177 +376,184 @@ async def performance_ranking(
+@@ -344,177 +386,184 @@ async def performance_ranking(
             "sla_pct": p.sla_compliance_pct,
             "score": p.performance_score,
         }
@@ -534,7 +544,7 @@ async def get_audit_logs(
         {
             "id": str(a.id),
             "user_id": str(a.user_id) if a.user_id else None,
-@@ -543,39 +582,39 @@ async def list_integrations(
+@@ -543,39 +592,39 @@ async def list_integrations(
     items = result.scalars().all()
     return [
         {
