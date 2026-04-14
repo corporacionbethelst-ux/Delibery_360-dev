@@ -6,7 +6,7 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
-from typing import Optional
+from typing import Any, Optional
 from app.core.config import settings
 
 
@@ -66,7 +66,7 @@ def set_tag(key: str, value: str):
     sentry_sdk.set_tag(key, value)
 
 
-def set_extra(key: str, value: any):
+def set_extra(key: str, value: Any):
     """Agregar información adicional al evento"""
     sentry_sdk.set_extra(key, value)
 
