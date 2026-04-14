@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Any
 from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -19,6 +20,12 @@ class DeliveryStatus(str, enum.Enum):
     EN_DESTINO = "en_destino"  # Llegó al destino
     COMPLETADA = "completada"  # Entrega exitosa
     FALLIDA = "fallida"  # Entrega falló
+
+    # Aliases para compatibilidad con nomenclatura legacy
+    PENDING = "pendiente"
+    IN_PROGRESS = "iniciada"
+    COMPLETED = "completada"
+    FAILED = "fallida"
 
 
 class ProofType(str, enum.Enum):
@@ -39,7 +46,7 @@ class Delivery(Base):
     rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id"), nullable=False, index=True)
     
     # Status
-    status = Column(SQLEnum(DeliveryStatus), default=DeliveryStatus.PENDIENTE)
+    status: Any = Column(SQLEnum(DeliveryStatus), default=DeliveryStatus.PENDIENTE)
     
     # Timing
     started_at = Column(DateTime)  # Cuando el repartidor inicia
@@ -60,7 +67,7 @@ class Delivery(Base):
     distance_delivery = Column(Float)  # km hasta cliente
     
     # Proof of Delivery
-    proof_type = Column(SQLEnum(ProofType))
+    proof_type: Any = Column(SQLEnum(ProofType))
     proof_photo_url = Column(String(500))  # URL de la foto
     proof_signature = Column(Text)  # Firma digital (base64)
     proof_otp = Column(String(10))  # OTP para verificación
