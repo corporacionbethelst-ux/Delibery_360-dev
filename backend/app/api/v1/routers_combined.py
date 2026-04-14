@@ -262,19 +262,7 @@ financial_router = APIRouter(prefix="/financial")
 
 @financial_router.get("/summary")
 async def financial_summary(
-    period: str = Query("today", description="today|week|month"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
-):
-    now = datetime.now(timezone.utc)
-    if period == "today":
-        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == "week":
-        start = now - timedelta(days=7)
-    else:
-        start = now - timedelta(days=30)
-
-    result = await db.execute(
+@@ -252,80 +278,86 @@ async def financial_summary(
         select(
             func.count(Financial.id),
             func.sum(Financial.total_amount),
@@ -361,18 +349,7 @@ async def performance_ranking(
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
     today = datetime.now(timezone.utc).date()
-    result = await db.execute(
-        select(Productivity)
-        .where(func.date(Productivity.date) == today)
-        .order_by(Productivity.performance_score.desc())
-        .limit(10)
-    )
-    items = result.scalars().all()
-    return [
-        {
-            "rank": i + 1,
-            "rider_id": str(p.rider_id),
-            "total_orders": p.total_orders,
+@@ -344,177 +376,184 @@ async def performance_ranking(
             "sla_pct": p.sla_compliance_pct,
             "score": p.performance_score,
         }
@@ -557,28 +534,7 @@ async def get_audit_logs(
         {
             "id": str(a.id),
             "user_id": str(a.user_id) if a.user_id else None,
-            "action": a.action,
-            "resource": a.resource,
-            "resource_id": a.resource_id,
-            "ip_address": a.ip_address,
-            "created_at": a.created_at.isoformat(),
-        }
-        for a in items
-    ]
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# INTEGRATIONS
-# ─────────────────────────────────────────────────────────────────────────────
-integrations_router = APIRouter(prefix="/integrations")
-
-
-@integrations_router.get("")
-async def list_integrations(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
-):
-    result = await db.execute(select(Integration).order_by(Integration.created_at.desc()))
+@@ -543,39 +582,39 @@ async def list_integrations(
     items = result.scalars().all()
     return [
         {
