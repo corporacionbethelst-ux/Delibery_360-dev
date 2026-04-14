@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 from sqlalchemy import create_engine
+from typing import AsyncGenerator, Generator
 from app.core.config import settings
 
 
@@ -42,7 +43,7 @@ SessionLocal = sessionmaker(
 )
 
 
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -54,7 +55,7 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 
-def get_db_session():
+def get_db_session() -> Generator[Session, None, None]:
     """Obtener sesión de base de datos síncrona para workers"""
     session = SessionLocal()
     try:

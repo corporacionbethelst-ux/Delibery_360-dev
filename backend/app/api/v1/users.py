@@ -16,6 +16,16 @@ from app.api.v1.auth import get_current_user
 router = APIRouter()
 
 
+def _parse_uuid(value: str, field_name: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{field_name} inválido",
+        )
+
+
 @router.get("/", response_model=List[dict])
 async def list_users(
     skip: int = 0,
@@ -32,7 +42,7 @@ async def list_users(
             detail="No tienes permisos para listar usuarios"
         )
     
-    result = await db.execute(select(User).where(User.is_active == True).offset(skip).limit(limit))
+    result = await db.execute(select(User).where(User.is_active.is_(True)).offset(skip).limit(limit))
     users = result.scalars().all()
     return [{
         "id": str(u.id),
@@ -54,14 +64,16 @@ async def get_user(
     """
     Get user by ID
     """
+    user_uuid = _parse_uuid(user_id, "user_id")
+
     # Users can only view their own profile unless they're managers
-    if current_user.id != uuid.UUID(user_id) and current_user.role not in [UserRole.SUPERADMIN, UserRole.GERENTE]:
+    if current_user.id != user_uuid and current_user.role not in [UserRole.SUPERADMIN, UserRole.GERENTE]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No tienes permisos para ver este usuario"
         )
     
-    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
+    result = await db.execute(select(User).where(User.id == user_uuid))
     user = result.scalar_one_or_none()
     
     if not user:
