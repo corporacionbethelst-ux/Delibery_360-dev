@@ -2,16 +2,17 @@
 Servicio de Autenticación y Gestión de Usuarios
 """
 from datetime import datetime, timedelta
+import uuid
 from typing import Optional, Tuple
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.core.config import settings
 from app.models.user import User, UserRole
 from app.schemas.auth import TokenData, LoginRequest
-from app.crud.user import user as user_crud
 
 
 class AuthService:
@@ -56,7 +57,7 @@ class AuthService:
             role: str = payload.get("role")
             if user_id is None:
                 return None
-            return TokenData(user_id=int(user_id), role=UserRole(role))
+            return TokenData(user_id=user_id, role=role)
         except JWTError:
             return None
     
@@ -67,7 +68,10 @@ class AuthService:
         password: str
     ) -> Optional[User]:
         """Autentica usuario con email y contraseña"""
-        user = await user_crud.get_by_email(db, email)
+        result = await db.execute(
+            select(User).where(User.email == email, User.is_deleted == False)
+        )
+        user = result.scalar_one_or_none()
         if not user:
             return None
         if not self.verify_password(password, user.hashed_password):
@@ -112,7 +116,24 @@ class AuthService:
                 detail="Refresh token inválido"
             )
         
-        user = await user_crud.get(db, token_data.user_id)
+        if not token_data.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token inválido",
+            )
+
+        try:
+            user_uuid = uuid.UUID(token_data.user_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token inválido",
+            )
+
+        result = await db.execute(
+            select(User).where(User.id == user_uuid, User.is_deleted == False)
+        )
+        user = result.scalar_one_or_none()
         if not user or not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
