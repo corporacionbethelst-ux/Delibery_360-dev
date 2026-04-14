@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Any
 from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -87,7 +88,7 @@ class Order(Base):
     payment_status = Column(String(20), default="pendiente")
     
     # Status & Assignment
-    status = Column(SQLEnum(OrderStatus), default=OrderStatus.PENDIENTE)
+    status: Any = Column(SQLEnum(OrderStatus), default=OrderStatus.PENDIENTE)
     priority = Column(String(20), default="normal")  # normal, vip, urgente
     assigned_rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id"), index=True)
     

@@ -146,9 +146,9 @@ async def create_order(
     )
 
     if body.rider_id:
-        order.assigned_rider_id = uuid.UUID(body.rider_id)
+        order.assigned_rider_id = uuid.UUID(body.rider_id)  # type: ignore[assignment]
         order.status = OrderStatus.ASIGNADO
-        order.accepted_at = datetime.now(timezone.utc)
+        order.accepted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
 
     db.add(order)
     await db.commit()
@@ -188,9 +188,9 @@ async def assign_rider(
     if not rider or rider.status != RiderStatus.ACTIVO:
         raise HTTPException(status_code=400, detail="Repartidor no disponible")
 
-    order.assigned_rider_id = rider.id
+    order.assigned_rider_id = rider.id  # type: ignore[assignment]
     order.status = OrderStatus.ASIGNADO
-    order.accepted_at = datetime.now(timezone.utc)
+    order.accepted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     await db.commit()
     return _order_to_dict(order)
 
@@ -231,11 +231,11 @@ async def update_status(
     now = datetime.now(timezone.utc)
     order.status = target
     if target == OrderStatus.RECOLECTADO:
-        order.picked_up_at = now
+        order.picked_up_at = now  # type: ignore[assignment]
     elif target == OrderStatus.ENTREGADO:
-        order.delivered_at = now
+        order.delivered_at = now  # type: ignore[assignment]
     elif target == OrderStatus.FALLIDO:
-        order.failure_reason = "delivery_failed"
+        order.failure_reason = "delivery_failed"  # type: ignore[assignment]
 
     await db.commit()
     return _order_to_dict(order)

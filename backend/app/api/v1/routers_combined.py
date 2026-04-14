@@ -91,8 +91,8 @@ async def start_delivery(
     )
     db.add(delivery)
 
-    order.status = OrderStatus.EN_RUTA
-    order.picked_up_at = datetime.now(timezone.utc)
+    order.status = OrderStatus.EN_RUTA  # type: ignore[assignment]
+    order.picked_up_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     await db.commit()
 
     return {"otp_code": otp, "message": "Entrega iniciada. Comparte el OTP con el cliente."}
@@ -129,8 +129,8 @@ async def complete_delivery(
     result2 = await db.execute(select(Order).where(Order.id == delivery.order_id))
     order = result2.scalar_one_or_none()
     if order:
-        order.status = OrderStatus.ENTREGADO
-        order.delivered_at = now
+        order.status = OrderStatus.ENTREGADO  # type: ignore[assignment]
+        order.delivered_at = now  # type: ignore[assignment]
         delivery.on_time = now <= order.estimated_delivery_time if order.estimated_delivery_time else True
 
     await db.commit()
