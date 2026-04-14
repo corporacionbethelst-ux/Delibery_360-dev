@@ -56,6 +56,7 @@ def _parse_uuid(value: str, field_name: str) -> uuid.UUID:
         raise HTTPException(status_code=400, detail=f"{field_name} inválido")
 
 
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-40yh1v
 async def _get_rider_for_user(db: AsyncSession, user_id) -> Optional[Rider]:
     result = await db.execute(select(Rider).where(Rider.user_id == user_id))
     return result.scalar_one_or_none()
@@ -70,6 +71,8 @@ async def _ensure_rider_self_scope(db: AsyncSession, current_user: User, rider: 
         raise HTTPException(status_code=403, detail="No tienes permiso para acceder a este repartidor")
 
 
+=======
+>>>>>>> main
 def _rider_to_dict(r: Rider, include_user: bool = False) -> dict:
     d: dict[str, Any] = {
         "id": str(r.id),

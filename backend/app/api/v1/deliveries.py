@@ -270,4 +270,4 @@ async def fail_delivery(
 
     await db.commit()
     await db.refresh(delivery)
-    return _delivery_to_dict(delivery)
+    return _delivery_to_dict(delivery
