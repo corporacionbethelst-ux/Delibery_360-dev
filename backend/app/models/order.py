@@ -22,6 +22,17 @@ class OrderStatus(str, enum.Enum):
     FALLIDO = "fallido"  # No se pudo entregar
     CANCELADO = "cancelado"  # Cancelado por cliente/sistema
 
+    # Aliases en inglés para compatibilidad con servicios legacy
+    PENDING = "pendiente"
+    ASSIGNED = "asignado"
+    PICKING_UP = "en_recoleccion"
+    PICKED_UP = "recolectado"
+    IN_TRANSIT = "en_ruta"
+    DELIVERING = "en_entrega"
+    DELIVERED = "entregado"
+    FAILED = "fallido"
+    CANCELLED = "cancelado"
+
 
 class OrderType(str, enum.Enum):
     """Order types for classification."""
