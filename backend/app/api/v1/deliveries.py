@@ -68,6 +68,7 @@ async def _get_rider_for_user(db: AsyncSession, user_id) -> Optional[Rider]:
     return result.scalar_one_or_none()
 
 
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-gl1qff
 async def _ensure_rider_delivery_access(db: AsyncSession, current_user: User, delivery: Delivery) -> None:
     """Restringe acceso de repartidores a sus propias entregas."""
     if current_user.role != UserRole.REPARTIDOR:
@@ -77,6 +78,8 @@ async def _ensure_rider_delivery_access(db: AsyncSession, current_user: User, de
         raise HTTPException(status_code=403, detail="No tienes permiso para acceder a esta entrega")
 
 
+=======
+>>>>>>> main
 @router.get("")
 async def list_deliveries(
     status: Optional[str] = Query(None),
@@ -172,7 +175,14 @@ async def start_delivery(
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-gl1qff
     await _ensure_rider_delivery_access(db, current_user, delivery)
+=======
+    if current_user.role == UserRole.REPARTIDOR:
+        rider = await _get_rider_for_user(db, current_user.id)
+        if not rider or delivery.rider_id != rider.id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para iniciar esta entrega")
+>>>>>>> main
 
     if body.lat is not None:
         delivery.current_latitude = body.lat
@@ -198,7 +208,14 @@ async def complete_delivery(
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-gl1qff
     await _ensure_rider_delivery_access(db, current_user, delivery)
+=======
+    if current_user.role == UserRole.REPARTIDOR:
+        rider = await _get_rider_for_user(db, current_user.id)
+        if not rider or delivery.rider_id != rider.id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para completar esta entrega")
+>>>>>>> main
 
     if body.otp_code and delivery.proof_otp and body.otp_code != delivery.proof_otp:
         raise HTTPException(status_code=400, detail="OTP incorrecto")
@@ -242,7 +259,14 @@ async def fail_delivery(
     if not delivery:
         raise HTTPException(status_code=404, detail="Entrega no encontrada")
 
+<<<<<<< codex/analyze-repository-for-errors-and-inconsistencies-gl1qff
     await _ensure_rider_delivery_access(db, current_user, delivery)
+=======
+    if current_user.role == UserRole.REPARTIDOR:
+        rider = await _get_rider_for_user(db, current_user.id)
+        if not rider or delivery.rider_id != rider.id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para fallar esta entrega")
+>>>>>>> main
 
     delivery.status = DeliveryStatus.FALLIDA
     delivery.has_issues = True

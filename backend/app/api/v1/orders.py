@@ -234,6 +234,11 @@ async def update_status(
         raise HTTPException(status_code=400, detail=f"Estado inválido: {new_status}")
 
     await _ensure_rider_order_access(db, current_user, order)
+    if current_user.role == UserRole.REPARTIDOR:
+        rider_result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
+        rider = rider_result.scalar_one_or_none()
+        if not rider or order.assigned_rider_id != rider.id:
+            raise HTTPException(status_code=403, detail="No tienes permiso para actualizar este pedido")
 
     current_status = cast(OrderStatus, order.status)
     allowed = VALID_TRANSITIONS.get(current_status, [])
