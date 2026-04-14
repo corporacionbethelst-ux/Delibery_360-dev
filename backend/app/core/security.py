@@ -1,11 +1,19 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
+import uuid
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.core.database import get_db
+from app.models.user import User
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
 import secrets
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
@@ -79,14 +87,14 @@ def decode_token(token: str, verify_type: Optional[str] = None) -> Optional[dict
         return None
 
 
-def validate_token_strength(token: str) -> dict:
+def validate_token_strength(token: str) -> dict[str, Any]:
     """
     Validar la fortaleza y seguridad de un token
     
     Returns:
         dict con información de validación
     """
-    result = {
+    result: dict[str, Any] = {
         "valid": False,
         "errors": [],
         "warnings": []
@@ -133,3 +141,37 @@ def validate_token_strength(token: str) -> dict:
     
     result["valid"] = len(result["errors"]) == 0
     return result
+
+
+async def get_current_active_user(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Dependencia de compatibilidad para obtener usuario autenticado activo."""
+    payload = decode_token(token, verify_type="access")
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales inválidas",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id_raw = payload.get("sub")
+    try:
+        user_id = uuid.UUID(str(user_id_raw))
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido: subject incorrecto",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    current_user = result.scalar_one_or_none()
+    if not current_user or not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no autorizado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return current_user
