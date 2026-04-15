@@ -15,6 +15,12 @@ logger = logging.getLogger(__name__)
 
 class AlertService:
     """Servicio para gestión de alertas operacionales"""
+
+    @staticmethod
+    def _to_related_id(value: Optional[object]) -> Optional[int]:
+        if isinstance(value, int):
+            return value
+        return None
     
     async def create_alert(
         self,
@@ -29,19 +35,19 @@ class AlertService:
     ) -> Notification:
         """Crear una nueva alerta"""
         priority_map = {
-            "low": NotificationPriority.LOW,
-            "medium": NotificationPriority.MEDIUM,
-            "high": NotificationPriority.HIGH,
-            "critical": NotificationPriority.CRITICAL
+            "low": NotificationPriority.BAJA,
+            "medium": NotificationPriority.NORMAL,
+            "high": NotificationPriority.ALTA,
+            "critical": NotificationPriority.CRITICA,
         }
         
         notification = Notification(
-            type=NotificationType.ALERT,
-            priority=priority_map.get(severity.lower(), NotificationPriority.MEDIUM),
+            notification_type=NotificationType.ALERTA_OPERACIONAL,
+            priority=priority_map.get(severity.lower(), NotificationPriority.NORMAL),
             title=title,
             message=message,
-            related_entity_id=related_entity_id,
-            related_entity_type=related_entity_type
+            related_id=self._to_related_id(related_entity_id),
+            related_type=related_entity_type,
         )
         
         db.add(notification)
@@ -119,7 +125,7 @@ class AlertService:
         """Obtener alertas activas recientes"""
         result = await db.execute(
             select(Notification)
-            .where(Notification.type == NotificationType.ALERT)
+            .where(Notification.notification_type == NotificationType.ALERTA_OPERACIONAL)
             .where(Notification.is_read.is_(False))
             .order_by(Notification.created_at.desc())
             .limit(limit)
