@@ -108,7 +108,15 @@ async def create_rider(
     body: RiderCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
-@@ -93,189 +114,199 @@ async def create_rider(
+):
+    """Crear un nuevo repartidor (requiere aprobación)"""
+    # Crear usuario con rol repartidor
+    user = await user_service.create_user(
+        db=db,
+        email=body.email,
+        password=body.password,
+        full_name=body.full_name,
+        phone=body.phone,
         role=UserRole.REPARTIDOR
     )
     db.add(user)

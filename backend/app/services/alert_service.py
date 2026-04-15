@@ -130,38 +130,6 @@ class AlertService:
                 related_entity_id=delivery.id,
                 related_entity_type="delivery"
             )
-@@ -96,34 +152,34 @@ class AlertService:
-        pending_orders = result.scalars().all()
-        
-        alerts = []
-        for order in pending_orders:
-            alert = await self.create_alert(
-                db=db,
-                alert_type="pending_order",
-                severity="medium",
-                title=f"Pedido #{order.id} sin asignar",
-                message=f"El pedido {order.id} lleva {threshold_minutes}+ minutos sin repartidor",
-                related_entity_id=order.id,
-                related_entity_type="order"
-            )
-            alerts.append(alert)
-        
-        return alerts
-    
-    async def get_active_alerts(
-        self,
-        db: AsyncSession,
-        limit: int = 100
-    ) -> List[Notification]:
-        """Obtener alertas activas recientes"""
-        result = await db.execute(
-            select(Notification)
-            .where(Notification.notification_type == NotificationType.ALERTA_OPERACIONAL)
-            .where(Notification.is_read.is_(False))
-            .order_by(Notification.created_at.desc())
-            .limit(limit)
-        )
-        return result.scalars().all()
 
 
 alert_service = AlertService()
