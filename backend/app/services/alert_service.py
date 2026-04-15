@@ -37,6 +37,21 @@ class AlertService:
             if isinstance(user_id, int) and user_id > 0 and user_id not in normalized:
                 normalized.append(user_id)
         return normalized
+
+    @staticmethod
+    def _normalize_severity_key(severity: object) -> str:
+        if not isinstance(severity, str):
+            return "medium"
+        normalized = severity.strip().lower()
+        aliases = {
+            "baja": "low",
+            "normal": "medium",
+            "media": "medium",
+            "alta": "high",
+            "critica": "critical",
+            "crítica": "critical",
+        }
+        return aliases.get(normalized, normalized)
     
     async def create_alert(
         self,
@@ -56,14 +71,15 @@ class AlertService:
             "high": NotificationPriority.ALTA,
             "critical": NotificationPriority.CRITICA,
         }
+        normalized_severity = self._normalize_severity_key(severity)
 
         normalized_recipient_user_ids = self._normalize_recipient_user_ids(recipient_user_ids)
         base_notification_kwargs = dict(
             notification_type=NotificationType.ALERTA_OPERACIONAL,
-            priority=priority_map.get(severity.lower(), NotificationPriority.NORMAL),
+            priority=priority_map.get(normalized_severity, NotificationPriority.NORMAL),
             title=title,
             message=message,
-            data={"alert_type": alert_type, "severity": severity.lower()},
+            data={"alert_type": alert_type, "severity": normalized_severity},
             related_id=self._to_related_id(related_entity_id),
             related_type=related_entity_type,
         )
@@ -81,7 +97,7 @@ class AlertService:
         logger.info(
             "Alerta creada: %s (severity: %s, recipients: %s)",
             title,
-            severity,
+            normalized_severity,
             len(normalized_recipient_user_ids),
         )
         return notifications[0]
@@ -110,7 +126,7 @@ class AlertService:
                 related_entity_id=delivery.id,
                 related_entity_type="delivery"
             )
-@@ -96,34 +132,34 @@ class AlertService:
+@@ -96,34 +148,34 @@ class AlertService:
         pending_orders = result.scalars().all()
         
         alerts = []
