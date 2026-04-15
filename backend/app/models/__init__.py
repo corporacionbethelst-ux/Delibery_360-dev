@@ -29,4 +29,7 @@ __all__ = [
     "Financial", "PaymentRuleType",
     "Route", "AuditLog", "Notification",
     "NotificationType", "Integration", "Productivity",
+    "user", "rider", "order",
+    "delivery", "shift", "financial", "route",
+    "audit_log", "notification", "integration", "productivity",
 ]

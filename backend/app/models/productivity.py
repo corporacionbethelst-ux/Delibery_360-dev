@@ -1,8 +1,8 @@
 """Productivity models for performance tracking and analytics."""
 
 import uuid
-from datetime import datetime, date
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Boolean, Index
+from datetime import datetime
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Index, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import enum

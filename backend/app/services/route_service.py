@@ -3,9 +3,8 @@
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select
 from app.models.route import Route, RoutePoint, RouteDeviation
-from app.models.delivery import Delivery
 from app.utils.geolocation import calculate_distance, is_point_in_polygon
 import logging
 
@@ -165,7 +164,6 @@ class RouteService:
         
         while i < len(points) - 1:
             stop_start = points[i]
-            stop_duration = 0
             j = i + 1
             
             while j < len(points):
