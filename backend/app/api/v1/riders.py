@@ -240,8 +240,8 @@ async def approve_rider(
     rider.status = RiderStatus.ACTIVO
     rider.approved_at = datetime.now(timezone.utc)
     if body and body.observations:
-        # Guardar observaciones si se proporcionan
-        pass
+        # Guardar observaciones en el campo notes si existe, o ignorarlas por ahora
+        rider.notes = body.observations if hasattr(rider, 'notes') else rider.notes
     await db.commit()
     return {"message": "Repartidor aprobado exitosamente", "rider_id": rider_id}
 
