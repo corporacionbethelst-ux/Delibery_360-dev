@@ -5,7 +5,7 @@ from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from app.models.rider import Rider, RiderStatus, RiderDocument
-from app.schemas.rider import RiderCreate, RiderUpdate, RiderApprovalRequest
+from app.schemas.rider import RiderCreate, RiderUpdate
 from datetime import datetime
 
 
@@ -30,7 +30,7 @@ class CRUDRider:
         if status:
             filters.append(Rider.status == status)
         if is_approved is not None:
-            filters.append(Rider.is_approved == is_approved)
+            filters.append(Rider.is_approved.is_(is_approved))
         
         query = select(Rider)
         if filters:
