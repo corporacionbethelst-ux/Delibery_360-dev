@@ -1,1 +1,33 @@
-Nothing should be ignored based on the provided file changes, as they only contain Python source files (.py) which are legitimate source code files and not build artifacts, dependencies, or temporary files.
+```gitignore
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Dependencies
+venv/
+.venv/
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Coverage reports
+.coverage
+htmlcov/
+coverage/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+```

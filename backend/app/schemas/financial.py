@@ -51,6 +51,7 @@ class PaymentRuleBase(BaseModel):
 
 
 class PaymentRuleCreate(PaymentRuleBase):
+    """Schema para crear una regla de pago"""
     pass
 
 
