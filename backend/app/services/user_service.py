@@ -19,6 +19,10 @@ class UserService:
     def _not_deleted_filter():
         """Filtro común para usuarios activos lógicamente."""
         return User.is_deleted.is_(False)
+
+    @staticmethod
+    def _normalize_email(email: str) -> str:
+        return email.strip().lower()
     
     async def get_user(self, db: AsyncSession, user_id: uuid.UUID) -> User:
         """Obtiene usuario por ID"""
@@ -33,8 +37,9 @@ class UserService:
     
     async def get_user_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
         """Obtiene usuario por email"""
+        normalized_email = self._normalize_email(email)
         result = await db.execute(
-            select(User).where(User.email == email, self._not_deleted_filter())
+            select(User).where(User.email == normalized_email, self._not_deleted_filter())
         )
         return result.scalar_one_or_none()
     
@@ -46,7 +51,8 @@ class UserService:
     ) -> User:
         """Crea un nuevo usuario"""
         # Verificar si email ya existe
-        existing_user = await self.get_user_by_email(db, user_data.email)
+        normalized_email = self._normalize_email(user_data.email)
+        existing_user = await self.get_user_by_email(db, normalized_email)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -58,7 +64,7 @@ class UserService:
         
         # Crear usuario
         user = User(
-            email=user_data.email,
+            email=normalized_email,
             full_name=user_data.full_name,
             hashed_password=hashed_password,
             role=user_data.role,
@@ -84,6 +90,15 @@ class UserService:
         # Si se actualiza contraseña, hacer hash
         if "password" in update_data and update_data["password"]:
             update_data["hashed_password"] = auth_service.get_password_hash(update_data.pop("password"))
+        if "email" in update_data and update_data["email"]:
+            normalized_email = self._normalize_email(update_data["email"])
+            existing_user = await self.get_user_by_email(db, normalized_email)
+            if existing_user and existing_user.id != user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email ya registrado"
+                )
+            update_data["email"] = normalized_email
         
         for field, value in update_data.items():
             setattr(user, field, value)
@@ -113,7 +128,7 @@ class UserService:
         if role is not None:
             q = q.where(User.role == role)
         if is_active is not None:
-            q = q.where(User.is_active == is_active)
+            q = q.where(User.is_active.is_(is_active))
 
         q = q.offset(skip).limit(limit)
         result = await db.execute(q)
