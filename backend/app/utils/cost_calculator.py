@@ -3,7 +3,6 @@ Calculadora de costos operativos para entregas
 Cálculo de márgenes, costos por repartidor y simulación de precios
 """
 from typing import Dict, List, Optional
-from decimal import Decimal
 
 
 class CostCalculator:

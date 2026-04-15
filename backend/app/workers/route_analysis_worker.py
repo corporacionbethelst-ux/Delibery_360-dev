@@ -3,7 +3,6 @@ Worker Celery para análisis de rutas
 """
 from celery import shared_task
 from datetime import datetime
-from sqlalchemy.orm import Session
 from app.core.database import get_db_session
 
 

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         try:
             return json.loads(self.BACKEND_CORS_ORIGINS)
-        except:
+        except (json.JSONDecodeError, TypeError):
             return ["http://localhost:3000"]
 
     # Database
@@ -80,8 +80,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
 
     # Seed superuser
-    FIRST_SUPERUSER_EMAIL: str = "admin@logrider.com"
-    FIRST_SUPERUSER_PASSWORD: str = "Admin1234!"
+    FIRST_SUPERUSER_EMAIL: str = "admin@delivery360.com"
+    FIRST_SUPERUSER_PASSWORD: Optional[str] = None
     FIRST_SUPERUSER_NAME: str = "Administrador"
 
     # Monitoring & Logging
@@ -104,4 +104,4 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
