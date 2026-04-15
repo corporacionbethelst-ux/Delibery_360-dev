@@ -25,6 +25,18 @@ class AlertService:
         if isinstance(value, str) and value.isdigit():
             return int(value)
         return None
+
+    @staticmethod
+    def _normalize_recipient_user_ids(recipient_user_ids: Optional[List[int]]) -> List[int]:
+        if not recipient_user_ids:
+            return []
+        normalized: List[int] = []
+        for user_id in recipient_user_ids:
+            if isinstance(user_id, bool):
+                continue
+            if isinstance(user_id, int) and user_id > 0 and user_id not in normalized:
+                normalized.append(user_id)
+        return normalized
     
     async def create_alert(
         self,
@@ -44,8 +56,9 @@ class AlertService:
             "high": NotificationPriority.ALTA,
             "critical": NotificationPriority.CRITICA,
         }
-        
-        notification = Notification(
+
+        normalized_recipient_user_ids = self._normalize_recipient_user_ids(recipient_user_ids)
+        base_notification_kwargs = dict(
             notification_type=NotificationType.ALERTA_OPERACIONAL,
             priority=priority_map.get(severity.lower(), NotificationPriority.NORMAL),
             title=title,
@@ -53,15 +66,25 @@ class AlertService:
             data={"alert_type": alert_type, "severity": severity.lower()},
             related_id=self._to_related_id(related_entity_id),
             related_type=related_entity_type,
-            user_id=recipient_user_ids[0] if recipient_user_ids else None,
         )
-        
-        db.add(notification)
+
+        notifications = [
+            Notification(**base_notification_kwargs, user_id=user_id)
+            for user_id in normalized_recipient_user_ids
+        ] or [Notification(**base_notification_kwargs)]
+
+        db.add_all(notifications)
         await db.commit()
-        await db.refresh(notification)
-        
-        logger.info(f"Alerta creada: {title} (severity: {severity})")
-        return notification
+        for notification in notifications:
+            await db.refresh(notification)
+
+        logger.info(
+            "Alerta creada: %s (severity: %s, recipients: %s)",
+            title,
+            severity,
+            len(normalized_recipient_user_ids),
+        )
+        return notifications[0]
     
     async def check_sla_alerts(self, db: AsyncSession, threshold_minutes: int = 5) -> List[Notification]:
         """Verificar entregas próximas a vencer SLA"""
@@ -79,7 +102,15 @@ class AlertService:
         alerts = []
         for delivery in deliveries_at_risk:
             alert = await self.create_alert(
-@@ -96,34 +109,34 @@ class AlertService:
+                db=db,
+                alert_type="sla_warning",
+                severity="high",
+                title=f"Entrega #{delivery.id} en riesgo de SLA",
+                message=f"La entrega {delivery.id} debe completarse en {threshold_minutes} minutos",
+                related_entity_id=delivery.id,
+                related_entity_type="delivery"
+            )
+@@ -96,34 +132,34 @@ class AlertService:
         pending_orders = result.scalars().all()
         
         alerts = []
