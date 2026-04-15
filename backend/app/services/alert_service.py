@@ -72,6 +72,10 @@ class AlertService:
             "critical": NotificationPriority.CRITICA,
         }
         normalized_severity = self._normalize_severity_key(severity)
+        normalized_related_id = self._to_related_id(related_entity_id)
+        alert_data = {"alert_type": alert_type, "severity": normalized_severity}
+        if related_entity_id is not None and normalized_related_id is None:
+            alert_data["related_entity_ref"] = str(related_entity_id)
 
         normalized_recipient_user_ids = self._normalize_recipient_user_ids(recipient_user_ids)
         base_notification_kwargs = dict(
@@ -79,8 +83,8 @@ class AlertService:
             priority=priority_map.get(normalized_severity, NotificationPriority.NORMAL),
             title=title,
             message=message,
-            data={"alert_type": alert_type, "severity": normalized_severity},
-            related_id=self._to_related_id(related_entity_id),
+            data=alert_data,
+            related_id=normalized_related_id,
             related_type=related_entity_type,
         )
 
@@ -126,7 +130,7 @@ class AlertService:
                 related_entity_id=delivery.id,
                 related_entity_type="delivery"
             )
-@@ -96,34 +148,34 @@ class AlertService:
+@@ -96,34 +152,34 @@ class AlertService:
         pending_orders = result.scalars().all()
         
         alerts = []
