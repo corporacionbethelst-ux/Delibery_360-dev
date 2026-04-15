@@ -5,7 +5,6 @@ from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import create_async_engine
 from typing import Dict, Any
 import time
-import psycopg2
 import redis
 from app.core.config import settings
 

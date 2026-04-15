@@ -1,9 +1,8 @@
 """Rate Limiting Middleware Mejorado"""
-from fastapi import Request, HTTPException, status
+from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from app.core.rate_limiter import rate_limiter
 from app.core.config import settings
-import time
 import logging
 
 logger = logging.getLogger(__name__)
