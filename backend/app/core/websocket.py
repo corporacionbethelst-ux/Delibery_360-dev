@@ -5,7 +5,6 @@ import json
 from typing import Dict, List, Optional
 from fastapi import WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
-import asyncio
 
 
 class ConnectionManager:

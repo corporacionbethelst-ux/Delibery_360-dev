@@ -4,6 +4,7 @@ Alert Service - Gestión de Alertas Operacionales
 from typing import Optional, List
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.models.notification import Notification, NotificationType, NotificationPriority
 from app.models.delivery import Delivery, DeliveryStatus
 from app.models.order import Order, OrderStatus
@@ -119,7 +120,7 @@ class AlertService:
         result = await db.execute(
             select(Notification)
             .where(Notification.type == NotificationType.ALERT)
-            .where(Notification.is_read == False)
+            .where(Notification.is_read.is_(False))
             .order_by(Notification.created_at.desc())
             .limit(limit)
         )
