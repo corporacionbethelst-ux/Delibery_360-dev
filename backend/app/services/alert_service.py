@@ -18,8 +18,12 @@ class AlertService:
 
     @staticmethod
     def _to_related_id(value: Optional[object]) -> Optional[int]:
+        if isinstance(value, bool):
+            return None
         if isinstance(value, int):
             return value
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
         return None
     
     async def create_alert(
@@ -46,8 +50,10 @@ class AlertService:
             priority=priority_map.get(severity.lower(), NotificationPriority.NORMAL),
             title=title,
             message=message,
+            data={"alert_type": alert_type, "severity": severity.lower()},
             related_id=self._to_related_id(related_entity_id),
             related_type=related_entity_type,
+            user_id=recipient_user_ids[0] if recipient_user_ids else None,
         )
         
         db.add(notification)
@@ -73,33 +79,7 @@ class AlertService:
         alerts = []
         for delivery in deliveries_at_risk:
             alert = await self.create_alert(
-                db=db,
-                alert_type="sla_warning",
-                severity="high",
-                title=f"Entrega #{delivery.id} en riesgo de SLA",
-                message=f"La entrega {delivery.id} debe completarse en {threshold_minutes} minutos",
-                related_entity_id=delivery.id,
-                related_entity_type="delivery"
-            )
-            alerts.append(alert)
-        
-        return alerts
-    
-    async def check_inactive_riders(self, db: AsyncSession, inactive_minutes: int = 30) -> List[Notification]:
-        """Verificar repartidores inactivos durante turno activo"""
-        # Implementación pendiente de tracking en tiempo real
-        logger.info("Verificando repartidores inactivos...")
-        return []
-    
-    async def check_pending_orders(self, db: AsyncSession, threshold_minutes: int = 10) -> List[Notification]:
-        """Verificar pedidos sin asignar por mucho tiempo"""
-        threshold_time = datetime.utcnow() - timedelta(minutes=threshold_minutes)
-        
-        result = await db.execute(
-            select(Order)
-            .where(Order.status == OrderStatus.PENDING)
-            .where(Order.created_at <= threshold_time)
-        )
+@@ -96,34 +109,34 @@ class AlertService:
         pending_orders = result.scalars().all()
         
         alerts = []
