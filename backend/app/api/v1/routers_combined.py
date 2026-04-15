@@ -272,7 +272,20 @@ financial_router = APIRouter(prefix="/financial")
 
 @financial_router.get("/summary")
 async def financial_summary(
-@@ -252,80 +288,86 @@ async def financial_summary(
+    period: str = Query("today", description="today|week|month"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
+):
+    """Obtener resumen financiero del periodo"""
+    now = datetime.now(timezone.utc)
+    if period == "today":
+        start = now.replace(hour=0, minute=0, second=0)
+    elif period == "week":
+        start = now - timedelta(days=7)
+    else:
+        start = now - timedelta(days=30)
+    
+    result = await db.execute(
         select(
             func.count(Financial.id),
             func.sum(Financial.total_amount),
@@ -358,9 +371,23 @@ async def performance_ranking(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
+    """Obtener ranking de repartidores por rendimiento"""
     today = datetime.now(timezone.utc).date()
-@@ -344,177 +386,184 @@ async def performance_ranking(
-            "sla_pct": p.sla_compliance_pct,
+    result = await db.execute(
+        select(Productivity)
+        .where(Productivity.date == today)
+        .order_by(Productivity.performance_score.desc())
+        .limit(50)
+    )
+    items = result.scalars().all()
+    return [
+        {
+            "rank": i + 1,
+            "rider_id": str(p.rider_id),
+            "orders": p.total_orders,
+            "on_time_pct": p.sla_compliance_pct,
+            "avg_time_min": p.avg_delivery_time_min,
+            "earnings": p.total_earnings,
             "score": p.performance_score,
         }
         for i, p in enumerate(items)
@@ -544,7 +571,31 @@ async def get_audit_logs(
         {
             "id": str(a.id),
             "user_id": str(a.user_id) if a.user_id else None,
-@@ -543,39 +592,39 @@ async def list_integrations(
+            "action": a.action.value,
+            "entity_type": a.entity_type,
+            "entity_id": str(a.entity_id) if a.entity_id else None,
+            "changes": a.changes,
+            "created_at": a.created_at.isoformat(),
+        }
+        for a in items
+    ]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# INTEGRATIONS
+# ─────────────────────────────────────────────────────────────────────────────
+integrations_router = APIRouter(prefix="/integrations")
+
+
+@integrations_router.get("")
+async def list_integrations(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
+):
+    """Listar integraciones activas"""
+    result = await db.execute(
+        select(Integration).order_by(Integration.name)
+    )
     items = result.scalars().all()
     return [
         {
