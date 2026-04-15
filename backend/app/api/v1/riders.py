@@ -108,20 +108,7 @@ async def create_rider(
     body: RiderCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
-):
-    # Verificar si ya existe un usuario con ese email
-    from app.models.user import User as UserModel
-    result = await db.execute(select(UserModel).where(UserModel.email == body.email))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="El email ya está registrado")
-    
-    # Crear usuario con rol REPARTIDOR
-    from app.core.security import get_password_hash
-    user = UserModel(
-        email=body.email,
-        hashed_password=get_password_hash(body.password),
-        full_name=body.full_name,
-        phone=body.phone,
+@@ -93,189 +114,199 @@ async def create_rider(
         role=UserRole.REPARTIDOR
     )
     db.add(user)
