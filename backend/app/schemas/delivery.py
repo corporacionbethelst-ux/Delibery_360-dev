@@ -2,26 +2,17 @@
 
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
-from enum import Enum
+import uuid
+from pydantic import BaseModel, ConfigDict
 
-
-class DeliveryStatus(str, Enum):
-    """Delivery status."""
-    PENDIENTE = "pendiente"
-    ASIGNADO = "asignado"
-    EN_RUTA = "en_ruta"
-    LLEGADO_A_DESTINO = "llegado_a_destino"
-    ENTREGADO = "entregado"
-    FALLIDO = "fallido"
-    CANCELADO = "cancelado"
+from app.models.delivery import DeliveryStatus
 
 
 # Base Schema
 class DeliveryBase(BaseModel):
     """Base schema for Delivery."""
-    order_id: int
-    rider_id: int
+    order_id: uuid.UUID
+    rider_id: uuid.UUID
     
     # Pickup Confirmation
     pickup_confirmed_at: Optional[datetime] = None
@@ -61,6 +52,9 @@ class DeliveryUpdate(BaseModel):
 # Proof of Delivery Schema
 class ProofOfDeliveryBase(BaseModel):
     """Base schema for Proof of Delivery."""
+    # Campo principal esperado por servicios legacy
+    photo_url: Optional[str] = None
+    # Campo alternativo para clientes que envían múltiples fotos
     photo_urls: Optional[List[str]] = None
     signature_base64: Optional[str] = None
     otp_code: Optional[str] = None  # One-time password for verification
@@ -72,18 +66,18 @@ class ProofOfDeliveryBase(BaseModel):
 
 class ProofOfDeliveryCreate(ProofOfDeliveryBase):
     """Schema for creating Proof of Delivery."""
-    delivery_id: int
+    delivery_id: uuid.UUID
 
 
 class ProofOfDeliveryResponse(ProofOfDeliveryBase):
     """Schema for Proof of Delivery response."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: int
-    delivery_id: int
+    id: uuid.UUID
+    delivery_id: uuid.UUID
     created_at: datetime
     verified: bool = False
-    verified_by: Optional[int] = None
+    verified_by: Optional[uuid.UUID] = None
     verified_at: Optional[datetime] = None
 
 
@@ -92,7 +86,7 @@ class DeliveryResponse(DeliveryBase):
     """Schema for Delivery response."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: int
+    id: uuid.UUID
     status: DeliveryStatus
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
