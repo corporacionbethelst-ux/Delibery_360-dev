@@ -6,7 +6,6 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.models.audit_log import AuditLog, AuditAction
-from app.crud.base import CRUDBase
 
 
 class AuditService:
