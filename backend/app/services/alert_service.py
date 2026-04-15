@@ -110,25 +110,7 @@ class AlertService:
                 related_entity_id=delivery.id,
                 related_entity_type="delivery"
             )
-            alerts.append(alert)
-        
-        return alerts
-    
-    async def check_inactive_riders(self, db: AsyncSession, inactive_minutes: int = 30) -> List[Notification]:
-        """Verificar repartidores inactivos durante turno activo"""
-        # Implementación pendiente de tracking en tiempo real
-        logger.info("Verificando repartidores inactivos...")
-        return []
-    
-    async def check_pending_orders(self, db: AsyncSession, threshold_minutes: int = 10) -> List[Notification]:
-        """Verificar pedidos sin asignar por mucho tiempo"""
-        threshold_time = datetime.utcnow() - timedelta(minutes=threshold_minutes)
-        
-        result = await db.execute(
-            select(Order)
-            .where(Order.status == OrderStatus.PENDING)
-            .where(Order.created_at <= threshold_time)
-        )
+@@ -96,34 +132,34 @@ class AlertService:
         pending_orders = result.scalars().all()
         
         alerts = []
