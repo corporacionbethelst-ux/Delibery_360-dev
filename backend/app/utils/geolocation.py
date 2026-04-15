@@ -1,7 +1,7 @@
 """Utilidades de geolocalización para el sistema Delivery360."""
 
 import math
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 
 def calculate_distance(

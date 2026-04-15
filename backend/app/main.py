@@ -3,10 +3,7 @@ Delivery360 - Main Application Entry Point
 FastAPI application with full configuration
 """
 
-from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 import logging
 from typing import AsyncGenerator
@@ -75,7 +72,6 @@ def create_app() -> FastAPI:
     # Configure CORS con seguridad reforzada
     from app.middleware.cors_middleware import setup_cors_middleware, get_security_headers
     from fastapi.middleware.trustedhost import TrustedHostMiddleware
-    from starlette.middleware.base import BaseHTTPMiddleware
     
     setup_cors_middleware(app)
     
