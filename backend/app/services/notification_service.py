@@ -105,7 +105,7 @@ class NotificationService:
     async def get_user_notifications(self, user_id: int, limit: int = 50, unread_only: bool = False) -> List[Notification]:
         query = select(Notification).where(Notification.user_id == user_id)
         if unread_only:
-            query = query.where(Notification.is_read == False)
+            query = query.where(Notification.is_read.is_(False))
         query = query.order_by(Notification.created_at.desc()).limit(limit)
         result = await self.db.execute(query)
         return list(result.scalars().all())
