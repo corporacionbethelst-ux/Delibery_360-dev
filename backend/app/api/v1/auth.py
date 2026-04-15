@@ -54,7 +54,7 @@ async def get_current_user(
         raise credentials_exception
 
     user_id = payload.get("sub")
-    result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
+    result = await db.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
     user = result.scalar_one_or_none()
     if not user:
         raise credentials_exception
@@ -79,7 +79,7 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(User).where(User.email == form_data.username, User.is_active == True, User.is_deleted == False)
+        select(User).where(User.email == form_data.username, User.is_active.is_(True), User.is_deleted.is_(False))
     )
     user = result.scalar_one_or_none()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -108,7 +108,7 @@ async def refresh_token(
         raise HTTPException(status_code=401, detail="Token de refresco inválido")
 
     user_id = payload.get("sub")
-    result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
+    result = await db.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail="Usuario no encontrado")

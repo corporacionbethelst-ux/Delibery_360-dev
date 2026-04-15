@@ -4,7 +4,7 @@ Enmascaramiento de datos, gestión de consentimientos y auditoría
 """
 import re
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 from enum import Enum
 
 
@@ -236,7 +236,7 @@ def create_privacy_report(
         ],
         'access_history': {
             'total_accesses': len(access_logs),
-            'last_30_days': len([l for l in access_logs if _is_last_n_days(l, 30)]),
+            'last_30_days': len([log_entry for log_entry in access_logs if _is_last_n_days(log_entry, 30)]),
             'by_purpose': _group_access_by_purpose(access_logs)
         },
         'retention_status': {

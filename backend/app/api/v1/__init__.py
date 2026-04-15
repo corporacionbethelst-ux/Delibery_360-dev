@@ -13,7 +13,6 @@ from app.api.v1.routers_combined import (
     integrations_router,
     users_router,
 )
-from types import ModuleType
 import types
 
 # Crear módulos ficticios para que main.py pueda hacer .router
@@ -32,3 +31,19 @@ alerts       = _make_module(alerts_router,        "alerts")
 audit        = _make_module(audit_router,         "audit")
 integrations = _make_module(integrations_router,  "integrations")
 users        = _make_module(users_router,         "users")
+
+__all__ = [
+    "auth",
+    "orders",
+    "riders",
+    "deliveries",
+    "shifts",
+    "financial",
+    "productivity",
+    "routes",
+    "dashboard",
+    "alerts",
+    "audit",
+    "integrations",
+    "users",
+]
