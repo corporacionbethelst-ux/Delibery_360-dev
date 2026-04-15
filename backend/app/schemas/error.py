@@ -3,7 +3,7 @@ Esquemas Pydantic para respuestas de error estandarizadas.
 Garantiza que el frontend siempre reciba la misma estructura ante fallos.
 """
 from pydantic import BaseModel, Field
-from typing import Optional, Any, Dict
+from typing import Optional
 
 
 class ErrorDetail(BaseModel):

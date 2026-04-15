@@ -3,7 +3,6 @@ Conector para sistemas POS (Point of Sale)
 """
 import httpx
 from typing import Dict, Any, Optional
-from datetime import datetime
 
 
 class POSConnector:
@@ -73,7 +72,8 @@ class POSConnector:
             headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
             
             try:
-                response = await client.delete(
+                response = await client.request(
+                    "DELETE",
                     f"{self.base_url}/orders/{order_id}",
                     json={"reason": reason},
                     headers=headers

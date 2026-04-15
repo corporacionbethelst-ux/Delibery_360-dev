@@ -113,7 +113,7 @@ class CRUDRoute:
     ) -> List[RouteDeviation]:
         result = await db.execute(
             select(RouteDeviation)
-            .where(RouteDeviation.is_resolved == False)
+            .where(RouteDeviation.is_resolved.is_(False))
             .order_by(RouteDeviation.detected_at.desc())
             .limit(limit)
         )
