@@ -29,7 +29,7 @@ export default function OrderList({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null); // State initialized to null
   const [showAssignModal, setShowAssignModal] = useState(false);
   
   const { fetchOrders } = useOrdersStore();
@@ -202,7 +202,7 @@ export default function OrderList({
           }}
           onAssign={(riderId) => {
             // Aquí iría la lógica para asignar el repartidor
-            console.log(`Asignando rider ${riderId} a la orden ${selectedOrder.id}`);
+            console.log(`Asignando rider ${riderId} a la orden ${selectedOrder.id}`); // Debug log
             setShowAssignModal(false);
             setSelectedOrder(null);
           }}

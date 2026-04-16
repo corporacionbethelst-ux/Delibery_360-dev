@@ -1,9 +1,5 @@
 'use client';
 
-/**
- * Componente RecentOrders - Tabla de órdenes recientes
- * Delivery360/LogiRider
- */
 
 import React from 'react';
 import { useRouter } from 'next/navigation';

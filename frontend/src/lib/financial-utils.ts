@@ -1,7 +1,3 @@
-/**
- * Financial utilities for Delivery360
- * Handles payment calculations, earnings, taxes, and financial reporting
- */
 
 import { PaymentTransaction, RiderEarnings, DeliveryPayment, FinancialReport } from '@/types';
 

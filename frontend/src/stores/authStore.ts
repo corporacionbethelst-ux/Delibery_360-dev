@@ -1,9 +1,5 @@
-/**
- * Auth Store - Zustand store para gestión de autenticación
- */
-
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from 'zustand'; // State management library
+import { persist } from 'zustand/middleware'; // Persist state to localStorage
 import { authApi, clearStoredTokens } from '../lib/api';
 
 // Tipos locales ya que api.ts no los exporta directamente
@@ -51,11 +47,11 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
-      // Login
+      // Login con credenciales
       login: async (credentials: LoginRequest) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null }); // Set loading state // Set loading state
         try {
-          const response = await authApi.login(credentials.email, credentials.password);
+          const response = await authApi.login(credentials.email, credentials.password); // Call login API // Call auth login method
           
           // Construir usuario desde la respuesta plana del backend
           const user: User = {
@@ -64,7 +60,7 @@ export const useAuthStore = create<AuthState>()(
             full_name: response.full_name,
             role: response.role as User['role'],
           };
-          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('user', JSON.stringify(user)); // Store user in localStorage // Store in localStorage
           
           set({
             user,
@@ -83,13 +79,13 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Logout
+      // Logout y limpieza de sesión
       logout: async () => {
-        set({ isLoading: true });
+        set({ isLoading: true }); // Set loading state // Set loading state
         try {
-          authApi.logout();
+          authApi.logout(); // Clear tokens from API layer
         } catch (error) {
-          console.error('Logout error:', error);
+          console.error('Logout error:', error); // Log error but continue cleanup // Log error but continue cleanup
         } finally {
           set({
             user: null,
@@ -98,15 +94,15 @@ export const useAuthStore = create<AuthState>()(
           });
           
           // Limpiar localStorage
-          localStorage.removeItem('user');
+          localStorage.removeItem('user'); // Remove user from storage // Remove from localStorage
         }
       },
 
       // Registro de repartidor
       registerRider: async (data) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null }); // Set loading state // Set loading state
         try {
-          const response = await authApi.registerRider(data);
+          const response = await authApi.registerRider(data); // Call register API // Call auth registerRider method
           
           // Construir usuario desde la respuesta plana del backend
           const user: User = {
@@ -115,7 +111,7 @@ export const useAuthStore = create<AuthState>()(
             full_name: data.full_name,
             role: response.role as User['role'],
           };
-          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('user', JSON.stringify(user)); // Store user in localStorage // Store in localStorage
           
           set({
             user,
@@ -134,17 +130,17 @@ export const useAuthStore = create<AuthState>()(
 
       // Verificar autenticación al cargar la app
       checkAuth: async () => {
-        const token = localStorage.getItem('access_token');
+        const token = localStorage.getItem('access_token'); // Get token from storage // Get from localStorage
         
         if (!token) {
-          set({ isAuthenticated: false, user: null });
+          set({ isAuthenticated: false, user: null }); // No token, not authenticated
           return;
         }
 
-        set({ isLoading: true });
+        set({ isLoading: true }); // Set loading state // Set loading state
         try {
-          const user = await authApi.me();
-          localStorage.setItem('user', JSON.stringify(user));
+          const user = await authApi.me(); // Get current user from API // Call auth me method
+          localStorage.setItem('user', JSON.stringify(user)); // Store user in localStorage // Store in localStorage
           
           set({
             user,
@@ -152,8 +148,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
         } catch (error) {
-          console.error('Auth check failed:', error);
-          clearStoredTokens();
+          console.error('Auth check failed:', error); // Log authentication error // Log authentication error
+          clearStoredTokens(); // Clear invalid tokens
           set({
             isAuthenticated: false,
             user: null,
@@ -163,20 +159,20 @@ export const useAuthStore = create<AuthState>()(
       },
 
       // Limpiar error
-      clearError: () => set({ error: null }),
+      clearError: () => set({ error: null }), // Clear error state // Clear error state
 
       // Actualizar usuario
       updateUser: (userData: Partial<User>) => {
-        const currentUser = get().user;
+        const currentUser = get().user; // Get current user
         if (currentUser) {
-          const updatedUser = { ...currentUser, ...userData };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          set({ user: updatedUser });
+          const updatedUser = { ...currentUser, ...userData }; // Merge updates
+          localStorage.setItem('user', JSON.stringify(updatedUser)); // Save to storage // Store in localStorage
+          set({ user: updatedUser }); // Update state
         }
       },
     }),
     {
-      name: 'auth-storage',
+      name: 'auth-storage', // Storage key name
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,

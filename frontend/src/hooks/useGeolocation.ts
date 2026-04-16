@@ -35,8 +35,8 @@ const defaultOptions: UseGeolocationOptions = {
 export const useGeolocation = (options: UseGeolocationOptions = {}) => {
   const mergedOptions = { ...defaultOptions, ...options };
   
-  const [position, setPosition] = useState<GeoPosition | null>(null);
-  const [error, setError] = useState<GeoError | null>(null);
+  const [position, setPosition] = useState<GeoPosition | null>(null); // State initialized to null
+  const [error, setError] = useState<GeoError | null>(null); // State initialized to null
   const [loading, setLoading] = useState<boolean>(mergedOptions.autoStart);
   const [isSupported, setIsSupported] = useState<boolean>(true);
   

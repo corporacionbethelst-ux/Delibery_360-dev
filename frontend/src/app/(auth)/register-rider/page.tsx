@@ -35,7 +35,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function RegisterRiderPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // State initialized to null
   const [success, setSuccess] = useState(false);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>({
@@ -49,7 +49,7 @@ export default function RegisterRiderPage() {
     setError(null);
     try {
       // Llamada real a la API del backend
-      await api.registerRider(data);
+      await api.registerRider(data); // Call registerRider API endpoint
       setSuccess(true);
       setTimeout(() => router.push('/rider'), 2000);
     } catch (err: any) {

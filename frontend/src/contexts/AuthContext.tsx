@@ -1,9 +1,5 @@
 'use client';
 
-/**
- * AuthContext - Contexto de React para autenticación
- * Proveedor global de estado de autenticación
- */
 
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useAuthStore } from '../stores/authStore';
