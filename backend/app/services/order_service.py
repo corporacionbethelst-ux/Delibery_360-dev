@@ -15,6 +15,7 @@ from app.schemas.order import OrderCreate, OrderUpdate
 
 
 class OrderService:
+    """Servicio para gestión de pedidos"""
 
     async def get_order(self, db: AsyncSession, order_id: uuid.UUID) -> Order:
         result = await db.execute(select(Order).where(Order.id == order_id))

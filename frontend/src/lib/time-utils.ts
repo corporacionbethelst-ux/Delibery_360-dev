@@ -1,3 +1,7 @@
+/**
+ * Time utilities for Delivery360
+ * Handles time formatting, duration calculations, and business hours
+ */
 
 export type TimeFormat = '24h' | '12h';
 

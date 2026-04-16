@@ -52,7 +52,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   
   // CONEXIÓN
   connect: () => {
-    set({ isConnecting: true, error: null }); // Clear error state
+    set({ isConnecting: true, error: null });
     // La implementación real se hace en WebSocketContext
     // Este store solo gestiona el estado
   },

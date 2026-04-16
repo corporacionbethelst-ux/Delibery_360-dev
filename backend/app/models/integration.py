@@ -8,6 +8,7 @@ from app.core.database import Base
 
 
 class IntegrationType(str, enum.Enum):
+    """Types of integrations."""
     TPV = "tpv"  # Terminal Punto de Venta
     ERP = "erp"  # Enterprise Resource Planning
     PAGOS = "pagos"  # Gateway de pagos
@@ -17,6 +18,7 @@ class IntegrationType(str, enum.Enum):
 
 
 class IntegrationStatus(str, enum.Enum):
+    """Integration connection status."""
     ACTIVA = "activa"
     INACTIVA = "inactiva"
     ERROR = "error"
@@ -24,6 +26,7 @@ class IntegrationStatus(str, enum.Enum):
 
 
 class Integration(Base):
+    """External system integration configuration."""
     
     __tablename__ = "integrations"
     
@@ -69,6 +72,7 @@ class Integration(Base):
 
 
 class IntegrationLog(Base):
+    """Log of integration operations."""
     
     __tablename__ = "integration_logs"
     
@@ -101,6 +105,7 @@ class IntegrationLog(Base):
 
 
 class WebhookEvent(Base):
+    """Received webhook events from external systems."""
     
     __tablename__ = "webhook_events"
     

@@ -53,7 +53,7 @@ export const useRidersStore = create<RidersState>((set, get) => ({
   
   // FETCH
   fetchRiders: async (filters?: Partial<RiderFilters>) => {
-    set({ isLoading: true, error: null }); // Set loading state
+    set({ isLoading: true, error: null });
     try {
       const allFilters = { ...get().filters, ...filters };
       const params = new URLSearchParams();
@@ -66,32 +66,32 @@ export const useRidersStore = create<RidersState>((set, get) => ({
       if (allFilters.dateFrom) params.append('dateFrom', allFilters.dateFrom.toISOString());
       if (allFilters.dateTo) params.append('dateTo', allFilters.dateTo.toISOString());
       
-      const response = await api.get(`/riders?${params.toString()}`); // Call get API endpoint
+      const response = await api.get(`/riders?${params.toString()}`);
       set({ 
         riders: response.data.items, 
         total: response.data.total,
         isLoading: false 
       });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false }); // Clear loading state
+      set({ error: error.message, isLoading: false });
       throw error;
     }
   },
   
   fetchRiderById: async (id: string) => {
-    set({ isLoading: true, error: null }); // Set loading state
+    set({ isLoading: true, error: null });
     try {
-      const response = await api.get(`/riders/${id}`); // Call get API endpoint
-      set({ selectedRider: response.data, isLoading: false }); // Clear loading state
+      const response = await api.get(`/riders/${id}`);
+      set({ selectedRider: response.data, isLoading: false });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false }); // Clear loading state
+      set({ error: error.message, isLoading: false });
       throw error;
     }
   },
   
   fetchPendingDocuments: async () => {
     try {
-      const response = await api.get('/riders/documents/pending'); // Call get API endpoint
+      const response = await api.get('/riders/documents/pending');
       return response.data;
     } catch (error: any) {
       set({ error: error.message });
@@ -101,9 +101,9 @@ export const useRidersStore = create<RidersState>((set, get) => ({
   
   // CRUD
   createRider: async (data: RiderCreateInput) => {
-    set({ isLoading: true, error: null }); // Set loading state
+    set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/riders', data); // Call post API endpoint
+      const response = await api.post('/riders', data);
       const newRider = response.data;
       set((state) => ({ 
         riders: [...state.riders, newRider],
@@ -112,15 +112,15 @@ export const useRidersStore = create<RidersState>((set, get) => ({
       }));
       return newRider;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false }); // Clear loading state
+      set({ error: error.message, isLoading: false });
       throw error;
     }
   },
   
   updateRider: async (id: string, data: RiderUpdateInput) => {
-    set({ isLoading: true, error: null }); // Set loading state
+    set({ isLoading: true, error: null });
     try {
-      const response = await api.put(`/riders/${id}`, data); // Call put API endpoint
+      const response = await api.put(`/riders/${id}`, data);
       const updatedRider = response.data;
       set((state) => ({
         riders: state.riders.map(r => r.id === id ? updatedRider : r),
@@ -129,15 +129,15 @@ export const useRidersStore = create<RidersState>((set, get) => ({
       }));
       return updatedRider;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false }); // Clear loading state
+      set({ error: error.message, isLoading: false });
       throw error;
     }
   },
   
   deleteRider: async (id: string) => {
-    set({ isLoading: true, error: null }); // Set loading state
+    set({ isLoading: true, error: null });
     try {
-      await api.delete(`/riders/${id}`); // Call delete API endpoint
+      await api.delete(`/riders/${id}`);
       set((state) => ({
         riders: state.riders.filter(r => r.id !== id),
         total: state.total - 1,
@@ -145,39 +145,39 @@ export const useRidersStore = create<RidersState>((set, get) => ({
         isLoading: false
       }));
     } catch (error: any) {
-      set({ error: error.message, isLoading: false }); // Clear loading state
+      set({ error: error.message, isLoading: false });
       throw error;
     }
   },
   
   approveRider: async (id: string, observations?: string) => {
-    set({ isLoading: true, error: null }); // Set loading state
+    set({ isLoading: true, error: null });
     try {
-      await api.post(`/riders/${id}/approve`, { observations }); // Call post API endpoint
-      const response = await api.get(`/riders/${id}`); // Call get API endpoint
+      await api.post(`/riders/${id}/approve`, { observations });
+      const response = await api.get(`/riders/${id}`);
       const updatedRider = response.data;
       set((state) => ({
         riders: state.riders.map(r => r.id === id ? updatedRider : r),
         isLoading: false
       }));
     } catch (error: any) {
-      set({ error: error.message, isLoading: false }); // Clear loading state
+      set({ error: error.message, isLoading: false });
       throw error;
     }
   },
   
   rejectRider: async (id: string, reason: string) => {
-    set({ isLoading: true, error: null }); // Set loading state
+    set({ isLoading: true, error: null });
     try {
-      await api.post(`/riders/${id}/reject`, { reason }); // Call post API endpoint
-      const response = await api.get(`/riders/${id}`); // Call get API endpoint
+      await api.post(`/riders/${id}/reject`, { reason });
+      const response = await api.get(`/riders/${id}`);
       const updatedRider = response.data;
       set((state) => ({
         riders: state.riders.map(r => r.id === id ? updatedRider : r),
         isLoading: false
       }));
     } catch (error: any) {
-      set({ error: error.message, isLoading: false }); // Clear loading state
+      set({ error: error.message, isLoading: false });
       throw error;
     }
   },

@@ -8,6 +8,7 @@ from enum import Enum
 
 
 class AuditAction(str, Enum):
+    """Tipos de acciones de auditoría"""
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
@@ -22,6 +23,7 @@ class AuditAction(str, Enum):
 
 
 class AuditLogBase(BaseModel):
+    """Schema base para logs de auditoría"""
     action: AuditAction
     resource_type: str
     resource_id: Optional[int] = None
@@ -31,10 +33,12 @@ class AuditLogBase(BaseModel):
 
 
 class AuditLogCreate(AuditLogBase):
+    """Schema para crear log de auditoría"""
     user_id: int
 
 
 class AuditLogResponse(AuditLogBase):
+    """Schema para respuesta de log de auditoría"""
     id: int
     user_id: int
     timestamp: datetime
@@ -44,6 +48,7 @@ class AuditLogResponse(AuditLogBase):
 
 
 class AuditLogFilter(BaseModel):
+    """Filtros para búsqueda de logs"""
     user_id: Optional[int] = None
     action: Optional[AuditAction] = None
     resource_type: Optional[str] = None

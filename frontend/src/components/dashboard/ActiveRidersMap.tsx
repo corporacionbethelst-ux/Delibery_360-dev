@@ -13,7 +13,7 @@ interface ActiveRidersMapProps {
 
 export function ActiveRidersMap({ riders: propRiders, onRiderClick }: ActiveRidersMapProps) {
   const { riders: storeRiders, getActiveRiders } = useRidersStore();
-  const [selectedRider, setSelectedRider] = useState<Rider | null>(null); // State initialized to null
+  const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   
   const riders = propRiders || storeRiders.filter(r => r.status === 'online');
 

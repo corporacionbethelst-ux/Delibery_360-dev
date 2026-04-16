@@ -27,10 +27,12 @@ from sqlalchemy import select
 
 
 def _get_seed_password(configured_password: str | None, length: int = 16) -> str:
+    """Retorna contraseña configurada o genera una temporal segura."""
     return configured_password or secrets.token_urlsafe(length)
 
 
 async def seed_database():
+    """Inicializar la base de datos con datos básicos"""
     
     print("🌱 Iniciando seed de la base de datos...")
     

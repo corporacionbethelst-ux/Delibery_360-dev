@@ -16,9 +16,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export default function RiderFinishDeliveryPage() {
   const [step, setStep] = useState(1);
   const [otpCode, setOtpCode] = useState('');
-  const [deliveryPhoto, setDeliveryPhoto] = useState<File | null>(null); // State initialized to null
+  const [deliveryPhoto, setDeliveryPhoto] = useState<File | null>(null);
   const [hasSignature, setHasSignature] = useState(false);
-  const [deliveryIssue, setDeliveryIssue] = useState<string | null>(null); // State initialized to null
+  const [deliveryIssue, setDeliveryIssue] = useState<string | null>(null);
 
   const handleVerifyOTP = () => {
     if (otpCode.length !== 6) {

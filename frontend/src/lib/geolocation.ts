@@ -1,3 +1,7 @@
+/**
+ * Geolocation utilities for Delivery360
+ * Handles browser geolocation API, distance calculations, and location tracking
+ */
 
 export interface Location {
   latitude: number;
@@ -227,6 +231,6 @@ export async function reverseGeocode(lat: number, lon: number): Promise<Partial<
 export async function forwardGeocode(address: string): Promise<Location | null> {
   // In production, integrate with Google Maps Geocoding API or similar
   // This is a mock implementation
-  console.log('Forward geocoding:', address); // Debug log
+  console.log('Forward geocoding:', address);
   return null;
 }

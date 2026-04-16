@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Componente ActiveRiders - Lista de repartidores activos
+ * Delivery360/LogiRider
+ */
 
 import React from 'react';
 import { useRouter } from 'next/navigation';

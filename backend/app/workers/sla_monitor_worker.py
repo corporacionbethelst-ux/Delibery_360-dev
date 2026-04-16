@@ -6,6 +6,7 @@ import asyncio
 
 @celery_app.task(name="app.workers.sla_monitor_worker.check_sla_breaches")
 def check_sla_breaches():
+    """Marca como SLA incumplido los pedidos que superaron su tiempo estimado."""
     asyncio.run(_check_sla())
 
 

@@ -7,6 +7,9 @@ from typing import Tuple
 
 
 class RateLimiter:
+    """
+    Limitador de tasa de peticiones con soporte para múltiples estrategias
+    """
     
     def __init__(self, redis_client=None):
         self.redis = redis_client
@@ -19,6 +22,18 @@ class RateLimiter:
         window_seconds: int = 60,
         strategy: str = 'sliding_window'
     ) -> Tuple[bool, dict]:
+        """
+        Verifica si la petición está permitida
+        
+        Args:
+            identifier: Identificador único (IP, user_id, etc.)
+            max_requests: Máximo de peticiones permitidas
+            window_seconds: Ventana de tiempo en segundos
+            strategy: Estrategia ('fixed_window', 'sliding_window', 'token_bucket')
+        
+        Returns:
+            Tuple[permitido, info_adicional]
+        """
         if strategy == 'fixed_window':
             return self._fixed_window(identifier, max_requests, window_seconds)
         elif strategy == 'sliding_window':
@@ -29,6 +44,9 @@ class RateLimiter:
             return self._sliding_window(identifier, max_requests, window_seconds)
     
     def _fixed_window(self, identifier: str, max_requests: int, window_seconds: int) -> Tuple[bool, dict]:
+        """
+        Ventana fija simple
+        """
         current_time = int(time.time())
         window_key = f"rate_limit:{identifier}:{current_time // window_seconds}"
         
@@ -54,6 +72,9 @@ class RateLimiter:
         return self._local_fixed_window(identifier, max_requests, window_seconds, current_time)
     
     def _sliding_window(self, identifier: str, max_requests: int, window_seconds: int) -> Tuple[bool, dict]:
+        """
+        Ventana deslizante más precisa
+        """
         current_time = time.time()
         window_start = current_time - window_seconds
         
@@ -96,6 +117,9 @@ class RateLimiter:
         return self._local_sliding_window(identifier, max_requests, window_seconds, current_time)
     
     def _token_bucket(self, identifier: str, max_requests: int, window_seconds: int) -> Tuple[bool, dict]:
+        """
+        Token bucket para rate limiting más suave
+        """
         current_time = time.time()
         refill_rate = max_requests / window_seconds  # tokens por segundo
         
@@ -148,6 +172,7 @@ class RateLimiter:
         return True, {'limit': max_requests, 'remaining': max_requests, 'reset': 0, 'retry_after': None}
     
     def _local_fixed_window(self, identifier: str, max_requests: int, window_seconds: int, current_time: int) -> Tuple[bool, dict]:
+        """Fallback local para fixed window"""
         window_key = f"{identifier}:{current_time // window_seconds}"
         
         if window_key not in self._local_storage:
@@ -167,6 +192,7 @@ class RateLimiter:
         }
     
     def _local_sliding_window(self, identifier: str, max_requests: int, window_seconds: int, current_time: float) -> Tuple[bool, dict]:
+        """Fallback local para sliding window"""
         key = f"sliding:{identifier}"
         window_start = current_time - window_seconds
         
@@ -200,6 +226,9 @@ class RateLimiter:
             }
     
     def get_usage_stats(self, identifier: str, window_seconds: int = 3600) -> dict:
+        """
+        Obtiene estadísticas de uso para un identificador
+        """
         current_time = time.time()
         window_start = current_time - window_seconds
         
@@ -234,4 +263,7 @@ def check_rate_limit(
     max_requests: int = 100,
     window_seconds: int = 60
 ) -> Tuple[bool, dict]:
+    """
+    Función helper para verificar rate limit rápidamente
+    """
     return rate_limiter.is_allowed(identifier, max_requests, window_seconds)

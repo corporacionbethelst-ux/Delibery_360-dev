@@ -1,3 +1,9 @@
+/**
+ * Delivery360 API Client
+ *
+ * Configuracion centralizada de Axios para todas las peticiones HTTP
+ * Manejo automatico de tokens, refresh y errores
+ */
 
 import axios, {
   AxiosInstance,
@@ -61,13 +67,13 @@ export const getStoredTokens = (): AuthTokens => {
   if (typeof window === 'undefined') return authTokens;
 
   try {
-    const accessToken = localStorage.getItem('access_token'); // Get from localStorage
-    const refreshToken = localStorage.getItem('refresh_token'); // Get from localStorage
+    const accessToken = localStorage.getItem('access_token');
+    const refreshToken = localStorage.getItem('refresh_token');
 
     authTokens = { accessToken, refreshToken };
     return authTokens;
   } catch (error) {
-    console.error('Error reading tokens from localStorage:', error); // Log error for debugging
+    console.error('Error reading tokens from localStorage:', error);
     return authTokens;
   }
 };
@@ -77,14 +83,14 @@ export const storeTokens = (tokens: TokenPair): void => {
   if (typeof window === 'undefined') return;
 
   try {
-    localStorage.setItem('access_token', tokens.access_token); // Store in localStorage
-    localStorage.setItem('refresh_token', tokens.refresh_token); // Store in localStorage
+    localStorage.setItem('access_token', tokens.access_token);
+    localStorage.setItem('refresh_token', tokens.refresh_token);
     authTokens = {
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
     };
   } catch (error) {
-    console.error('Error storing tokens to localStorage:', error); // Log error for debugging
+    console.error('Error storing tokens to localStorage:', error);
   }
 };
 
@@ -93,11 +99,11 @@ export const clearStoredTokens = (): void => {
   if (typeof window === 'undefined') return;
 
   try {
-    localStorage.removeItem('access_token'); // Remove from localStorage
-    localStorage.removeItem('refresh_token'); // Remove from localStorage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     authTokens = { accessToken: null, refreshToken: null };
   } catch (error) {
-    console.error('Error clearing tokens from localStorage:', error); // Log error for debugging
+    console.error('Error clearing tokens from localStorage:', error);
   }
 };
 

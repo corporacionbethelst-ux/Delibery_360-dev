@@ -10,6 +10,16 @@ from io import StringIO, BytesIO
 
 
 def export_to_csv(data: List[Dict], columns: Optional[List[str]] = None) -> str:
+    """
+    Exporta datos a formato CSV
+    
+    Args:
+        data: Lista de diccionarios con los datos
+        columns: Columnas a incluir (default: todas las keys del primer registro)
+    
+    Returns:
+        String con contenido CSV
+    """
     if not data:
         return ""
     
@@ -39,6 +49,17 @@ def export_to_csv(data: List[Dict], columns: Optional[List[str]] = None) -> str:
 
 
 def export_to_json(data: List[Dict], indent: int = 2, include_metadata: bool = True) -> str:
+    """
+    Exporta datos a formato JSON
+    
+    Args:
+        data: Lista de diccionarios con los datos
+        indent: Nivel de indentación
+        include_metadata: Incluir metadatos (timestamp, count)
+    
+    Returns:
+        String con contenido JSON
+    """
     if include_metadata:
         output = {
             'metadata': {
@@ -55,6 +76,17 @@ def export_to_json(data: List[Dict], indent: int = 2, include_metadata: bool = T
 
 
 def export_to_excel_binary(data: List[Dict], sheet_name: str = 'Datos') -> bytes:
+    """
+    Exporta datos a Excel (formato binario XLSX)
+    Nota: Requiere openpyxl instalado
+    
+    Args:
+        data: Lista de diccionarios con los datos
+        sheet_name: Nombre de la hoja
+    
+    Returns:
+        Bytes con archivo Excel
+    """
     try:
         from openpyxl import Workbook
     except ImportError:
@@ -102,6 +134,18 @@ def generate_report_pdf(
     sections: List[Dict],
     metadata: Optional[Dict] = None
 ) -> bytes:
+    """
+    Genera reporte en formato PDF simplificado
+    Nota: Para PDF real se requiere reportlab o weasyprint
+    
+    Args:
+        title: Título del reporte
+        sections: Lista de secciones con título y contenido
+        metadata: Metadatos opcionales
+    
+    Returns:
+        Bytes con PDF (placeholder - requiere librería externa)
+    """
     # Placeholder - implementación real requiere librerías adicionales
     # Ejemplo con reportlab:
     """
@@ -158,6 +202,17 @@ def export_financial_summary(
     summary: Dict,
     format: str = 'json'
 ) -> str:
+    """
+    Exporta resumen financiero en formato específico
+    
+    Args:
+        period: Período del reporte (ej: "2024-01")
+        summary: Diccionario con datos financieros
+        format: Formato de salida ('json', 'csv')
+    
+    Returns:
+        String con datos formateados
+    """
     # Preparar datos
     data = {
         'period': period,
@@ -190,6 +245,17 @@ def create_data_package(
     data_types: List[str],
     data: Dict[str, List[Dict]]
 ) -> Dict:
+    """
+    Crea paquete completo de datos para exportación (derecho LGPD)
+    
+    Args:
+        user_id: ID del usuario
+        data_types: Tipos de datos a incluir
+        data: Diccionario con datos por tipo
+    
+    Returns:
+        Paquete de datos listo para exportar
+    """
     package = {
         'user_id': user_id,
         'export_timestamp': datetime.now().isoformat(),
@@ -216,6 +282,15 @@ def create_data_package(
 
 
 def compress_data_package(package: Dict) -> bytes:
+    """
+    Comprime paquete de datos para descarga
+    
+    Args:
+        package: Paquete de datos
+    
+    Returns:
+        Bytes comprimidos (ZIP)
+    """
     import zipfile
     
     buffer = BytesIO()

@@ -31,7 +31,7 @@ const statusLabels: Record<string, string> = {
 
 export function DeliveryMap({ deliveries: propDeliveries, onDeliveryClick }: DeliveryMapProps) {
   const { deliveries: storeDeliveries, getDeliveries } = useDeliveriesStore();
-  const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null); // State initialized to null
+  const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   

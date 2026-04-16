@@ -12,6 +12,7 @@ from app.core.database import Base
 
 
 class OrderStatus(str, enum.Enum):
+    """Order status workflow."""
     PENDIENTE = "pendiente"  # Aguardando asignación
     ASIGNADO = "asignado"  # Repartidor asignado
     EN_RECOLECCION = "en_recoleccion"  # Repartidor en restaurante
@@ -35,6 +36,7 @@ class OrderStatus(str, enum.Enum):
 
 
 class OrderType(str, enum.Enum):
+    """Order types for classification."""
     NORMAL = "normal"
     VIP = "vip"
     AGENDADO = "agendado"
@@ -43,6 +45,7 @@ class OrderType(str, enum.Enum):
 
 
 class OrderPriority(str, enum.Enum):
+    """Order priority levels."""
     NORMAL = "normal"
     ALTA = "alta"
     URGENTE = "urgente"
@@ -50,6 +53,7 @@ class OrderPriority(str, enum.Enum):
 
 
 class Order(Base):
+    """Order model representing customer requests."""
     
     __tablename__ = "orders"
     

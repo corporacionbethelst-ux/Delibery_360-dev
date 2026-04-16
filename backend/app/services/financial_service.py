@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class FinancialService:
+    """Servicio para operaciones financieras"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -25,6 +26,7 @@ class FinancialService:
         order_id: Optional[int] = None,
         reference_id: Optional[str] = None
     ) -> FinancialTransaction:
+        """Crear una nueva transacción financiera"""
         transaction = FinancialTransaction(
             rider_id=rider_id,
             amount=amount,
@@ -47,6 +49,7 @@ class FinancialService:
         is_night_shift: bool,
         is_rainy_day: bool
     ) -> Dict[str, Any]:
+        """Calcular ganancias por entrega basado en reglas de pago"""
         result = await self.db.execute(
             select(PaymentRule).where(PaymentRule.id == payment_rule_id)
         )
@@ -89,6 +92,7 @@ class FinancialService:
         }
     
     async def create_daily_liquidation(self, rider_id: int, liquidation_date: date) -> Optional[Liquidation]:
+        """Crear liquidación diaria para un repartidor"""
         existing = await self.db.execute(
             select(Liquidation).where(
                 and_(
@@ -142,6 +146,7 @@ class FinancialService:
         start_date: datetime,
         end_date: datetime
     ) -> Dict[str, Any]:
+        """Obtener resumen de ganancias de un repartidor en un período"""
         result = await self.db.execute(
             select(
                 func.sum(FinancialTransaction.amount).label('total_earnings'),
@@ -174,6 +179,7 @@ class FinancialService:
         start_date: date,
         end_date: date
     ) -> Dict[str, Any]:
+        """Consolidar datos financieros de un período"""
         result = await self.db.execute(
             select(
                 func.sum(FinancialTransaction.amount).label('total_amount'),
