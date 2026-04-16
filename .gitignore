@@ -1,49 +1,60 @@
 ```
 # Python cache
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
 
-# Virtual environments
-venv/
-.venv/
-env/
-.ENV/
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# Logs
+# Logs and temp files
 *.log
+*.tmp
+*.swp
 
-# Environment files
+# Environment
 .env
 .env.local
 *.env.*
 
-# Coverage reports
-.coverage
-htmlcov/
-.coverage.*
-.coverage.xml
-
-# Testing
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
-
-# IDE
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# OS
-.DS_Store
-Thumbs.db
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+*.py~
+*.py.class
+*.py.obj
+*.py.out
+*.py.exe
+*.py.dll
+*.py.so
+*.py.a
+*.py.o
+*.py.obj
+*.py.out
+
+# Build artifacts
+dist/
+build/
+target/
+*.class
+*.o
+*.exe
+*.dll
+*.so
+*.a
+*.obj
+*.out
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# MyPy
+.mypy_cache/
+
+# PyTest
+.pytest_cache/
 
 # Compressed files
 *.zip
