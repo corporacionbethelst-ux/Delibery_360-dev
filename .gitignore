@@ -32,6 +32,14 @@ __pycache__/
 *.py.obj
 *.py.out
 
+*.db
+node_modules/
+.next/
+
+*.pyc
+postgres_data/
+redis_data
+
 # Build artifacts
 dist/
 build/
