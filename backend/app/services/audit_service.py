@@ -10,7 +10,6 @@ from app.crud.base import CRUDBase
 
 
 class AuditService:
-    """Servicio para gestión de logs de auditoría"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -25,21 +24,6 @@ class AuditService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> AuditLog:
-        """
-        Registrar acción de auditoría
-        
-        Args:
-            user_id: ID del usuario que realiza la acción
-            action: Tipo de acción (CREATE, UPDATE, DELETE, etc.)
-            resource_type: Tipo de recurso (User, Order, Delivery, etc.)
-            resource_id: ID del recurso afectado
-            details: Detalles adicionales en JSON
-            ip_address: IP del usuario
-            user_agent: User agent del navegador
-            
-        Returns:
-            Registro de auditoría creado
-        """
         audit_log = AuditLog(
             user_id=user_id,
             action=action,
@@ -63,7 +47,6 @@ class AuditService:
         limit: int = 100,
         offset: int = 0
     ) -> List[AuditLog]:
-        """Obtener acciones de un usuario"""
         query = select(AuditLog).where(AuditLog.user_id == user_id)
         query = query.order_by(AuditLog.timestamp.desc())
         query = query.limit(limit).offset(offset)
@@ -76,7 +59,6 @@ class AuditService:
         resource_type: str,
         resource_id: int
     ) -> List[AuditLog]:
-        """Obtener historial de cambios de un recurso"""
         query = select(AuditLog).where(
             AuditLog.resource_type == resource_type,
             AuditLog.resource_id == resource_id
@@ -93,7 +75,6 @@ class AuditService:
         action_type: Optional[AuditAction] = None,
         user_id: Optional[int] = None
     ) -> List[AuditLog]:
-        """Obtener acciones por rango de fechas"""
         query = select(AuditLog).where(
             AuditLog.timestamp >= start_date,
             AuditLog.timestamp <= end_date
@@ -115,7 +96,6 @@ class AuditService:
         start_date: datetime,
         end_date: datetime
     ) -> Dict[str, Any]:
-        """Obtener estadísticas de acciones"""
         # Total de acciones
         total_query = select(func.count()).select_from(AuditLog).where(
             AuditLog.timestamp >= start_date,
@@ -144,7 +124,6 @@ class AuditService:
         }
     
     async def cleanup_old_logs(self, days_to_keep: int = 365) -> int:
-        """Eliminar logs antiguos"""
         from sqlalchemy import delete
         from datetime import timedelta
         
@@ -158,5 +137,4 @@ class AuditService:
 
 
 def get_audit_service(db: AsyncSession) -> AuditService:
-    """Factory para obtener servicio de auditoría"""
     return AuditService(db)

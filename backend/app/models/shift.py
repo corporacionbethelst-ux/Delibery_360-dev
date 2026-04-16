@@ -11,7 +11,6 @@ from app.core.database import Base
 
 
 class ShiftStatus(str, enum.Enum):
-    """Shift status."""
     PROGRAMADO = "programado"  # Planificado
     EN_CURSO = "en_curso"  # Actualmente activo
     COMPLETADO = "completado"  # Finalizado normalmente
@@ -20,7 +19,6 @@ class ShiftStatus(str, enum.Enum):
 
 
 class Shift(Base):
-    """Shift model tracking rider work periods."""
     
     __tablename__ = "shifts"
     
@@ -67,7 +65,6 @@ class Shift(Base):
 
 
 class CheckInOut(Base):
-    """Check-in/Check-out registration for riders."""
     
     __tablename__ = "check_in_out"
     

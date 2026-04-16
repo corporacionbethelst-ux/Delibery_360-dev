@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class AlertService:
-    """Servicio para gestión de alertas operacionales"""
     
     async def create_alert(
         self,
@@ -26,7 +25,6 @@ class AlertService:
         related_entity_type: Optional[str] = None,
         recipient_user_ids: Optional[List[int]] = None
     ) -> Notification:
-        """Crear una nueva alerta"""
         priority_map = {
             "low": NotificationPriority.LOW,
             "medium": NotificationPriority.MEDIUM,
@@ -51,7 +49,6 @@ class AlertService:
         return notification
     
     async def check_sla_alerts(self, db: AsyncSession, threshold_minutes: int = 5) -> List[Notification]:
-        """Verificar entregas próximas a vencer SLA"""
         now = datetime.utcnow()
         threshold_time = now + timedelta(minutes=threshold_minutes)
         
@@ -79,13 +76,11 @@ class AlertService:
         return alerts
     
     async def check_inactive_riders(self, db: AsyncSession, inactive_minutes: int = 30) -> List[Notification]:
-        """Verificar repartidores inactivos durante turno activo"""
         # Implementación pendiente de tracking en tiempo real
         logger.info("Verificando repartidores inactivos...")
         return []
     
     async def check_pending_orders(self, db: AsyncSession, threshold_minutes: int = 10) -> List[Notification]:
-        """Verificar pedidos sin asignar por mucho tiempo"""
         threshold_time = datetime.utcnow() - timedelta(minutes=threshold_minutes)
         
         result = await db.execute(
@@ -115,7 +110,6 @@ class AlertService:
         db: AsyncSession,
         limit: int = 100
     ) -> List[Notification]:
-        """Obtener alertas activas recientes"""
         result = await db.execute(
             select(Notification)
             .where(Notification.type == NotificationType.ALERT)

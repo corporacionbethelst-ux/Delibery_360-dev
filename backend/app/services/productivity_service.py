@@ -16,7 +16,6 @@ from sqlalchemy import select
 
 
 class ProductivityService:
-    """Service for calculating productivity metrics and SLA"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -27,7 +26,6 @@ class ProductivityService:
         start_date: datetime, 
         end_date: datetime
     ) -> Dict[str, Any]:
-        """Calculate productivity metrics for a rider in a period"""
         
         # Total deliveries completed
         total_deliveries = await self.db.execute(
@@ -100,7 +98,6 @@ class ProductivityService:
         self, 
         shift_id: int
     ) -> Dict[str, Any]:
-        """Calculate productivity metrics for a specific shift"""
         
         shift = await self.db.get(Shift, shift_id)
         if not shift:
@@ -138,7 +135,6 @@ class ProductivityService:
         end_date: datetime, 
         limit: int = 10
     ) -> List[Dict[str, Any]]:
-        """Get top performing riders in a period"""
         
         # Query riders with their metrics
         result = await self.db.execute(
@@ -176,7 +172,6 @@ class ProductivityService:
         start_date: datetime, 
         end_date: datetime
     ) -> Dict[str, Any]:
-        """Get SLA compliance report for a period"""
         
         # Total deliveries
         total_result = await self.db.execute(

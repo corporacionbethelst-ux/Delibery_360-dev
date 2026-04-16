@@ -8,10 +8,6 @@ from datetime import datetime
 
 
 def validate_cpf(cpf: str) -> bool:
-    """
-    Valida CPF (Cadastro de Pessoas Físicas) brasileiro
-    Algoritmo oficial de validación
-    """
     # Limpiar CPF (remover puntos y guión)
     cpf = re.sub(r'\D', '', cpf)
     
@@ -33,10 +29,6 @@ def validate_cpf(cpf: str) -> bool:
 
 
 def validate_cnpj(cnpj: str) -> bool:
-    """
-    Valida CNPJ (Cadastro Nacional da Pessoa Jurídica) brasileiro
-    Algoritmo oficial de validación
-    """
     # Limpiar CNPJ
     cnpj = re.sub(r'\D', '', cnpj)
     
@@ -62,10 +54,6 @@ def validate_cnpj(cnpj: str) -> bool:
 
 
 def validate_cnh(cnh: str) -> bool:
-    """
-    Valida CNH (Carteira Nacional de Habilitação) brasileira
-    Formato: 11 dígitos numéricos
-    """
     cnh = re.sub(r'\D', '', cnh)
     
     if len(cnh) != 11:
@@ -87,13 +75,6 @@ def validate_cnh(cnh: str) -> bool:
 
 
 def validate_phone(phone: str, international: bool = False) -> bool:
-    """
-    Valida números de teléfono brasileños
-    Formatos aceptados:
-    - (11) 91234-5678
-    - 11912345678
-    - +55 11 91234-5678
-    """
     phone = re.sub(r'\D', '', phone)
     
     # Teléfono internacional con código de país
@@ -114,18 +95,11 @@ def validate_phone(phone: str, international: bool = False) -> bool:
 
 
 def validate_email(email: str) -> bool:
-    """
-    Valida formato de email según RFC 5322
-    """
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return bool(re.match(pattern, email))
 
 
 def validate_date(date_str: str, format: str = '%Y-%m-%d') -> Tuple[bool, Optional[datetime]]:
-    """
-    Valida y parsea fecha en formato específico
-    Returns: (es_válido, datetime_obj o None)
-    """
     try:
         date_obj = datetime.strptime(date_str, format)
         return True, date_obj
@@ -134,9 +108,6 @@ def validate_date(date_str: str, format: str = '%Y-%m-%d') -> Tuple[bool, Option
 
 
 def validate_future_date(date_str: str, format: str = '%Y-%m-%d') -> bool:
-    """
-    Valida que la fecha sea futura
-    """
     is_valid, date_obj = validate_date(date_str, format)
     if not is_valid:
         return False
@@ -145,32 +116,20 @@ def validate_future_date(date_str: str, format: str = '%Y-%m-%d') -> bool:
 
 
 def validate_positive_number(value: float, allow_zero: bool = False) -> bool:
-    """
-    Valida que un número sea positivo
-    """
     if allow_zero:
         return value >= 0
     return value > 0
 
 
 def validate_percentage(value: float) -> bool:
-    """
-    Valida que un valor esté entre 0 y 100
-    """
     return 0 <= value <= 100
 
 
 def validate_decimal_range(value: float, min_val: float, max_val: float) -> bool:
-    """
-    Valida que un decimal esté dentro de un rango
-    """
     return min_val <= value <= max_val
 
 
 def sanitize_string(text: str, max_length: int = 255) -> str:
-    """
-    Limpia y sanitiza string removiendo caracteres peligrosos
-    """
     # Remover tags HTML
     text = re.sub(r'<[^>]*>', '', text)
     
@@ -185,19 +144,10 @@ def sanitize_string(text: str, max_length: int = 255) -> str:
 
 
 def validate_coordinates(latitude: float, longitude: float) -> bool:
-    """
-    Valida coordenadas geográficas
-    Latitude: -90 a 90
-    Longitude: -180 a 180
-    """
     return -90 <= latitude <= 90 and -180 <= longitude <= 180
 
 
 def validate_document_type(document: str, document_type: str) -> bool:
-    """
-    Valida documento según tipo
-    document_type: 'cpf', 'cnpj', 'cnh', 'rne'
-    """
     validators = {
         'cpf': validate_cpf,
         'cnpj': validate_cnpj,

@@ -15,13 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 class RiderService:
-    """Servicio para gestión de repartidores"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
     
     async def create_rider(self, rider_data: RiderCreate, user_id: int) -> Rider:
-        """Crear un nuevo repartidor (auto-registro)"""
         try:
             # Crear documento de repartidor
             rider = Rider(
@@ -50,21 +48,18 @@ class RiderService:
             raise
     
     async def get_rider_by_user_id(self, user_id: int) -> Optional[Rider]:
-        """Obtener repartidor por ID de usuario"""
         result = await self.db.execute(
             select(Rider).where(Rider.user_id == user_id)
         )
         return result.scalar_one_or_none()
     
     async def get_rider_by_id(self, rider_id: int) -> Optional[Rider]:
-        """Obtener repartidor por ID"""
         result = await self.db.execute(
             select(Rider).where(Rider.id == rider_id)
         )
         return result.scalar_one_or_none()
     
     async def update_rider(self, rider_id: int, rider_data: RiderUpdate) -> Rider:
-        """Actualizar información de repartidor"""
         rider = await self.get_rider_by_id(rider_id)
         if not rider:
             raise ValueError(f"Repartidor {rider_id} no encontrado")
@@ -79,7 +74,6 @@ class RiderService:
         return rider
     
     async def approve_rider(self, rider_id: int, approval_data: RiderApprovalRequest, approver_id: int) -> Rider:
-        """Aprobar registro de repartidor"""
         rider = await self.get_rider_by_id(rider_id)
         if not rider:
             raise ValueError(f"Repartidor {rider_id} no encontrado")
@@ -116,7 +110,6 @@ class RiderService:
         return rider
     
     async def upload_document(self, rider_id: int, document_type: str, document_url: str, description: Optional[str] = None) -> RiderDocument:
-        """Subir documento de repartidor"""
         rider = await self.get_rider_by_id(rider_id)
         if not rider:
             raise ValueError(f"Repartidor {rider_id} no encontrado")
@@ -137,21 +130,18 @@ class RiderService:
         return document
     
     async def get_pending_approvals(self) -> List[Rider]:
-        """Obtener lista de repartidores pendientes de aprobación"""
         result = await self.db.execute(
             select(Rider).where(Rider.approval_status == "pending")
         )
         return result.scalars().all()
     
     async def get_active_riders(self) -> List[Rider]:
-        """Obtener repartidores activos"""
         result = await self.db.execute(
             select(Rider).where(Rider.status == RiderStatus.ACTIVE)
         )
         return result.scalars().all()
     
     async def update_status(self, rider_id: int, status: RiderStatus) -> Rider:
-        """Actualizar estado del repartidor"""
         rider = await self.get_rider_by_id(rider_id)
         if not rider:
             raise ValueError(f"Repartidor {rider_id} no encontrado")
@@ -171,14 +161,12 @@ class RiderService:
         return rider
     
     async def get_riders_by_status(self, status: RiderStatus) -> List[Rider]:
-        """Obtener repartidores por estado"""
         result = await self.db.execute(
             select(Rider).where(Rider.status == status)
         )
         return result.scalars().all()
     
     async def increment_delivery_count(self, rider_id: int, success: bool = True) -> None:
-        """Incrementar contador de entregas"""
         rider = await self.get_rider_by_id(rider_id)
         if not rider:
             return
@@ -193,7 +181,6 @@ class RiderService:
         await self.db.commit()
     
     async def update_rating(self, rider_id: int, new_rating: float) -> Rider:
-        """Actualizar calificación del repartidor"""
         rider = await self.get_rider_by_id(rider_id)
         if not rider:
             raise ValueError(f"Repartidor {rider_id} no encontrado")

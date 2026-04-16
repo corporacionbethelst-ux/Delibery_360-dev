@@ -23,7 +23,6 @@ class WeatherCondition(str, Enum):
 
 
 class TimeCalculator:
-    """Utility class for calculating delivery times and ETAs"""
     
     # Base speed in km/h for different traffic levels
     TRAFFIC_SPEEDS = {
@@ -53,19 +52,6 @@ class TimeCalculator:
         is_peak_hour: bool = False,
         base_time_minutes: int = 5
     ) -> Dict[str, Any]:
-        """
-        Calculate estimated time of arrival
-        
-        Args:
-            distance_km: Distance in kilometers
-            traffic_level: Current traffic level
-            weather: Current weather condition
-            is_peak_hour: Whether it's peak hour
-            base_time_minutes: Base time for preparation/pickup
-        
-        Returns:
-            Dictionary with ETA calculations
-        """
         if distance_km <= 0:
             return {
                 "eta_minutes": base_time_minutes,
@@ -117,18 +103,6 @@ class TimeCalculator:
         exclude_prep_time: bool = True,
         prep_time_minutes: int = 5
     ) -> Dict[str, Any]:
-        """
-        Calculate actual delivery time from timestamps
-        
-        Args:
-            start_time: When delivery started (picked up)
-            end_time: When delivery was completed
-            exclude_prep_time: Whether to exclude preparation time
-            prep_time_minutes: Preparation time to exclude
-        
-        Returns:
-            Dictionary with time breakdown
-        """
         total_delta = end_time - start_time
         total_minutes = total_delta.total_seconds() / 60
         
@@ -148,11 +122,6 @@ class TimeCalculator:
     
     @classmethod
     def is_peak_hour(cls, dt: Optional[datetime] = None) -> bool:
-        """
-        Check if given time is during peak hours
-        
-        Peak hours: 7-9 AM and 12-2 PM and 6-9 PM
-        """
         if dt is None:
             dt = datetime.now()
         
@@ -172,18 +141,6 @@ class TimeCalculator:
         traffic_level: TrafficLevel = TrafficLevel.MEDIUM,
         weather: WeatherCondition = WeatherCondition.CLEAR
     ) -> datetime:
-        """
-        Calculate optimal departure time to arrive at desired time
-        
-        Args:
-            desired_arrival: When you want to arrive
-            distance_km: Distance to travel
-            traffic_level: Expected traffic level
-            weather: Expected weather condition
-        
-        Returns:
-            Optimal departure datetime
-        """
         eta_info = cls.calculate_eta(
             distance_km=distance_km,
             traffic_level=traffic_level,

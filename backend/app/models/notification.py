@@ -9,7 +9,6 @@ from app.core.database import Base
 
 
 class NotificationType(str, enum.Enum):
-    """Types of notifications."""
     ALERTA_OPERACIONAL = "alerta_operacional"
     ASIGNACION_PEDIDO = "asignacion_pedido"
     ESTADO_ENTREGA = "estado_entrega"
@@ -20,7 +19,6 @@ class NotificationType(str, enum.Enum):
 
 
 class NotificationChannel(str, enum.Enum):
-    """Notification delivery channels."""
     PUSH = "push"
     EMAIL = "email"
     SMS = "sms"
@@ -29,7 +27,6 @@ class NotificationChannel(str, enum.Enum):
 
 
 class NotificationPriority(str, enum.Enum):
-    """Notification priority levels."""
     BAJA = "baja"
     NORMAL = "normal"
     ALTA = "alta"
@@ -37,7 +34,6 @@ class NotificationPriority(str, enum.Enum):
 
 
 class Notification(Base):
-    """Notification model for system communications."""
     
     __tablename__ = "notifications"
     
@@ -86,7 +82,6 @@ class Notification(Base):
 
 
 class Alert(Base):
-    """Operational alerts requiring attention."""
     
     __tablename__ = "alerts"
     

@@ -7,7 +7,6 @@ from enum import Enum
 
 
 class ShiftStatus(str, Enum):
-    """Shift status."""
     PROGRAMADO = "programado"
     ACTIVO = "activo"
     PAUSADO = "pausado"
@@ -17,7 +16,6 @@ class ShiftStatus(str, Enum):
 
 # Base Schema
 class ShiftBase(BaseModel):
-    """Base schema for Shift."""
     rider_id: int
     
     # Scheduled Times
@@ -31,13 +29,11 @@ class ShiftBase(BaseModel):
 
 # Create Schema
 class ShiftCreate(ShiftBase):
-    """Schema for creating a Shift."""
     status: Optional[ShiftStatus] = ShiftStatus.PROGRAMADO
 
 
 # Update Schema
 class ShiftUpdate(BaseModel):
-    """Schema for updating a Shift."""
     scheduled_start: Optional[datetime] = None
     scheduled_end: Optional[datetime] = None
     notes: Optional[str] = None
@@ -47,7 +43,6 @@ class ShiftUpdate(BaseModel):
 
 # Check In/Out Schema
 class CheckInOutBase(BaseModel):
-    """Base schema for Check-In/Check-Out."""
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     notes: Optional[str] = None
@@ -55,17 +50,14 @@ class CheckInOutBase(BaseModel):
 
 
 class CheckInRequest(CheckInOutBase):
-    """Schema for checking in to start a shift."""
     shift_id: int
 
 
 class CheckOutRequest(CheckInOutBase):
-    """Schema for checking out to end a shift."""
     shift_id: int
 
 
 class CheckInOutResponse(CheckInOutBase):
-    """Schema for Check-In/Check-Out response."""
     model_config = ConfigDict(from_attributes=True)
     
     id: int
@@ -78,7 +70,6 @@ class CheckInOutResponse(CheckInOutBase):
 
 # Response Schema
 class ShiftResponse(ShiftBase):
-    """Schema for Shift response."""
     model_config = ConfigDict(from_attributes=True)
     
     id: int
@@ -94,7 +85,6 @@ class ShiftResponse(ShiftBase):
 
 # Status Update
 class ShiftStatusUpdate(BaseModel):
-    """Schema for updating shift status."""
     status: ShiftStatus
     reason: Optional[str] = None
     
@@ -103,14 +93,12 @@ class ShiftStatusUpdate(BaseModel):
 
 # List Response
 class ShiftListResponse(BaseModel):
-    """Schema for shift list response."""
     total: int
     shifts: List[ShiftResponse]
 
 
 # CheckInOut Request (union of CheckIn and CheckOut)
 class CheckInOutRequest(BaseModel):
-    """Schema for check-in/out request."""
     shift_id: int
     is_check_in: bool = True  # True for check-in, False for check-out
     latitude: Optional[float] = None

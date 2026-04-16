@@ -8,18 +8,6 @@ from typing import Dict
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware para agregar headers de seguridad HTTP en todas las respuestas
-    
-    Implementa las mejores prácticas de seguridad OWASP:
-    - HSTS (HTTP Strict Transport Security)
-    - X-Content-Type-Options
-    - X-Frame-Options
-    - X-XSS-Protection
-    - Content-Security-Policy
-    - Referrer-Policy
-    - Permissions-Policy
-    """
     
     def __init__(self, app, custom_headers: Dict[str, str] = None):
         super().__init__(app)
@@ -65,19 +53,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
     
     def _is_production(self, request: Request) -> bool:
-        """Verificar si estamos en entorno de producción"""
         # Verificar por host o headers especiales
         host = request.headers.get("host", "")
         return not any(dev in host for dev in ["localhost", "127.0.0.1"])
 
 
 def get_default_security_headers() -> Dict[str, str]:
-    """
-    Obtener diccionario con headers de seguridad recomendados
-    
-    Returns:
-        Dict con headers de seguridad
-    """
     return {
         "X-Frame-Options": "DENY",
         "X-Content-Type-Options": "nosniff",
@@ -89,15 +70,6 @@ def get_default_security_headers() -> Dict[str, str]:
 
 
 def get_csp_header(allow_domains: list = None) -> str:
-    """
-    Generar header Content-Security-Policy
-    
-    Args:
-        allow_domains: Lista de dominios permitidos para scripts, estilos, etc.
-    
-    Returns:
-        String con la política de seguridad de contenido
-    """
     if not allow_domains:
         allow_domains = ["'self'"]
     

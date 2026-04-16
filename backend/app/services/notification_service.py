@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class NotificationService:
-    """Servicio para gestión de notificaciones push, email y SMS"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -26,7 +25,6 @@ class NotificationService:
         data: Optional[Dict[str, Any]] = None,
         channel: str = "push"
     ) -> Notification:
-        """Crear una nueva notificación"""
         notification = Notification(
             user_id=user_id,
             notification_type=notification_type,
@@ -43,7 +41,6 @@ class NotificationService:
         return notification
     
     async def _send_notification(self, notification: Notification):
-        """Enviar notificación al canal correspondiente"""
         try:
             if notification.channel == "push":
                 await self._send_push_notification(notification)

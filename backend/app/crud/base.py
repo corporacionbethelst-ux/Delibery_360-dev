@@ -15,18 +15,11 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
 class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-    """
-    Base class for CRUD operations
-    
-    Args:
-        model: SQLAlchemy model class
-    """
     
     def __init__(self, model: Type[ModelType]):
         self.model = model
     
     def get(self, db: Session, id: Any) -> Optional[ModelType]:
-        """Get a single record by ID"""
         return db.query(self.model).filter(self.model.id == id).first()
     
     def get_multi(
@@ -37,7 +30,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         limit: int = 100,
         filters: Optional[Dict[str, Any]] = None
     ) -> List[ModelType]:
-        """Get multiple records with pagination and filters"""
         query = db.query(self.model)
         
         if filters:
@@ -52,7 +44,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db: Session,
         filters: Optional[Dict[str, Any]] = None
     ) -> int:
-        """Get total count of records"""
         query = db.query(func.count(self.model.id))
         
         if filters:
@@ -63,7 +54,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return query.scalar()
     
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
-        """Create a new record"""
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data)
         db.add(db_obj)
@@ -78,7 +68,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_obj: ModelType,
         obj_in: Union[UpdateSchemaType, Dict[str, Any]]
     ) -> ModelType:
-        """Update an existing record"""
         obj_data = jsonable_encoder(db_obj)
         
         if isinstance(obj_in, dict):
@@ -96,7 +85,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
     
     def remove(self, db: Session, *, id: int) -> ModelType:
-        """Soft delete a record (set is_active=False)"""
         obj = db.query(self.model).get(id)
         if obj and hasattr(obj, 'is_active'):
             obj.is_active = False
@@ -106,7 +94,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return obj
     
     def hard_delete(self, db: Session, *, id: int) -> Optional[ModelType]:
-        """Hard delete a record"""
         obj = db.query(self.model).get(id)
         if obj:
             db.delete(obj)

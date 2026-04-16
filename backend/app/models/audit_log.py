@@ -9,7 +9,6 @@ from app.core.database import Base
 
 
 class ActionType(str, enum.Enum):
-    """Types of auditable actions."""
     LOGIN = "login"
     LOGOUT = "logout"
     CREATE = "create"
@@ -27,7 +26,6 @@ class ActionType(str, enum.Enum):
 
 
 class AuditLog(Base):
-    """Audit log for tracking all system actions (LGPD compliance)."""
     
     __tablename__ = "audit_logs"
     
@@ -85,7 +83,6 @@ class AuditLog(Base):
 
 
 class AuditAction(Base):
-    """Detailed action metadata for audit logs."""
     
     __tablename__ = "audit_actions"
     

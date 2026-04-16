@@ -32,27 +32,26 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Gestor del ciclo de vida de la aplicación (startup/shutdown)"""
     # Startup: iniciar aplicación y crear tablas en desarrollo
-    logger.info("Starting Delivery360 API...")
+    logger.info("Starting Delivery360 API...")  # Log de inicio
     
     if settings.ENVIRONMENT == "development":  # Crear tablas solo en desarrollo
         logger.info("Creating database tables...")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     
-    logger.info("Delivery360 API started successfully")
+    logger.info("Delivery360 API started successfully")  # Confirmación de inicio
     
     yield  # Aplicación en ejecución
     
     # Shutdown: cerrar conexiones de base de datos
-    logger.info("Shutting down Delivery360 API...")
-    await engine.dispose()
-    logger.info("Database connections closed")
+    logger.info("Shutting down Delivery360 API...")  # Log de cierre
+    await engine.dispose()  # Liberar conexiones de BD
+    logger.info("Database connections closed")  # Confirmación de cierre
 
 
 def create_app() -> FastAPI:
-    """Factory pattern para crear y configurar la instancia de FastAPI"""
+    # Factory pattern para crear y configurar la instancia de FastAPI
     
     # Crear instancia de FastAPI con metadatos del proyecto
     app = FastAPI(

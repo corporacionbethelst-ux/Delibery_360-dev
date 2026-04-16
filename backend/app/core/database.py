@@ -6,7 +6,7 @@ from app.core.config import settings
 
 
 class Base(DeclarativeBase):
-    """Clase base para todos los modelos ORM de SQLAlchemy"""
+    # Clase base para todos los modelos ORM de SQLAlchemy
     pass
 
 
@@ -48,7 +48,7 @@ SessionLocal = sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Dependencia para obtener sesión asíncrona de BD por request"""
+    # Dependencia para obtener sesión asíncrona de BD por request
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -61,7 +61,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 def get_db_session() -> Generator[Session, None, None]:
-    """Obtener sesión síncrona para workers y scripts no-async"""
+    # Obtener sesión síncrona para workers y scripts no-async
     session = SessionLocal()
     try:
         yield session

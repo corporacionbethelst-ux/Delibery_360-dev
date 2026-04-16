@@ -9,7 +9,6 @@ from app.core.database import get_db_session
 
 @shared_task(bind=True, max_retries=3)
 def generate_daily_report(self, date: str, report_type: str = "operations"):
-    """Generar reporte diario"""
     try:
         db = next(get_db_session())
         

@@ -9,10 +9,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 class RateLimitMiddleware:
-    """
-    Middleware de limitación de tasa mejorado con soporte para múltiples estrategias
-    y configuración flexible por endpoint
-    """
     def __init__(self, app):
         self.app = app
         # Configuración por defecto
@@ -114,7 +110,6 @@ class RateLimitMiddleware:
         await self.app(scope, receive, send_with_headers)
     
     def _get_user_id_from_request(self, request: Request) -> str:
-        """Extraer user_id del token JWT si está presente"""
         try:
             auth_header = request.headers.get("Authorization", "")
             if auth_header.startswith("Bearer "):
@@ -130,7 +125,6 @@ class RateLimitMiddleware:
         return ""
     
     def _get_limits_for_path(self, path: str) -> tuple:
-        """Obtener límites específicos para una ruta"""
         # Buscar el prefijo más específico que coincida
         best_match = None
         best_length = 0

@@ -4,7 +4,7 @@ import json
 
 
 class Settings(BaseSettings):
-    """Configuración global de la aplicación cargada desde variables de ambiente"""
+    # Configuración global de la aplicación cargada desde variables de ambiente
     
     # --- CONFIGURACIÓN GENERAL ---
     APP_NAME: str = "LogiRider"  # Nombre de la aplicación
@@ -13,10 +13,10 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"  # Alias para checks condicionales
     DEBUG: bool = True  # Modo debug habilitado
     SECRET_KEY: str  # Clave secreta para JWT y cifrado
-    
+
     @property
     def is_secret_key_default(self) -> bool:
-        """Verificar si se usa la clave secreta por defecto (inseguro)"""
+        # Verificar si se usa la clave secreta por defecto (inseguro)
         return self.SECRET_KEY == "CHANGE-THIS-SECRET-KEY-IN-PRODUCTION-MIN-32-CHARS-RANDOM!"
 
     # --- CONFIGURACIÓN DE API ---
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> List[str]:
-        """Convertir string JSON de CORS a lista de Python"""
+        # Convertir string JSON de CORS a lista de Python
         try:
             return json.loads(self.BACKEND_CORS_ORIGINS)
         except (json.JSONDecodeError, TypeError):
@@ -42,14 +42,14 @@ class Settings(BaseSettings):
 
     @property
     def database_url_computed(self) -> str:
-        """Construir URL asíncrona de PostgreSQL"""
+        # Construir URL asíncrona de PostgreSQL
         if self.DATABASE_URL:
             return self.DATABASE_URL
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     @property
     def database_url_sync_computed(self) -> str:
-        """Construir URL síncrona de PostgreSQL"""
+        # Construir URL síncrona de PostgreSQL
         if self.DATABASE_URL_SYNC:
             return self.DATABASE_URL_SYNC
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
 
     @property
     def jwt_algorithm_computed(self) -> str:
-        """Retornar algoritmo JWT (prioriza JWT_ALGORITHM)"""
+        # Retornar algoritmo JWT (prioriza JWT_ALGORITHM)
         return self.JWT_ALGORITHM or self.ALGORITHM
 
     # --- CONFIGURACIÓN DE CELERY ---
@@ -80,7 +80,7 @@ class Settings(BaseSettings):
 
     @property
     def retention_days_computed(self) -> int:
-        """Retornar días de retención (prioriza LGPD)"""
+        # Retornar días de retención (prioriza LGPD)
         return self.LGPD_RETENTION_DAYS if self.LGPD_RETENTION_DAYS else self.DATA_RETENTION_DAYS
 
     # --- RATE LIMITING ---
@@ -106,7 +106,7 @@ class Settings(BaseSettings):
     EMAIL_FROM: str = "noreply@delivery360.com"  # Email remitente
 
     class Config:
-        """Configuración interna de Pydantic"""
+        # Configuración interna de Pydantic
         env_file = ".env"  # Archivo .env para cargar variables
         case_sensitive = True  # Respetar mayúsculas/minúsculas
         extra = "ignore"  # Ignorar variables extra

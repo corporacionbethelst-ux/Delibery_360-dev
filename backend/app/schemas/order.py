@@ -7,7 +7,6 @@ from enum import Enum
 
 
 class OrderStatus(str, Enum):
-    """Order status."""
     PENDIENTE = "pendiente"
     ASIGNADO = "asignado"
     EN_PREPARACION = "en_preparacion"
@@ -20,7 +19,6 @@ class OrderStatus(str, Enum):
 
 
 class OrderType(str, Enum):
-    """Order type."""
     ESTANDAR = "estandar"
     EXPRESS = "express"
     PROGRAMADO = "programado"
@@ -29,7 +27,6 @@ class OrderType(str, Enum):
 
 # Base Schema
 class OrderBase(BaseModel):
-    """Base schema for Order."""
     external_id: Optional[str] = None  # ID del sistema externo (POS/ERP)
     customer_name: str
     customer_phone: str
@@ -70,14 +67,12 @@ class OrderBase(BaseModel):
 
 # Create Schema
 class OrderCreate(OrderBase):
-    """Schema for creating an Order."""
     rider_id: Optional[int] = None
     status: Optional[OrderStatus] = OrderStatus.PENDIENTE
 
 
 # Update Schema
 class OrderUpdate(BaseModel):
-    """Schema for updating an Order."""
     external_id: Optional[str] = None
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
@@ -110,7 +105,6 @@ class OrderUpdate(BaseModel):
 
 # Response Schema
 class OrderResponse(OrderBase):
-    """Schema for Order response."""
     model_config = ConfigDict(from_attributes=True)
     
     id: int
@@ -127,14 +121,12 @@ class OrderResponse(OrderBase):
 
 # List Response
 class OrderListResponse(BaseModel):
-    """Schema for order list response."""
     total: int
     orders: List[OrderResponse]
 
 
 # Assignment Request
 class OrderAssignRequest(BaseModel):
-    """Schema for assigning an order to a rider."""
     rider_id: int
     notes: Optional[str] = None
     
@@ -143,7 +135,6 @@ class OrderAssignRequest(BaseModel):
 
 # Status Update
 class OrderStatusUpdate(BaseModel):
-    """Schema for updating order status."""
     status: OrderStatus
     reason: Optional[str] = None
     

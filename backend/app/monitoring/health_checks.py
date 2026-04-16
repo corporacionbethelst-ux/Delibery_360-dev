@@ -22,16 +22,11 @@ router = APIRouter(prefix="/health", tags=["Health"])
 
 @router.get("/check")
 async def health_check():
-    """Health check básico - solo verifica que la app esté corriendo"""
     return {"status": "healthy", "timestamp": time.time()}
 
 
 @router.get("/ready")
 async def readiness_check():
-    """
-    Readiness check - verifica que la app esté lista para recibir tráfico
-    Verifica conexión a base de datos y Redis
-    """
     from sqlalchemy import text
     checks: Dict[str, Any] = {
         "database": False,
@@ -65,10 +60,6 @@ async def readiness_check():
 
 @router.get("/live")
 async def liveness_check():
-    """
-    Liveness check - verifica que la app no esté en deadlock
-    Usado por Kubernetes para restart automático
-    """
     return {
         "status": "alive",
         "timestamp": time.time(),

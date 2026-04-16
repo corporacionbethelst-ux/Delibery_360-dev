@@ -7,7 +7,6 @@ from enum import Enum
 
 
 class RiderStatusEnum(str, Enum):
-    """Rider availability status."""
     PENDIENTE = "pendiente"
     ACTIVO = "activo"
     INACTIVO = "inactivo"
@@ -17,7 +16,6 @@ class RiderStatusEnum(str, Enum):
 
 
 class VehicleTypeEnum(str, Enum):
-    """Vehicle types for riders."""
     BICICLETA = "bicicleta"
     MOTO = "moto"
     CARRO = "carro"
@@ -27,7 +25,6 @@ class VehicleTypeEnum(str, Enum):
 
 # Base Schema
 class RiderBase(BaseModel):
-    """Base schema for Rider."""
     document_type: Optional[str] = "CPF"
     document_number: str
     birth_date: Optional[datetime] = None
@@ -50,13 +47,11 @@ class RiderBase(BaseModel):
 
 # Create Schema
 class RiderCreate(RiderBase):
-    """Schema for creating a Rider."""
     user_id: int
 
 
 # Update Schema
 class RiderUpdate(BaseModel):
-    """Schema for updating a Rider."""
     document_type: Optional[str] = None
     document_number: Optional[str] = None
     birth_date: Optional[datetime] = None
@@ -81,7 +76,6 @@ class RiderUpdate(BaseModel):
 
 # Response Schema
 class RiderResponse(RiderBase):
-    """Schema for Rider response."""
     model_config = ConfigDict(from_attributes=True)
     
     id: int
@@ -99,18 +93,15 @@ class RiderResponse(RiderBase):
 
 # Document Schema
 class RiderDocumentBase(BaseModel):
-    """Base schema for Rider documents."""
     document_type: str
     document_url: str
 
 
 class RiderDocumentCreate(RiderDocumentBase):
-    """Schema for creating a Rider document."""
     rider_id: int
 
 
 class RiderDocumentResponse(RiderDocumentBase):
-    """Schema for Rider document response."""
     model_config = ConfigDict(from_attributes=True)
     
     id: int
@@ -125,7 +116,6 @@ class RiderDocumentResponse(RiderDocumentBase):
 
 # Approval Request Schema
 class RiderApprovalRequest(BaseModel):
-    """Schema for requesting rider approval."""
     approve: bool = True
     rejection_reason: Optional[str] = None
     
@@ -134,7 +124,6 @@ class RiderApprovalRequest(BaseModel):
 
 # Status Update Schema
 class RiderStatusUpdate(BaseModel):
-    """Schema for updating rider status."""
     status: RiderStatusEnum
     reason: Optional[str] = None
     

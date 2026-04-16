@@ -16,10 +16,8 @@ from app.crud.order import order as order_crud
 
 
 class DeliveryService:
-    """Servicio para gestión de entregas"""
     
     async def get_delivery(self, db: AsyncSession, delivery_id: uuid.UUID) -> Delivery:
-        """Obtiene entrega por ID"""
         delivery = await delivery_crud.get(db, delivery_id)
         if not delivery:
             raise HTTPException(
@@ -34,7 +32,6 @@ class DeliveryService:
         order_id: uuid.UUID,
         created_by: int
     ) -> Delivery:
-        """Crea una nueva entrega vinculada a un pedido"""
         order = await order_crud.get(db, order_id)
         if not order:
             raise HTTPException(
@@ -70,7 +67,6 @@ class DeliveryService:
         rider_id: uuid.UUID,
         started_by: int
     ) -> Delivery:
-        """Inicia entrega (marcado de salida)"""
         delivery = await self.get_delivery(db, delivery_id)
         
         if delivery.status != DeliveryStatus.PENDIENTE:
@@ -102,7 +98,6 @@ class DeliveryService:
         proof_data: ProofOfDeliveryCreate,
         completed_by: int
     ) -> Delivery:
-        """Completa entrega con prueba de entrega"""
         delivery = await self.get_delivery(db, delivery_id)
         
         if delivery.status not in [DeliveryStatus.INICIADA, DeliveryStatus.EN_ROUTE, DeliveryStatus.EN_DESTINO]:
@@ -148,7 +143,6 @@ class DeliveryService:
         failure_reason: str,
         failed_by: int
     ) -> Delivery:
-        """Marca entrega como fallida"""
         delivery = await self.get_delivery(db, delivery_id)
         
         if delivery.status not in [DeliveryStatus.INICIADA, DeliveryStatus.EN_ROUTE, DeliveryStatus.EN_DESTINO]:
@@ -192,7 +186,6 @@ class DeliveryService:
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None
     ) -> List[Delivery]:
-        """Lista entregas con filtros"""
         filters = {}
         if status_filter:
             filters["status"] = status_filter
@@ -211,7 +204,6 @@ class DeliveryService:
         rider_id: uuid.UUID,
         status_filter: Optional[DeliveryStatus] = None
     ) -> List[Delivery]:
-        """Obtiene entregas de un repartidor"""
         filters = {"rider_id": rider_id}
         if status_filter:
             filters["status"] = status_filter
@@ -224,7 +216,6 @@ class DeliveryService:
         rider_id: uuid.UUID,
         limit: int = 50
     ) -> List[Delivery]:
-        """Obtiene histórico de entregas completadas de un repartidor"""
         return await delivery_crud.get_multi(
             db, 
             skip=0, 

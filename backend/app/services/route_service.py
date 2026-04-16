@@ -13,13 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 class RouteService:
-    """Servicio para gestión de rutas y tracking GPS"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
     
     async def create_route(self, delivery_id: int) -> Route:
-        """Crear una nueva ruta para una entrega"""
         route = Route(
             delivery_id=delivery_id,
             status="active"
@@ -38,7 +36,6 @@ class RouteService:
         speed: Optional[float] = None,
         bearing: Optional[float] = None
     ) -> RoutePoint:
-        """Agregar un punto de geolocalización a una ruta"""
         point = RoutePoint(
             route_id=route_id,
             latitude=latitude,
@@ -59,7 +56,6 @@ class RouteService:
         expected_route: List[Dict[str, float]],
         threshold_meters: float = 100.0
     ) -> Optional[RouteDeviation]:
-        """Detectar si el repartidor se desvió de la ruta esperada"""
         # Verificar si está dentro del polígono de la ruta esperada
         is_on_route = is_point_in_polygon(
             current_lat, current_lon, expected_route
@@ -99,7 +95,6 @@ class RouteService:
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None
     ) -> List[RoutePoint]:
-        """Obtener historial de puntos de una ruta"""
         query = select(RoutePoint).where(RoutePoint.route_id == route_id)
         
         if start_time:
@@ -114,7 +109,6 @@ class RouteService:
         return list(points)
     
     async def calculate_route_metrics(self, route_id: int) -> Dict[str, Any]:
-        """Calcular métricas de una ruta"""
         points_query = await self.db.execute(
             select(RoutePoint).where(
                 RoutePoint.route_id == route_id
@@ -159,7 +153,6 @@ class RouteService:
         }
     
     def _detect_stops(self, points: List[RoutePoint], threshold_minutes: float = 5) -> int:
-        """Detectar paradas significativas en la ruta"""
         stops = 0
         i = 0
         
@@ -182,7 +175,6 @@ class RouteService:
         return stops
     
     async def resolve_deviation(self, deviation_id: int, resolution_notes: Optional[str] = None):
-        """Marcar una desviación como resuelta"""
         result = await self.db.execute(
             select(RouteDeviation).where(RouteDeviation.id == deviation_id)
         )

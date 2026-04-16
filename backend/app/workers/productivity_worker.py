@@ -9,7 +9,6 @@ from app.core.database import get_db_session
 
 @shared_task(bind=True, max_retries=3)
 def calculate_rider_productivity(self, rider_id: int, date: str):
-    """Calcular métricas de productividad para un repartidor en una fecha"""
     try:
         db_session = next(get_db_session())
         

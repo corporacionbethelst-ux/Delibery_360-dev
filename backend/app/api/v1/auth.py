@@ -128,7 +128,6 @@ async def register_rider(
     body: RiderRegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Registro público para repartidores desde la app móvil."""
     if not body.lgpd_consent:
         raise HTTPException(status_code=400, detail="Debe aceptar los términos LGPD para registrarse")
 
