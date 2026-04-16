@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Bell, X, AlertTriangle, AlertCircle, Info } from 'lucide-react'
-import { Alert, AlertType } from '@/types/alert'
+import type { Alert, AlertType } from '@/types/alerts';
 
 // Componente para mostrar notificaciones de alertas en tiempo real
 export default function AlertNotification() {

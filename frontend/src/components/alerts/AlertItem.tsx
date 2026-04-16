@@ -1,4 +1,4 @@
-import { Alert } from '@/types/alert';
+import type { Alert } from '@/types/alerts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
