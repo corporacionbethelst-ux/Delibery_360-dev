@@ -4,11 +4,10 @@ Rider Service - Gestión de repartidores y aprobaciones
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from app.models.rider import Rider, RiderStatus, RiderDocument
 from app.models.user import User
 from app.schemas.rider import RiderCreate, RiderUpdate, RiderApprovalRequest
-from app.core.security import get_password_hash
 import logging
 
 logger = logging.getLogger(__name__)

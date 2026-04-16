@@ -17,7 +17,7 @@ async def _check_sla():
         now = datetime.now(timezone.utc)
         result = await db.execute(
             select(Order).where(
-                Order.sla_breached == False,
+                Order.sla_breached.is_(False),
                 Order.estimated_delivery_at < now,
                 Order.status.notin_([OrderStatus.ENTREGADO, OrderStatus.CANCELADO, OrderStatus.FALLIDO]),
             )

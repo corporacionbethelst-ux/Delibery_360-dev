@@ -2,8 +2,7 @@
 Worker Celery para cálculo de productividad
 """
 from celery import shared_task
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
+from datetime import datetime
 from app.core.database import get_db_session
 
 

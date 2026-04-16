@@ -4,6 +4,7 @@ Alert Service - Gestión de Alertas Operacionales
 from typing import Optional, List
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.models.notification import Notification, NotificationType, NotificationPriority
 from app.models.delivery import Delivery, DeliveryStatus
 from app.models.order import Order, OrderStatus
@@ -26,27 +27,45 @@ class AlertService:
         recipient_user_ids: Optional[List[int]] = None
     ) -> Notification:
         priority_map = {
-            "low": NotificationPriority.LOW,
-            "medium": NotificationPriority.MEDIUM,
-            "high": NotificationPriority.HIGH,
-            "critical": NotificationPriority.CRITICAL
+            "low": NotificationPriority.BAJA,
+            "medium": NotificationPriority.NORMAL,
+            "high": NotificationPriority.ALTA,
+            "critical": NotificationPriority.CRITICA,
         }
-        
-        notification = Notification(
-            type=NotificationType.ALERT,
-            priority=priority_map.get(severity.lower(), NotificationPriority.MEDIUM),
+        normalized_severity = self._normalize_severity_key(severity)
+        normalized_related_id = self._to_related_id(related_entity_id)
+        alert_data = {"alert_type": alert_type, "severity": normalized_severity}
+        if related_entity_id is not None and normalized_related_id is None:
+            alert_data["related_entity_ref"] = str(related_entity_id)
+
+        normalized_recipient_user_ids = self._normalize_recipient_user_ids(recipient_user_ids)
+        base_notification_kwargs = dict(
+            notification_type=NotificationType.ALERTA_OPERACIONAL,
+            priority=priority_map.get(normalized_severity, NotificationPriority.NORMAL),
             title=title,
             message=message,
-            related_entity_id=related_entity_id,
-            related_entity_type=related_entity_type
+            data=alert_data,
+            related_id=normalized_related_id,
+            related_type=related_entity_type,
         )
-        
-        db.add(notification)
+
+        notifications = [
+            Notification(**base_notification_kwargs, user_id=user_id)
+            for user_id in normalized_recipient_user_ids
+        ] or [Notification(**base_notification_kwargs)]
+
+        db.add_all(notifications)
         await db.commit()
-        await db.refresh(notification)
-        
-        logger.info(f"Alerta creada: {title} (severity: {severity})")
-        return notification
+        for notification in notifications:
+            await db.refresh(notification)
+
+        logger.info(
+            "Alerta creada: %s (severity: %s, recipients: %s)",
+            title,
+            normalized_severity,
+            len(normalized_recipient_user_ids),
+        )
+        return notifications[0]
     
     async def check_sla_alerts(self, db: AsyncSession, threshold_minutes: int = 5) -> List[Notification]:
         now = datetime.utcnow()

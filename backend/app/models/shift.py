@@ -1,8 +1,8 @@
 """Shift model for rider work schedule management."""
 
 import uuid
-from datetime import datetime, date
-from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SQLEnum, Boolean, Float, Interval, Time
+from datetime import datetime
+from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SQLEnum, Float, Time, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import enum

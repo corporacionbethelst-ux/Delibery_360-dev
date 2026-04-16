@@ -2,7 +2,8 @@
 
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+import uuid
+from pydantic import BaseModel, ConfigDict
 from enum import Enum
 
 
@@ -99,7 +100,7 @@ class OrderUpdate(BaseModel):
     estimated_duration_minutes: Optional[int] = None
     notes: Optional[str] = None
     metadata_json: Optional[Dict[str, Any]] = None
-    rider_id: Optional[int] = None
+    rider_id: Optional[uuid.UUID] = None
     status: Optional[OrderStatus] = None
 
 
@@ -107,8 +108,8 @@ class OrderUpdate(BaseModel):
 class OrderResponse(OrderBase):
     model_config = ConfigDict(from_attributes=True)
     
-    id: int
-    rider_id: Optional[int] = None
+    id: uuid.UUID
+    rider_id: Optional[uuid.UUID] = None
     status: OrderStatus
     created_at: datetime
     updated_at: datetime

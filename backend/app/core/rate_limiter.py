@@ -3,8 +3,7 @@ Rate Limiter para control de peticiones por IP y usuario
 Implementación con Redis para distribución horizontal
 """
 import time
-from typing import Optional, Tuple
-from datetime import datetime, timedelta
+from typing import Tuple
 
 
 class RateLimiter:

@@ -1,33 +1,35 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useRidersStore } from '@/stores/ridersStore';
 import { RiderCard } from '@/components/riders/RiderCard';
 import { RiderList } from '@/components/riders/RiderList';
+import AddRiderModal from '@/components/riders/AddRiderModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ManagerRidersPage() {
-  const { riders, loading, getRiders, updateRiderStatus } = useRidersStore();
+  const { riders, loading, fetchRiders } = useRidersStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   useEffect(() => {
-    getRiders();
+    fetchRiders();
   }, []);
 
   const filteredRiders = riders.filter(rider => {
-    const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = rider.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          rider.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || rider.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const handleAddRider = () => {
-    // TODO: Implementar modal de agregar repartidor
-    alert('Funcionalidad de agregar repartidor - Pendiente de implementar modal');
+  const handleAddSuccess = () => {
+    fetchRiders();
   };
 
   if (loading) return <div className="p-8 text-center">Cargando repartidores...</div>;
@@ -36,10 +38,7 @@ export default function ManagerRidersPage() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Gestión de Repartidores</h1>
-        <Button onClick={handleAddRider}>
-          <Plus className="w-4 h-4 mr-2" />
-          Agregar Repartidor
-        </Button>
+        <AddRiderModal onSuccess={handleAddSuccess} />
       </div>
 
       {/* Filtros y Búsqueda */}

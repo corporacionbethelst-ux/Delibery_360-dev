@@ -2,7 +2,7 @@
 Servicio de Gestión de Pedidos (AsyncSession nativo)
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 from typing import Optional, List
 
@@ -30,11 +30,8 @@ class OrderService:
         created_by: int,
     ) -> Order:
         now = datetime.utcnow()
-        estimated_delivery = (
-            now.replace(microsecond=0)
-            if not order_data.estimated_duration_minutes
-            else now.replace(microsecond=0)
-        )
+        estimated_minutes = order_data.estimated_duration_minutes or 60
+        estimated_delivery = now.replace(microsecond=0) + timedelta(minutes=estimated_minutes)
         order = Order(
             external_id=order_data.external_id,
             customer_name=order_data.customer_name,

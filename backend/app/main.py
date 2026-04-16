@@ -15,8 +15,8 @@ from app.core.config import settings
 from app.core.database import engine, Base
 from app.core.exception_handlers import register_exception_handlers
 from app.api.v1 import (
-    auth, users, riders, orders, deliveries, 
-    shifts, productivity, financial, dashboard, 
+    auth, users, riders, orders, deliveries,
+    shifts, productivity, financial, dashboard,
     routes, alerts, integrations, audit
 )
 from app.middleware import RateLimitMiddleware, AuditLogMiddleware

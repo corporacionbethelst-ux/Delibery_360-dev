@@ -5,7 +5,7 @@ Soporte para CSV, Excel, PDF y JSON
 import csv
 import json
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
 from io import StringIO, BytesIO
 
 

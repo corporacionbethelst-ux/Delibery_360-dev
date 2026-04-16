@@ -3,15 +3,11 @@ Worker Celery para generación de reportes
 """
 from celery import shared_task
 from datetime import datetime
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db_session
 
 
 @shared_task(bind=True, max_retries=3)
 def generate_daily_report(self, date: str, report_type: str = "operations"):
     try:
-        db = next(get_db_session())
-        
         from app.utils.data_exporter import DataExporter
         
         # Generar reporte según tipo

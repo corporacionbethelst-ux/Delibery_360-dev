@@ -1,6 +1,6 @@
 """Servicio para operaciones financieras del sistema Delivery360."""
 
-from typing import List, Optional, Dict, Any
+from typing import Optional, Dict, Any
 from datetime import datetime, date
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession

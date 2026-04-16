@@ -3,16 +3,15 @@ Delivery360 - Productivity Service
 Productivity metrics, SLA calculation, performance rankings
 """
 
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+from datetime import datetime
+from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, and_, or_
-from app.models.productivity import ProductivityRecord, ShiftComparison, PerformanceRanking
+from sqlalchemy import func
 from app.models.delivery import Delivery, DeliveryStatus
-from app.models.order import Order, OrderStatus
 from app.models.shift import Shift, ShiftStatus
 from app.models.rider import Rider
 from sqlalchemy import select
+from fastapi import HTTPException
 
 
 class ProductivityService:
@@ -32,7 +31,7 @@ class ProductivityService:
             select(func.count(Delivery.id))
             .where(
                 Delivery.rider_id == rider_id,
-                Delivery.status == DeliveryStatus.DELIVERED,
+                Delivery.status == DeliveryStatus.COMPLETADA,
                 Delivery.completed_at >= start_date,
                 Delivery.completed_at <= end_date
             )
@@ -44,7 +43,7 @@ class ProductivityService:
             select(func.avg(Delivery.completed_at - Delivery.started_at))
             .where(
                 Delivery.rider_id == rider_id,
-                Delivery.status == DeliveryStatus.DELIVERED,
+                Delivery.status == DeliveryStatus.COMPLETADA,
                 Delivery.completed_at >= start_date,
                 Delivery.completed_at <= end_date
             )
@@ -56,8 +55,8 @@ class ProductivityService:
             select(func.count(Delivery.id))
             .where(
                 Delivery.rider_id == rider_id,
-                Delivery.status == DeliveryStatus.DELIVERED,
-                Delivery.sla_compliant == True,
+                Delivery.status == DeliveryStatus.COMPLETADA,
+                Delivery.sla_compliant.is_(True),
                 Delivery.completed_at >= start_date,
                 Delivery.completed_at <= end_date
             )
@@ -110,7 +109,7 @@ class ProductivityService:
                 Delivery.rider_id == shift.rider_id,
                 Delivery.started_at >= shift.start_time,
                 Delivery.completed_at <= shift.end_time,
-                Delivery.status == DeliveryStatus.DELIVERED
+                Delivery.status == DeliveryStatus.COMPLETADA
             )
         )
         total_deliveries = deliveries_result.scalar() or 0
@@ -146,7 +145,7 @@ class ProductivityService:
             )
             .join(Delivery, Delivery.rider_id == Rider.id)
             .where(
-                Delivery.status == DeliveryStatus.DELIVERED,
+                Delivery.status == DeliveryStatus.COMPLETADA,
                 Delivery.completed_at >= start_date,
                 Delivery.completed_at <= end_date
             )
@@ -177,7 +176,7 @@ class ProductivityService:
         total_result = await self.db.execute(
             select(func.count(Delivery.id))
             .where(
-                Delivery.status == DeliveryStatus.DELIVERED,
+                Delivery.status == DeliveryStatus.COMPLETADA,
                 Delivery.completed_at >= start_date,
                 Delivery.completed_at <= end_date
             )
@@ -188,8 +187,8 @@ class ProductivityService:
         met_sla_result = await self.db.execute(
             select(func.count(Delivery.id))
             .where(
-                Delivery.status == DeliveryStatus.DELIVERED,
-                Delivery.sla_compliant == True,
+                Delivery.status == DeliveryStatus.COMPLETADA,
+                Delivery.sla_compliant.is_(True),
                 Delivery.completed_at >= start_date,
                 Delivery.completed_at <= end_date
             )
