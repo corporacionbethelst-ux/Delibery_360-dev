@@ -1,6 +1,6 @@
 from enum import Enum
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 from pydantic import BaseModel, Field
 from decimal import Decimal
 
@@ -51,6 +51,7 @@ class PaymentRuleBase(BaseModel):
 
 
 class PaymentRuleCreate(PaymentRuleBase):
+    """Schema para crear una regla de pago"""
     pass
 
 

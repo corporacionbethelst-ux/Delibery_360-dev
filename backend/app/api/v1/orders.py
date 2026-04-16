@@ -43,6 +43,13 @@ class AssignRider(BaseModel):
     rider_id: str
 
 
+def _parse_uuid(value: str, field_name: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"{field_name} inválido")
+
+
 def _order_to_dict(o: Order) -> dict:
     status_value = o.status.value if hasattr(o.status, "value") else str(o.status)
     priority_value = o.priority.value if hasattr(o.priority, "value") else str(o.priority)
@@ -107,12 +114,10 @@ async def list_orders(
 
     # Repartidor solo ve sus pedidos
     if current_user.role == UserRole.REPARTIDOR:
-        rider_result = await db.execute(
-            select(Rider).where(Rider.user_id == current_user.id)
-        )
-        rider = rider_result.scalar_one_or_none()
-        if rider:
-            q = q.where(Order.assigned_rider_id == rider.id)
+        rider = await _get_rider_for_user(db, current_user.id)
+        if not rider:
+            raise HTTPException(status_code=404, detail="Perfil de repartidor no encontrado")
+        q = q.where(Order.assigned_rider_id == rider.id)
 
     if status:
         try:
@@ -120,7 +125,12 @@ async def list_orders(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Estado inválido: {status}")
     if rider_id:
-        q = q.where(Order.assigned_rider_id == uuid.UUID(rider_id))
+        rider_uuid = _parse_uuid(rider_id, "rider_id")
+        if current_user.role == UserRole.REPARTIDOR:
+            rider = await _get_rider_for_user(db, current_user.id)
+            if not rider or rider.id != rider_uuid:
+                raise HTTPException(status_code=403, detail="No tienes permiso para filtrar por ese rider_id")
+        q = q.where(Order.assigned_rider_id == rider_uuid)
 
     q = q.order_by(Order.created_at.desc()).limit(limit).offset(offset)
     orders_result = await db.execute(q)
@@ -158,7 +168,7 @@ async def create_order(
     )
 
     if body.rider_id:
-        order.assigned_rider_id = uuid.UUID(body.rider_id)  # type: ignore[assignment]
+        order.assigned_rider_id = _parse_uuid(body.rider_id, "rider_id")  # type: ignore[assignment]
         order.status = OrderStatus.ASIGNADO
         order.accepted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
 
@@ -168,13 +178,30 @@ async def create_order(
     return _order_to_dict(order)
 
 
+@router.get("/stats/summary")
+async def orders_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    today = datetime.now(timezone.utc).date()
+    result = await db.execute(
+        select(Order.status, func.count(Order.id))
+        .where(func.date(Order.created_at) == today)
+        .group_by(Order.status)
+    )
+    rows = result.all()
+    summary = {r[0].value: r[1] for r in rows}
+    total = sum(summary.values())
+    return {"today": summary, "total_today": total}
+
+
 @router.get("/{order_id}")
 async def get_order(
     order_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Order).where(Order.id == uuid.UUID(order_id)))
+    result = await db.execute(select(Order).where(Order.id == _parse_uuid(order_id, "order_id")))
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
@@ -189,14 +216,14 @@ async def assign_rider(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
-    result = await db.execute(select(Order).where(Order.id == uuid.UUID(order_id)))
+    result = await db.execute(select(Order).where(Order.id == _parse_uuid(order_id, "order_id")))
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
     if order.status not in (OrderStatus.PENDIENTE, OrderStatus.ASIGNADO):
         raise HTTPException(status_code=400, detail=f"No se puede asignar un pedido en estado {order.status.value}")
 
-    result2 = await db.execute(select(Rider).where(Rider.id == uuid.UUID(body.rider_id)))
+    result2 = await db.execute(select(Rider).where(Rider.id == _parse_uuid(body.rider_id, "rider_id")))
     rider = result2.scalar_one_or_none()
     if not rider or rider.status != RiderStatus.ACTIVO:
         raise HTTPException(status_code=400, detail="Repartidor no disponible")
@@ -223,7 +250,7 @@ async def update_status(
         OrderStatus.EN_RUTA: [OrderStatus.ENTREGADO, OrderStatus.FALLIDO, OrderStatus.CANCELADO],
     }
 
-    result = await db.execute(select(Order).where(Order.id == uuid.UUID(order_id)))
+    result = await db.execute(select(Order).where(Order.id == _parse_uuid(order_id, "order_id")))
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
@@ -234,11 +261,6 @@ async def update_status(
         raise HTTPException(status_code=400, detail=f"Estado inválido: {new_status}")
 
     await _ensure_rider_order_access(db, current_user, order)
-    if current_user.role == UserRole.REPARTIDOR:
-        rider_result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
-        rider = rider_result.scalar_one_or_none()
-        if not rider or order.assigned_rider_id != rider.id:
-            raise HTTPException(status_code=403, detail="No tienes permiso para actualizar este pedido")
 
     current_status = cast(OrderStatus, order.status)
     allowed = VALID_TRANSITIONS.get(current_status, [])
@@ -259,20 +281,3 @@ async def update_status(
 
     await db.commit()
     return _order_to_dict(order)
-
-
-@router.get("/stats/summary")
-async def orders_summary(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    today = datetime.now(timezone.utc).date()
-    result = await db.execute(
-        select(Order.status, func.count(Order.id))
-        .where(func.date(Order.created_at) == today)
-        .group_by(Order.status)
-    )
-    rows = result.all()
-    summary = {r[0].value: r[1] for r in rows}
-    total = sum(summary.values())
-    return {"today": summary, "total_today": total}

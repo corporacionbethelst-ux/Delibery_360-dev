@@ -2,11 +2,8 @@
 
 from fastapi import Request, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
-from typing import Optional, List
-from functools import wraps
-
-from app.core.config import settings
+from jose import JWTError
+from typing import Optional
 from app.core.security import decode_token as verify_token
 
 

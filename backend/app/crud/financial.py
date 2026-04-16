@@ -52,7 +52,7 @@ class CRUDFinancial:
     async def get_active_payment_rule(self, db: AsyncSession) -> Optional[PaymentRule]:
         result = await db.execute(
             select(PaymentRule)
-            .where(PaymentRule.is_active == True)
+            .where(PaymentRule.is_active.is_(True))
         )
         return result.scalar_one_or_none()
 

@@ -26,8 +26,8 @@ from app.core.database import engine, Base
 from app.core.exception_handlers import register_exception_handlers
 # Importación de todos los routers de API v1 (endpoints agrupados por funcionalidad)
 from app.api.v1 import (
-    auth, users, riders, orders, deliveries, 
-    shifts, productivity, financial, dashboard, 
+    auth, users, riders, orders, deliveries,
+    shifts, productivity, financial, dashboard,
     routes, alerts, integrations, audit
 )
 # Importación de middlewares personalizados para rate limiting y auditoría
@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # --- FASE DE INICIO (STARTUP) ---
     # Registrar en logs que la aplicación está comenzando
     logger.info("Starting Delivery360 API...")
-    
+
     # Crear tablas de base de datos solo en entorno de desarrollo
     # En producción se usan migraciones con Alembic
     if settings.ENVIRONMENT == "development":
@@ -65,13 +65,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Abrir conexión asíncrona y crear todas las tablas definidas en los modelos
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-    
+
     # Registrar que la aplicación inició correctamente
     logger.info("Delivery360 API started successfully")
-    
+
     # Punto de yield donde la aplicación se mantiene ejecutándose
     yield
-    
+
     # --- FASE DE CIERRE (SHUTDOWN) ---
     # Registrar que la aplicación está deteniéndose
     logger.info("Shutting down Delivery360 API...")
@@ -87,7 +87,7 @@ def create_app() -> FastAPI:
     Crea y configura la instancia de la aplicación con toda la seguridad necesaria
     Retorna una aplicación completamente configurada lista para usar
     """
-    
+
     # Crear instancia de FastAPI con metadatos del proyecto
     # title: Nombre de la API que aparece en Swagger/OpenAPI
     # description: Descripción detallada visible en la documentación
@@ -105,19 +105,19 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json",
         lifespan=lifespan
     )
-    
+
     # --- CONFIGURACIÓN DE SEGURIDAD Y MIDDLEWARES ---
-    
+
     # Importar funciones para configurar CORS y headers de seguridad
     from app.middleware.cors_middleware import setup_cors_middleware, get_security_headers
     # Importar middleware para validar hosts de confianza (seguridad adicional)
     from fastapi.middleware.trustedhost import TrustedHostMiddleware
     # Importar clase base para crear middlewares personalizados HTTP
     from starlette.middleware.base import BaseHTTPMiddleware
-    
+
     # Configurar middleware CORS para permitir conexiones desde dominios autorizados
     setup_cors_middleware(app)
-    
+
     # Middleware personalizado para agregar headers de seguridad en todas las respuestas
     # Se ejecuta en cada request/response cycle
     @app.middleware("http")
@@ -134,7 +134,7 @@ def create_app() -> FastAPI:
             response.headers[header] = value
         # Retornar la respuesta modificada con los headers agregados
         return response
-    
+
     # Middleware para validar hosts de confianza solo en producción
     # Previene ataques de host header injection
     if settings.ENVIRONMENT == "production":
@@ -147,22 +147,22 @@ def create_app() -> FastAPI:
                 "127.0.0.1"                  # IP local para testing
             ]
         )
-    
+
     # Agregar middleware personalizado para rate limiting (límite de requests por IP)
     # Previene ataques de fuerza bruta y abuso de la API
     app.add_middleware(RateLimitMiddleware)
     # Agregar middleware personalizado para logging de auditoría
     # Registra todas las acciones importantes para trazabilidad
     app.add_middleware(AuditLogMiddleware)
-    
+
     # Registrar manejadores globales de excepciones
     # Centraliza el manejo de errores en toda la aplicación
     register_exception_handlers(app)
-    
+
     # --- REGISTRO DE ROUTERS (ENDPOINTS DE LA API) ---
-    
+
     # Router de autenticación: login, logout, refresh token
-    app.include_router(auth.router, prefix="/api/v1", tags=["Auth"]) 
+    app.include_router(auth.router, prefix="/api/v1", tags=["Auth"])
     # Router de usuarios: CRUD de usuarios del sistema
     app.include_router(users.router, prefix="/api/v1", tags=["Users"])
     # Router de repartidores (riders): gestión de flota de delivery
@@ -191,9 +191,9 @@ def create_app() -> FastAPI:
     app.include_router(health_router, prefix="/health", tags=["Health"])
     # Router de métricas: endpoints para métricas de rendimiento (Prometheus, etc.)
     app.include_router(metrics_router, prefix="/metrics", tags=["Metrics"])
-    
+
     # --- ENDPOINTS RAÍZ (ROOT) ---
-    
+
     # Endpoint raíz que devuelve información general de la API
     # Accesible en GET / - muestra bienvenida y enlaces útiles
     @app.get("/", tags=["Root"])
@@ -208,7 +208,7 @@ def create_app() -> FastAPI:
             "health": "/health/check",                        # Ruta para verificar salud del servicio
             "metrics": "/metrics"                             # Ruta para métricas de monitoreo
         }
-    
+
     # Endpoint simple de ping para health checks rápidos
     # Accesible en GET /ping - responde inmediatamente con "pong"
     @app.get("/ping", tags=["Root"])
@@ -216,7 +216,7 @@ def create_app() -> FastAPI:
         """Endpoint simple ping para verificaciones de salud rápidas"""
         # Retornar respuesta mínima para confirmar que el servidor está activo
         return {"success": True, "message": "pong"}
-    
+
     # Retornar la instancia de aplicación completamente configurada
     return app
 

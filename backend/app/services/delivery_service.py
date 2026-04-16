@@ -17,6 +17,20 @@ from app.crud.order import order as order_crud
 
 class DeliveryService:
     """Servicio para gestión de entregas"""
+
+    @staticmethod
+    def _ensure_status_transition(
+        delivery: Delivery,
+        *,
+        allowed_from: tuple[DeliveryStatus, ...],
+        action: str,
+    ) -> None:
+        if delivery.status not in allowed_from:
+            allowed = ", ".join(s.value for s in allowed_from)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No se puede {action}. Estado actual: {delivery.status.value}. Estados permitidos: {allowed}",
+            )
     
     async def get_delivery(self, db: AsyncSession, delivery_id: uuid.UUID) -> Delivery:
         """Obtiene entrega por ID"""
@@ -72,12 +86,11 @@ class DeliveryService:
     ) -> Delivery:
         """Inicia entrega (marcado de salida)"""
         delivery = await self.get_delivery(db, delivery_id)
-        
-        if delivery.status != DeliveryStatus.PENDIENTE:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No se puede iniciar entrega. Estado actual: {delivery.status.value}"
-            )
+        self._ensure_status_transition(
+            delivery,
+            allowed_from=(DeliveryStatus.PENDIENTE, DeliveryStatus.INICIADA, DeliveryStatus.EN_PICKUP),
+            action="iniciar entrega",
+        )
         
         if delivery.rider_id != rider_id:
             raise HTTPException(
@@ -89,7 +102,7 @@ class DeliveryService:
             db,
             db_obj=delivery,
             obj_in={
-                "status": DeliveryStatus.INICIADA,
+                "status": DeliveryStatus.EN_ROUTE,
                 "started_at": datetime.utcnow(),
             }
         )
@@ -104,19 +117,19 @@ class DeliveryService:
     ) -> Delivery:
         """Completa entrega con prueba de entrega"""
         delivery = await self.get_delivery(db, delivery_id)
-        
-        if delivery.status not in [DeliveryStatus.INICIADA, DeliveryStatus.EN_ROUTE, DeliveryStatus.EN_DESTINO]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No se puede completar entrega. Estado actual: {delivery.status.value}"
-            )
+        self._ensure_status_transition(
+            delivery,
+            allowed_from=(DeliveryStatus.INICIADA, DeliveryStatus.EN_ROUTE, DeliveryStatus.EN_DESTINO),
+            action="completar entrega",
+        )
+        now = datetime.utcnow()
         
         delivery = await delivery_crud.update(
             db,
             db_obj=delivery,
             obj_in={
                 "status": DeliveryStatus.COMPLETADA,
-                "completed_at": datetime.utcnow(),
+                "completed_at": now,
                 "proof_photo_url": proof_data.photo_url,
                 "proof_signature": proof_data.signature_base64,
                 "proof_otp": proof_data.otp_code,
@@ -135,7 +148,7 @@ class DeliveryService:
                 db_obj=order,
                 obj_in={
                     "status": OrderStatus.ENTREGADO,
-                    "delivered_at": datetime.utcnow(),
+                    "delivered_at": now,
                 }
             )
         
@@ -150,12 +163,11 @@ class DeliveryService:
     ) -> Delivery:
         """Marca entrega como fallida"""
         delivery = await self.get_delivery(db, delivery_id)
-        
-        if delivery.status not in [DeliveryStatus.INICIADA, DeliveryStatus.EN_ROUTE, DeliveryStatus.EN_DESTINO]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No se puede fallar entrega. Estado actual: {delivery.status.value}"
-            )
+        self._ensure_status_transition(
+            delivery,
+            allowed_from=(DeliveryStatus.PENDIENTE, DeliveryStatus.INICIADA, DeliveryStatus.EN_ROUTE, DeliveryStatus.EN_DESTINO),
+            action="fallar entrega",
+        )
         
         delivery = await delivery_crud.update(
             db,

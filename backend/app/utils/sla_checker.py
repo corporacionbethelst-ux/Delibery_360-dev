@@ -2,7 +2,7 @@
 Verificador de SLA (Service Level Agreement) para entregas
 Cálculo de cumplimiento, alertas tempranas y penalizaciones
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from enum import Enum
 
