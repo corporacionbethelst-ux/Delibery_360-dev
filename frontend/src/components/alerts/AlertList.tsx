@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert } from '@/types/alert';
+import type { Alert } from '@/types/alerts';
 import { AlertItem } from './AlertItem';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
