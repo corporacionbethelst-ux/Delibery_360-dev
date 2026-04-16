@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class AuditLogger:
+    """Logger de auditoría para registrar todas las acciones del sistema"""
     
     @staticmethod
     async def log_action(
@@ -22,6 +23,21 @@ class AuditLogger:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> Optional[AuditLog]:
+        """
+        Registrar una acción de auditoría
+        
+        Args:
+            user_id: ID del usuario que realizó la acción
+            action: Tipo de acción (CREATE, READ, UPDATE, DELETE, LOGIN, LOGOUT)
+            resource_type: Tipo de recurso (user, order, delivery, etc.)
+            resource_id: ID del recurso afectado
+            details: Detalles adicionales en JSON
+            ip_address: IP del cliente
+            user_agent: User agent del cliente
+            
+        Returns:
+            AuditLog creado o None si falló
+        """
         try:
             audit_log = AuditLog(
                 user_id=user_id,
@@ -53,6 +69,7 @@ class AuditLogger:
         limit: int = 100,
         offset: int = 0
     ) -> list:
+        """Obtener historial de acciones de un usuario"""
         async with AsyncSessionLocal() as session:
             stmt = select(AuditLog).where(AuditLog.user_id == user_id)\
                 .order_by(AuditLog.timestamp.desc())\
@@ -66,6 +83,7 @@ class AuditLogger:
         resource_id: int,
         limit: int = 100
     ) -> list:
+        """Obtener historial de cambios de un recurso"""
         async with AsyncSessionLocal() as session:
             stmt = select(AuditLog)\
                 .where(AuditLog.resource_type == resource_type)\
@@ -83,6 +101,7 @@ class AuditLogger:
         end_date: Optional[datetime] = None,
         limit: int = 100
     ) -> list:
+        """Buscar logs de auditoría con filtros"""
         async with AsyncSessionLocal() as session:
             stmt = select(AuditLog)
             

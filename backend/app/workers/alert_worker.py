@@ -8,6 +8,7 @@ from app.core.database import get_db_session
 
 @shared_task(bind=True, max_retries=3)
 def generate_operational_alert(self, alert_type: str, severity: str, details: dict):
+    """Generar alerta operacional"""
     try:
         db_session = next(get_db_session())
         

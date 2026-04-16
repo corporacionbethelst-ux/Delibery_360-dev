@@ -11,6 +11,7 @@ from app.core.database import Base
 
 
 class PerformanceLevel(str, enum.Enum):
+    """Performance classification levels."""
     EXCELENTE = "excelente"  # Top 10%
     MUY_BUENO = "muy_bueno"  # Top 25%
     BUENO = "bueno"  # Promedio superior
@@ -19,6 +20,7 @@ class PerformanceLevel(str, enum.Enum):
 
 
 class ProductivityRecord(Base):
+    """Daily productivity record for each rider."""
     
     __tablename__ = "productivity_records"
     
@@ -83,6 +85,7 @@ class ProductivityRecord(Base):
 
 
 class ShiftComparison(Base):
+    """Comparative analysis between shifts."""
     
     __tablename__ = "shift_comparisons"
     
@@ -113,6 +116,7 @@ class ShiftComparison(Base):
 
 
 class PerformanceRanking(Base):
+    """Leaderboard/ranking for riders."""
     
     __tablename__ = "performance_rankings"
     

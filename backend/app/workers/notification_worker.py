@@ -8,6 +8,7 @@ from typing import Dict, Any
 
 @shared_task(bind=True, max_retries=3)
 def send_push_notification(self, user_id: int, title: str, message: str, data: Dict[str, Any] = None):
+    """Enviar notificación push a usuario"""
     try:
         # Aquí iría la integración con Firebase Cloud Messaging o APNS
         print(f"Sending push to user {user_id}: {title} - {message}")
@@ -21,6 +22,7 @@ def send_push_notification(self, user_id: int, title: str, message: str, data: D
 
 @shared_task(bind=True, max_retries=3)
 def send_email_notification(self, email: str, subject: str, body: str):
+    """Enviar notificación por email"""
     try:
         # Aquí iría la integración con SendGrid, SES, etc.
         print(f"Sending email to {email}: {subject}")
@@ -33,6 +35,7 @@ def send_email_notification(self, email: str, subject: str, body: str):
 
 @shared_task(bind=True, max_retries=3)
 def send_sms_notification(self, phone: str, message: str):
+    """Enviar notificación por SMS"""
     try:
         # Aquí iría la integración con Twilio, etc.
         print(f"Sending SMS to {phone}: {message[:50]}...")

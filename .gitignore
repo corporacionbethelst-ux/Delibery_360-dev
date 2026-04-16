@@ -1,61 +1,60 @@
 ```
-# Dependencies
-node_modules/
-
-# Build outputs
-dist/
-build/
-.next/
-out/
-
-# Python
+# Python cache
 __pycache__/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Python specific
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv/
-.ENV
-.python-version
+*.py~
+*.py.class
+*.py.obj
+*.py.out
+*.py.exe
+*.py.dll
+*.py.so
+*.py.a
+*.py.o
+*.py.obj
+*.py.out
 
-# Logs
-*.log
-
-# Environment variables
-.env
-.env.local
-*.env
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
+# Build artifacts
+dist/
+build/
+target/
+*.class
+*.o
+*.exe
+*.dll
+*.so
+*.a
+*.obj
+*.out
 
 # Coverage
 coverage/
 htmlcov/
 .coverage
 
-# Temporary files
-*.tmp
-*.temp
+# MyPy
+.mypy_cache/
 
-# Compiled files
-*.class
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.a
-*.out
+# PyTest
+.pytest_cache/
 
 # Compressed files
 *.zip
@@ -80,10 +79,4 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-
-# Cache directories
-.mypy_cache/
-.pytest_cache/
-.target/
-.gradle/
 ```

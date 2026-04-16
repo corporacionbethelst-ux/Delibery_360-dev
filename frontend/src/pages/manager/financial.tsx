@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function ManagerFinancialPage() {
   const { getDailySummary, getTransactions, transactions, loading } = useFinancialStore();
   const [period, setPeriod] = useState('today');
-  const [summary, setSummary] = useState<any>(null); // State initialized to null
+  const [summary, setSummary] = useState<any>(null);
 
   useEffect(() => {
     // Simular carga de datos

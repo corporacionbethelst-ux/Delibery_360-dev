@@ -25,6 +25,10 @@ class DataCategory(str, Enum):
 
 
 def mask_cpf(cpf: str) -> str:
+    """
+    Enmascara CPF mostrando solo últimos dígitos
+    Ejemplo: 123.456.789-00 → ***.***.**9-00
+    """
     cpf_clean = re.sub(r'\D', '', cpf)
     
     if len(cpf_clean) != 11:
@@ -34,6 +38,10 @@ def mask_cpf(cpf: str) -> str:
 
 
 def mask_cnpj(cnpj: str) -> str:
+    """
+    Enmascara CNPJ mostrando solo últimos dígitos
+    Ejemplo: 12.345.678/0001-90 → **.***.***/0001-90
+    """
     cnpj_clean = re.sub(r'\D', '', cnpj)
     
     if len(cnpj_clean) != 14:
@@ -43,6 +51,10 @@ def mask_cnpj(cnpj: str) -> str:
 
 
 def mask_phone(phone: str) -> str:
+    """
+    Enmascara teléfono mostrando solo últimos dígitos
+    Ejemplo: (11) 91234-5678 → (**) *****-**78
+    """
     phone_clean = re.sub(r'\D', '', phone)
     
     if len(phone_clean) < 4:
@@ -52,6 +64,10 @@ def mask_phone(phone: str) -> str:
 
 
 def mask_email(email: str) -> str:
+    """
+    Enmascara email mostrando primeras y últimas letras
+    Ejemplo: joao.silva@email.com → j***o.s****a@email.com
+    """
     if '@' not in email:
         return email
     
@@ -66,6 +82,9 @@ def mask_email(email: str) -> str:
 
 
 def mask_address(address: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Enmascara dirección manteniendo solo ciudad y estado
+    """
     return {
         'street': '***',
         'number': '***',
@@ -79,6 +98,10 @@ def mask_address(address: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def mask_zip_code(zip_code: str) -> str:
+    """
+    Enmascara CEP mostrando solo primeros dígitos
+    Ejemplo: 01234-567 → 012**-***
+    """
     zip_clean = re.sub(r'\D', '', zip_code)
     
     if len(zip_clean) != 8:
@@ -88,12 +111,18 @@ def mask_zip_code(zip_code: str) -> str:
 
 
 def mask_financial_data(value: float, show_percentage: bool = False) -> str:
+    """
+    Enmascara valor financiero
+    """
     if show_percentage:
         return "R$ ***,**"
     return "R$ ***"
 
 
 def get_data_retention_period(data_category: DataCategory) -> timedelta:
+    """
+    Retorna período de retención según categoría de dato (LGPD)
+    """
     retention_periods = {
         DataCategory.PERSONAL: timedelta(days=365 * 5),  # 5 años
         DataCategory.SENSITIVE: timedelta(days=365 * 2),  # 2 años
@@ -109,11 +138,17 @@ def calculate_data_expiration_date(
     created_at: datetime,
     data_category: DataCategory
 ) -> datetime:
+    """
+    Calcula fecha de expiración de datos según categoría
+    """
     retention_period = get_data_retention_period(data_category)
     return created_at + retention_period
 
 
 def is_data_expired(created_at: datetime, data_category: DataCategory) -> bool:
+    """
+    Verifica si los datos ya expiraron según política de retención
+    """
     expiration_date = calculate_data_expiration_date(created_at, data_category)
     return datetime.now() > expiration_date
 
@@ -122,6 +157,9 @@ def validate_consent(
     consent_record: Dict[str, Any],
     consent_type: ConsentType
 ) -> bool:
+    """
+    Valida si el consentimiento es válido para un tipo específico
+    """
     # Consentimiento necesario siempre es válido
     if consent_type == ConsentType.NECESSARY:
         return True
@@ -150,6 +188,9 @@ def validate_consent(
 
 
 def get_consent_requirements(data_types: List[str]) -> List[ConsentType]:
+    """
+    Retorna tipos de consentimiento requeridos según datos a procesar
+    """
     requirements = []
     
     if any(t in ['email_marketing', 'sms_marketing', 'push_notifications'] for t in data_types):
@@ -173,6 +214,9 @@ def create_privacy_report(
     consents: List[Dict],
     access_logs: List[Dict]
 ) -> Dict:
+    """
+    Crea reporte de privacidad para titular de datos (derecho LGPD)
+    """
     return {
         'user_id': user_id,
         'report_generated_at': datetime.now().isoformat(),
@@ -203,6 +247,9 @@ def create_privacy_report(
 
 
 def _check_data_minimization(personal_data: Dict) -> bool:
+    """
+    Verifica si se cumple principio de minimización de datos LGPD
+    """
     required_fields = ['name', 'email', 'document']
     optional_fields = ['phone', 'address', 'birth_date']
     
@@ -216,6 +263,7 @@ def _check_data_minimization(personal_data: Dict) -> bool:
 
 
 def _is_last_n_days(log: Dict, days: int) -> bool:
+    """Verifica si log es de los últimos N días"""
     timestamp = log.get('timestamp')
     if not timestamp:
         return False
@@ -225,6 +273,7 @@ def _is_last_n_days(log: Dict, days: int) -> bool:
 
 
 def _group_access_by_purpose(access_logs: List[Dict]) -> Dict[str, int]:
+    """Agrupa accesos por propósito"""
     groups = {}
     for log in access_logs:
         purpose = log.get('purpose', 'unknown')
@@ -233,16 +282,22 @@ def _group_access_by_purpose(access_logs: List[Dict]) -> Dict[str, int]:
 
 
 def _get_expiring_soon(personal_data: Dict, days: int = 30) -> List[str]:
+    """Retorna datos que expirarán en los próximos N días"""
     # Implementación simplificada
     return []
 
 
 def _get_expired_data(personal_data: Dict) -> List[str]:
+    """Retorna datos ya expirados"""
     # Implementación simplificada
     return []
 
 
 def anonymize_user_data(user_data: Dict) -> Dict:
+    """
+    Anonimiza completamente datos de usuario para analytics
+    (proceso irreversible según LGPD)
+    """
     import hashlib
     
     # Crear hash único pero irreversible

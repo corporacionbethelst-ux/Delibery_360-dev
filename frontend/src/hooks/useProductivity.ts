@@ -44,14 +44,14 @@ const defaultOptions: UseProductivityOptions = {
 export const useProductivity = (options: UseProductivityOptions = {}): UseProductivityReturn => {
   const mergedOptions = { ...defaultOptions, ...options };
   
-  const [metrics, setMetrics] = useState<ProductivityMetrics | null>(null); // State initialized to null
-  const [riderProductivity, setRiderProductivity] = useState<RiderProductivity[]>([]); // State initialized to empty array
-  const [timeMetrics, setTimeMetrics] = useState<TimeMetrics | null>(null); // State initialized to null
-  const [slaMetrics, setSlaMetrics] = useState<SLAMetrics | null>(null); // State initialized to null
+  const [metrics, setMetrics] = useState<ProductivityMetrics | null>(null);
+  const [riderProductivity, setRiderProductivity] = useState<RiderProductivity[]>([]);
+  const [timeMetrics, setTimeMetrics] = useState<TimeMetrics | null>(null);
+  const [slaMetrics, setSlaMetrics] = useState<SLAMetrics | null>(null);
   
   const [loading, setLoading] = useState<boolean>(mergedOptions.autoFetch);
-  const [error, setError] = useState<string | null>(null); // State initialized to null
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null); // State initialized to null
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Fetch general metrics
   const fetchMetrics = useCallback(async (overrideOptions?: Partial<UseProductivityOptions>) => {
@@ -66,7 +66,7 @@ export const useProductivity = (options: UseProductivityOptions = {}): UseProduc
       if (opts.dateFrom) params.append('dateFrom', opts.dateFrom.toISOString());
       if (opts.dateTo) params.append('dateTo', opts.dateTo.toISOString());
       
-      const response = await api.get(`/productivity/metrics?${params.toString()}`); // Call get API endpoint
+      const response = await api.get(`/productivity/metrics?${params.toString()}`);
       setMetrics(response.data);
       setLastUpdated(new Date());
     } catch (err: any) {
@@ -91,7 +91,7 @@ export const useProductivity = (options: UseProductivityOptions = {}): UseProduc
         dateTo: dateTo.toISOString(),
       });
       
-      const response = await api.get(`/productivity/riders/${riderId}?${params}`); // Call get API endpoint
+      const response = await api.get(`/productivity/riders/${riderId}?${params}`);
       setRiderProductivity([response.data]);
       setLastUpdated(new Date());
     } catch (err: any) {
@@ -107,7 +107,7 @@ export const useProductivity = (options: UseProductivityOptions = {}): UseProduc
     setError(null);
     
     try {
-      const response = await api.get(`/productivity/time-metrics?date=${date.toISOString()}`); // Call get API endpoint
+      const response = await api.get(`/productivity/time-metrics?date=${date.toISOString()}`);
       setTimeMetrics(response.data);
       setLastUpdated(new Date());
     } catch (err: any) {
@@ -128,7 +128,7 @@ export const useProductivity = (options: UseProductivityOptions = {}): UseProduc
         dateTo: dateTo.toISOString(),
       });
       
-      const response = await api.get(`/productivity/sla?${params}`); // Call get API endpoint
+      const response = await api.get(`/productivity/sla?${params}`);
       setSlaMetrics(response.data);
       setLastUpdated(new Date());
     } catch (err: any) {

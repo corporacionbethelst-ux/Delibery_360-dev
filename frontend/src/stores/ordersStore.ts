@@ -94,7 +94,7 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   
   // FETCH - API Real
   fetchOrders: async (filters) => {
-    set({ isLoading: true, error: null }); // Set loading state
+    set({ isLoading: true, error: null });
     try {
       const params = new URLSearchParams();
       if (filters?.status) params.append('status', filters.status);
@@ -102,7 +102,7 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
       if (filters?.limit) params.append('limit', String(filters.limit));
       if (filters?.offset !== undefined) params.append('offset', String(filters.offset));
       
-      const response = await api.get(`/orders?${params.toString()}`); // Call get API endpoint
+      const response = await api.get(`/orders?${params.toString()}`);
       const data = Array.isArray(response.data) ? response.data : [];
       set({ 
         orders: data,
@@ -123,10 +123,10 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   },
   
   fetchOrderById: async (id) => {
-    set({ isLoading: true, error: null }); // Set loading state
+    set({ isLoading: true, error: null });
     try {
-      const response = await api.get(`/orders/${id}`); // Call get API endpoint
-      set({ selectedOrder: response.data, isLoading: false }); // Clear loading state
+      const response = await api.get(`/orders/${id}`);
+      set({ selectedOrder: response.data, isLoading: false });
     } catch (error: any) {
       set({ 
         error: error.message || 'Error al obtener pedido',
@@ -137,9 +137,9 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   },
   
   createOrder: async (input) => {
-    set({ isCreating: true, error: null }); // Clear error state
+    set({ isCreating: true, error: null });
     try {
-      const response = await api.post('/orders', input); // Call post API endpoint
+      const response = await api.post('/orders', input);
       const newOrder: Order = response.data;
       set((state) => ({ 
         orders: [newOrder, ...state.orders],
@@ -160,9 +160,9 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   },
   
   updateOrderStatus: async (id, status) => {
-    set({ isUpdating: true, error: null }); // Clear error state
+    set({ isUpdating: true, error: null });
     try {
-      const response = await api.patch(`/orders/${id}/status?new_status=${status}`); // Call patch API endpoint
+      const response = await api.patch(`/orders/${id}/status?new_status=${status}`);
       const updatedOrder: Order = response.data;
       get().updateOrder(id, updatedOrder);
       set({ isUpdating: false });
@@ -176,9 +176,9 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   },
   
   assignRider: async (orderId, riderId) => {
-    set({ isUpdating: true, error: null }); // Clear error state
+    set({ isUpdating: true, error: null });
     try {
-      const response = await api.patch(`/orders/${orderId}/assign`, { rider_id: riderId }); // Call patch API endpoint
+      const response = await api.patch(`/orders/${orderId}/assign`, { rider_id: riderId });
       const updatedOrder: Order = response.data;
       get().updateOrder(orderId, updatedOrder);
       set({ isUpdating: false });
@@ -192,9 +192,9 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   },
   
   deleteOrder: async (id) => {
-    set({ isUpdating: true, error: null }); // Clear error state
+    set({ isUpdating: true, error: null });
     try {
-      await api.delete(`/orders/${id}`); // Call delete API endpoint
+      await api.delete(`/orders/${id}`);
       get().removeOrder(id);
       set({ isUpdating: false });
     } catch (error: any) {

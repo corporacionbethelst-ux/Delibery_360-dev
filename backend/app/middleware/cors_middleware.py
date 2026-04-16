@@ -15,6 +15,17 @@ def setup_cors_middleware(
     allow_headers: Optional[List[str]] = None,
     expose_headers: Optional[List[str]] = None
 ):
+    """
+    Configurar middleware CORS en la aplicación FastAPI con seguridad reforzada
+    
+    Args:
+        app: Instancia de FastAPI
+        allow_origins: Lista de orígenes permitidos (default: desde settings)
+        allow_credentials: Permitir cookies y autenticación (default: True)
+        allow_methods: Métodos HTTP permitidos (default: todos)
+        allow_headers: Headers permitidos (default: todos)
+        expose_headers: Headers expuestos al cliente (default: rate limiting + request ID)
+    """
     
     # Configuración por defecto desde settings o lista específica
     origins = allow_origins or settings.cors_origins
@@ -67,6 +78,7 @@ def setup_cors_middleware(
 
 
 def get_default_cors_config() -> dict:
+    """Obtener configuración CORS por defecto segura"""
     return {
         "allow_origins": [
             "http://localhost:3000",
@@ -95,6 +107,17 @@ def get_default_cors_config() -> dict:
 
 
 def validate_origin(origin: str, allowed_origins: List[str]) -> bool:
+    """
+    Validar si un origen está permitido
+    Soporta patrones simples y validación estricta
+    
+    Args:
+        origin: El origen a validar
+        allowed_origins: Lista de orígenes permitidos
+    
+    Returns:
+        bool: True si el origen es válido
+    """
     if not origin:
         return False
     
@@ -107,6 +130,12 @@ def validate_origin(origin: str, allowed_origins: List[str]) -> bool:
 
 
 def get_security_headers() -> dict:
+    """
+    Obtener headers de seguridad recomendados para agregar a las respuestas
+    
+    Returns:
+        dict: Headers de seguridad
+    """
     return {
         "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
         "X-Content-Type-Options": "nosniff",

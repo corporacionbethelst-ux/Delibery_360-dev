@@ -15,6 +15,7 @@ class SLAStatus(str, Enum):
 
 
 class SLAChecker:
+    """Clase principal para verificación de SLA"""
     
     def __init__(self, base_sla_minutes: int = 45):
         self.base_sla_minutes = base_sla_minutes
@@ -45,6 +46,19 @@ def calculate_sla_threshold(
     peak_hour_bonus: int = 0,
     vip_customer: bool = False
 ) -> int:
+    """
+    Calcula el threshold de SLA considerando múltiples factores
+    
+    Args:
+        base_minutes: Tiempo base en minutos (default: 45)
+        zone_multiplier: Multiplicador por zona (centro: 0.8, periferia: 1.3)
+        weather_multiplier: Multiplicador por clima (lluvia: 1.3, normal: 1.0)
+        peak_hour_bonus: Minutos extra por hora pico
+        vip_customer: Si es cliente VIP reduce el tiempo
+    
+    Returns:
+        Threshold de SLA en minutos
+    """
     threshold = base_minutes * zone_multiplier * weather_multiplier
     threshold += peak_hour_bonus
     
@@ -59,6 +73,17 @@ def check_sla_status(
     current_time: Optional[datetime] = None,
     risk_threshold_minutes: int = 10
 ) -> Tuple[SLAStatus, int]:
+    """
+    Verifica el estado actual del SLA
+    
+    Args:
+        estimated_delivery: Hora estimada de entrega
+        current_time: Hora actual (default: now)
+        risk_threshold_minutes: Minutos antes del límite para considerar "en riesgo"
+    
+    Returns:
+        Tuple[SLAStatus, minutos_restantes_o_retraso]
+    """
     if current_time is None:
         current_time = datetime.now()
     
@@ -78,6 +103,17 @@ def check_sla_status(
 
 
 def calculate_sla_compliance_rate(deliveries: List[Dict]) -> float:
+    """
+    Calcula el porcentaje de entregas dentro del SLA
+    
+    Args:
+        deliveries: Lista de dicts con keys:
+            - estimated_delivery: datetime
+            - actual_delivery: datetime o None
+    
+    Returns:
+        Porcentaje de cumplimiento (0-100)
+    """
     if not deliveries:
         return 100.0
     
@@ -102,6 +138,20 @@ def get_early_warning_alerts(
     active_deliveries: List[Dict],
     risk_threshold_minutes: int = 15
 ) -> List[Dict]:
+    """
+    Genera alertas tempranas para entregas en riesgo de incumplir SLA
+    
+    Args:
+        active_deliveries: Lista de entregas activas con:
+            - id: int
+            - estimated_delivery: datetime
+            - current_status: str
+            - rider_id: int
+            - order_id: int
+    
+    Returns:
+        Lista de alertas con información de la entrega en riesgo
+    """
     alerts = []
     current_time = datetime.now()
     
@@ -135,6 +185,9 @@ def get_early_warning_alerts(
 
 
 def _get_recommended_action(status: SLAStatus, minutes: int) -> str:
+    """
+    Retorna acción recomendada basada en el estado del SLA
+    """
     if status == SLAStatus.AT_RISK:
         if minutes <= 5:
             return "Contactar repartidor inmediatamente"
@@ -156,6 +209,18 @@ def calculate_penalty(
     max_penalty: float = 20.00,
     min_penalty: float = 2.00
 ) -> float:
+    """
+    Calcula penalización por incumplimiento de SLA
+    
+    Args:
+        sla_breach_minutes: Minutos de retraso
+        penalty_rate_per_minute: Valor por minuto de retraso
+        max_penalty: Penalización máxima
+        min_penalty: Penalización mínima
+    
+    Returns:
+        Valor de la penalización
+    """
     if sla_breach_minutes <= 0:
         return 0.0
     
@@ -164,6 +229,15 @@ def calculate_penalty(
 
 
 def get_sla_statistics(deliveries: List[Dict]) -> Dict:
+    """
+    Calcula estadísticas completas de SLA
+    
+    Args:
+        deliveries: Lista de entregas completadas
+    
+    Returns:
+        Dict con estadísticas detalladas
+    """
     if not deliveries:
         return {
             'total_deliveries': 0,

@@ -20,7 +20,7 @@ interface AssignRiderModalProps {
 
 export default function AssignRiderModal({ order, onClose, onAssign }: AssignRiderModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRider, setSelectedRider] = useState<string | null>(null); // State initialized to null
+  const [selectedRider, setSelectedRider] = useState<string | null>(null);
   const { riders, fetchRiders } = useRidersStore();
 
   // Filtrar repartidores disponibles

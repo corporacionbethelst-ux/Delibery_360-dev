@@ -14,11 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 class ShiftService:
+    """Servicio para gestión de turnos"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
     
     async def create_shift(self, rider_id: int, shift_data: ShiftCreate) -> Shift:
+        """Crear un nuevo turno programado"""
         try:
             # Verificar que el repartidor existe
             rider_result = await self.db.execute(select(Rider).where(Rider.id == rider_id))
@@ -46,10 +48,12 @@ class ShiftService:
             raise
     
     async def get_shift_by_id(self, shift_id: int) -> Optional[Shift]:
+        """Obtener turno por ID"""
         result = await self.db.execute(select(Shift).where(Shift.id == shift_id))
         return result.scalar_one_or_none()
     
     async def get_active_shift(self, rider_id: int) -> Optional[Shift]:
+        """Obtener turno activo del repartidor"""
         result = await self.db.execute(
             select(Shift).where(
                 and_(
@@ -61,6 +65,7 @@ class ShiftService:
         return result.scalar_one_or_none()
     
     async def check_in(self, rider_id: int, check_in_data: CheckInRequest) -> tuple[Shift, CheckInOut]:
+        """Realizar check-in (inicio de turno)"""
         # Buscar turno activo o crear uno nuevo si es permitido
         active_shift = await self.get_active_shift(rider_id)
         
@@ -109,6 +114,7 @@ class ShiftService:
         return shift, check_in
     
     async def check_out(self, rider_id: int, check_out_data: CheckOutRequest) -> tuple[Shift, CheckInOut]:
+        """Realizar check-out (fin de turno)"""
         active_shift = await self.get_active_shift(rider_id)
         
         if not active_shift:
@@ -148,6 +154,7 @@ class ShiftService:
         return active_shift, check_out
     
     async def update_shift(self, shift_id: int, shift_data: ShiftUpdate) -> Shift:
+        """Actualizar turno"""
         shift = await self.get_shift_by_id(shift_id)
         if not shift:
             raise ValueError(f"Turno {shift_id} no encontrado")
@@ -162,6 +169,7 @@ class ShiftService:
         return shift
     
     async def cancel_shift(self, shift_id: int, reason: str) -> Shift:
+        """Cancelar turno"""
         shift = await self.get_shift_by_id(shift_id)
         if not shift:
             raise ValueError(f"Turno {shift_id} no encontrado")
@@ -180,6 +188,7 @@ class ShiftService:
         return shift
     
     async def get_shifts_by_rider(self, rider_id: int, limit: int = 50) -> List[Shift]:
+        """Obtener historial de turnos de un repartidor"""
         result = await self.db.execute(
             select(Shift)
             .where(Shift.rider_id == rider_id)
@@ -194,6 +203,7 @@ class ShiftService:
         end_date: datetime,
         rider_id: Optional[int] = None
     ) -> List[Shift]:
+        """Obtener turnos por rango de fechas"""
         query = select(Shift).where(
             and_(
                 Shift.start_time >= start_date,
@@ -209,6 +219,7 @@ class ShiftService:
         return result.scalars().all()
     
     async def get_shift_statistics(self, rider_id: int, days: int = 30) -> dict:
+        """Obtener estadísticas de turnos"""
         cutoff_date = datetime.utcnow() - timedelta(days=days)
         
         result = await self.db.execute(
@@ -235,6 +246,7 @@ class ShiftService:
         }
     
     async def get_active_shifts_count(self) -> int:
+        """Obtener cantidad de turnos activos actualmente"""
         result = await self.db.execute(
             select(func.count(Shift.id)).where(Shift.status == ShiftStatus.ACTIVE)
         )

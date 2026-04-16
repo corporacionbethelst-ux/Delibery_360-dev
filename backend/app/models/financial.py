@@ -11,6 +11,7 @@ from app.core.database import Base
 
 
 class PaymentRuleType(str, enum.Enum):
+    """Types of payment rules."""
     FIJA = "fija"  # Valor fijo por entrega
     VARIABLE = "variable"  # Por distancia/tiempo
     MIXTA = "mixta"  # Combinación
@@ -18,6 +19,7 @@ class PaymentRuleType(str, enum.Enum):
 
 
 class LiquidationStatus(str, enum.Enum):
+    """Liquidation status."""
     PENDIENTE = "pendiente"
     PROCESADA = "procesada"
     PAGADA = "pagada"
@@ -25,6 +27,7 @@ class LiquidationStatus(str, enum.Enum):
 
 
 class TransactionType(str, enum.Enum):
+    """Types of financial transactions."""
     PAGO_ENTREGA = "pago_entrega"
     BONO = "bono"
     DEDUCCION = "deduccion"
@@ -33,6 +36,7 @@ class TransactionType(str, enum.Enum):
 
 
 class FinancialTransaction(Base):
+    """Financial transaction record."""
     
     __tablename__ = "financial_transactions"
     
@@ -64,6 +68,7 @@ class FinancialTransaction(Base):
 
 
 class PaymentRule(Base):
+    """Payment rules configuration for rider compensation."""
     
     __tablename__ = "payment_rules"
     
@@ -107,6 +112,7 @@ class PaymentRule(Base):
 
 
 class DailyLiquidation(Base):
+    """Daily liquidation for each rider."""
     
     __tablename__ = "daily_liquidations"
     
@@ -160,6 +166,7 @@ class DailyLiquidation(Base):
 
 
 class CostRecord(Base):
+    """Cost records per order/delivery for operational analysis."""
     
     __tablename__ = "cost_records"
     

@@ -16,17 +16,21 @@ from app.schemas.auth import TokenData, LoginRequest
 
 
 class AuthService:
+    """Servicio para autenticación y autorización"""
     
     def __init__(self):
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        """Verifica si una contraseña coincide con el hash"""
         return self.pwd_context.verify(plain_password, hashed_password)
     
     def get_password_hash(self, password: str) -> str:
+        """Genera hash de contraseña"""
         return self.pwd_context.hash(password)
     
     def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
+        """Crea token de acceso JWT"""
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
@@ -38,6 +42,7 @@ class AuthService:
         return encoded_jwt
     
     def create_refresh_token(self, data: dict) -> str:
+        """Crea token de refresco JWT"""
         to_encode = data.copy()
         expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         to_encode.update({"exp": expire})
@@ -45,6 +50,7 @@ class AuthService:
         return encoded_jwt
     
     def decode_token(self, token: str) -> Optional[TokenData]:
+        """Decodifica y valida token JWT"""
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
             user_id: str = payload.get("sub")
@@ -57,6 +63,7 @@ class AuthService:
 
     @staticmethod
     def _not_deleted_filter():
+        """Filtro común para usuarios no eliminados."""
         return User.is_deleted.is_(False)
     
     async def authenticate_user(
@@ -65,6 +72,7 @@ class AuthService:
         email: str, 
         password: str
     ) -> Optional[User]:
+        """Autentica usuario con email y contraseña"""
         result = await db.execute(
             select(User).where(User.email == email, self._not_deleted_filter())
         )
@@ -76,6 +84,7 @@ class AuthService:
         return user
     
     async def login(self, db: AsyncSession, login_data: LoginRequest) -> Tuple[str, str, User]:
+        """Realiza login y retorna tokens"""
         user = await self.authenticate_user(db, login_data.email, login_data.password)
         if not user:
             raise HTTPException(
@@ -104,6 +113,7 @@ class AuthService:
         db: AsyncSession, 
         refresh_token: str
     ) -> Tuple[str, str]:
+        """Refresca tokens usando refresh token"""
         token_data = self.decode_token(refresh_token)
         if not token_data:
             raise HTTPException(

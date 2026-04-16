@@ -1,3 +1,7 @@
+/**
+ * WebSocket utilities for Delivery360
+ * Handles WebSocket connection, message handling, and reconnection logic
+ */
 
 export interface WSMessage {
   type: string;
@@ -46,7 +50,7 @@ export class WebSocketClient {
         this.ws = new WebSocket(this.config.url);
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected'); // Debug log
+          console.log('WebSocket connected');
           this.setStatus('connected');
           this.reconnectAttempts = 0;
           this.startHeartbeat();
@@ -59,13 +63,13 @@ export class WebSocketClient {
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error); // Log error for debugging
+          console.error('WebSocket error:', error);
           this.setStatus('error');
           reject(error);
         };
 
         this.ws.onclose = (event) => {
-          console.log('WebSocket closed:', event.code, event.reason); // Debug log
+          console.log('WebSocket closed:', event.code, event.reason);
           this.setStatus('disconnected');
           this.stopHeartbeat();
           this.attemptReconnect();
@@ -107,7 +111,7 @@ export class WebSocketClient {
     } else {
       // Queue message for later delivery
       this.messageQueue.push(enrichedMessage);
-      console.warn('WebSocket not connected, message queued'); // Warning log
+      console.warn('WebSocket not connected, message queued');
     }
   }
 
@@ -171,7 +175,7 @@ export class WebSocketClient {
         genericSubscribers.forEach(callback => callback(message));
       }
     } catch (error) {
-      console.error('Error parsing WebSocket message:', error); // Log error for debugging
+      console.error('Error parsing WebSocket message:', error);
     }
   }
 
@@ -180,14 +184,14 @@ export class WebSocketClient {
    */
   private attemptReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts!) {
-      console.error('Max reconnection attempts reached'); // Log error for debugging
+      console.error('Max reconnection attempts reached');
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.config.reconnectInterval! * Math.pow(2, this.reconnectAttempts - 1);
 
-    console.log(`Attempting reconnection ${this.reconnectAttempts}/${this.config.maxReconnectAttempts} in ${delay}ms`); // Debug log
+    console.log(`Attempting reconnection ${this.reconnectAttempts}/${this.config.maxReconnectAttempts} in ${delay}ms`);
 
     this.reconnectTimer = setTimeout(() => {
       this.connect().catch(console.error);
@@ -280,7 +284,7 @@ export function parseWSMessage(data: string): WSMessage | null {
   try {
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error parsing WebSocket message:', error); // Log error for debugging
+    console.error('Error parsing WebSocket message:', error);
     return null;
   }
 }

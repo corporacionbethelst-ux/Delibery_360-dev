@@ -17,11 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 class DashboardService:
+    """Servicio para obtención de datos de dashboards"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
     
     async def get_manager_dashboard(self, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
+        """Obtener datos para dashboard de gerente"""
         # Total de pedidos
         result = await self.db.execute(
             select(func.count(Order.id))
@@ -122,6 +124,7 @@ class DashboardService:
         }
     
     async def get_operator_dashboard(self, shift_id: Optional[int] = None) -> Dict[str, Any]:
+        """Obtener datos para dashboard de operador"""
         # Pedidos pendientes
         result = await self.db.execute(
             select(func.count(Order.id))
@@ -191,6 +194,7 @@ class DashboardService:
         }
     
     async def get_rider_dashboard(self, rider_id: int, date: Optional[datetime] = None) -> Dict[str, Any]:
+        """Obtener datos para dashboard de repartidor"""
         if not date:
             date = datetime.utcnow().date()
         if isinstance(date, datetime):
@@ -290,6 +294,7 @@ class DashboardService:
         end_date: datetime,
         group_by: str = "day"
     ) -> List[Dict[str, Any]]:
+        """Obtener comparación de productividad por período"""
         # Implementación básica agrupando por día
         result = await self.db.execute(
             select(

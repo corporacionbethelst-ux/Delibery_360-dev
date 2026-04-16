@@ -34,11 +34,38 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    """
+    Verificar si una contraseña en texto plano coincide con su hash
+    
+    Args:
+        plain: Contraseña en texto plano proporcionada por el usuario
+        hashed: Hash de contraseña almacenado en la base de datos
+    
+    Returns:
+        bool: True si la contraseña coincide, False en caso contrario
+    
+    Uso típico:
+        if verify_password(password_provided, user.hashed_password):
+            # Login exitoso
+    """
     # Usar bcrypt para comparar texto plano con hash almacenado
     return pwd_context.verify(plain, hashed)
 
 
 def hash_password(password: str) -> str:
+    """
+    Generar hash seguro de una contraseña usando bcrypt
+    
+    Args:
+        password: Contraseña en texto plano a hashear
+    
+    Returns:
+        str: Hash de la contraseña listo para almacenar en DB
+    
+    Uso típico:
+        user.hashed_password = hash_password("mi_contraseña_segura")
+        db.add(user)
+    """
     # Hashear contraseña con bcrypt (incluye salt automático)
     return pwd_context.hash(password)
 
@@ -48,6 +75,23 @@ get_password_hash = hash_password
 
 
 def create_access_token(subject: Any, expires_delta: Optional[timedelta] = None) -> str:
+    """
+    Crear un JWT access token para autenticación de usuario
+    
+    Args:
+        subject: Identificador del usuario (generalmente UUID o email)
+        expires_delta: Tiempo personalizado de expiración (opcional)
+    
+    Returns:
+        str: Token JWT codificado listo para enviar al cliente
+    
+    El token incluye:
+        - sub: Identificador del sujeto (usuario)
+        - exp: Timestamp de expiración
+        - type: Tipo de token ("access")
+        - iat: Timestamp de creación (issued at)
+        - jti: ID único del token para prevenir replay attacks
+    """
     # Calcular timestamp de expiración: ahora + tiempo configurado o personalizado
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -67,6 +111,20 @@ def create_access_token(subject: Any, expires_delta: Optional[timedelta] = None)
 
 
 def create_refresh_token(subject: Any) -> str:
+    """
+    Crear un JWT refresh token para renovar access tokens expirados
+    
+    Args:
+        subject: Identificador del usuario (generalmente UUID o email)
+    
+    Returns:
+        str: Token JWT de refresh con expiración extendida (días)
+    
+    Diferencias con access token:
+        - Mayor tiempo de vida (días vs minutos)
+        - Se usa solo para obtener nuevos access tokens
+        - Debe almacenarse de forma más segura (httpOnly cookie)
+    """
     # Calcular expiración basada en días configurados (ej: 7 días)
     expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     # Codificar payload JWT similar al access token pero con tipo "refresh"
@@ -84,6 +142,24 @@ def create_refresh_token(subject: Any) -> str:
 
 
 def decode_token(token: str, verify_type: Optional[str] = None) -> Optional[dict]:
+    """
+    Decodificar y validar un token JWT
+    
+    Args:
+        token: El token JWT a decodificar (string completo recibido del cliente)
+        verify_type: Tipo de token esperado ('access' o 'refresh'). 
+                     Si es None, acepta cualquier tipo.
+    
+    Returns:
+        dict: Payload del token (claims) si es válido
+        None: Si el token es inválido, expirado o tipo incorrecto
+    
+    Proceso de validación:
+        1. Decodifica con SECRET_KEY y verifica firma
+        2. Verifica fecha de expiración automáticamente (jwt.decode lo hace)
+        3. Valida tipo de token si se especificó
+        4. Verifica presencia de jti (unique token ID)
+    """
     try:
         # Decodificar token verificando firma y expiración automáticamente
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
@@ -104,6 +180,27 @@ def decode_token(token: str, verify_type: Optional[str] = None) -> Optional[dict
 
 
 def validate_token_strength(token: str) -> dict[str, Any]:
+    """
+    Validar la fortaleza y seguridad de un token JWT
+    
+    Args:
+        token: Token JWT a analizar
+    
+    Returns:
+        dict: Resultado de validación con estructura:
+            {
+                "valid": bool,           # ¿Token es válido?
+                "errors": list[str],     # Lista de errores críticos
+                "warnings": list[str]    # Lista de advertencias no críticas
+            }
+    
+    Validaciones realizadas:
+        - Decodificación y firma válida
+        - Campos requeridos presentes
+        - Tipo de token conocido
+        - Duración razonable según tipo
+        - Tiempo restante antes de expirar
+    """
     # Inicializar resultado con estado inválido por defecto
     result: dict[str, Any] = {
         "valid": False,

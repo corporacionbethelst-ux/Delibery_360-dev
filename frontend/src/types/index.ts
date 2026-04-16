@@ -1,3 +1,7 @@
+/**
+ * Tipos globales de Delivery360
+ * Exporta todos los tipos utilizados en el frontend
+ */
 
 // Enums unificados para estados
 export enum OrderStatus {

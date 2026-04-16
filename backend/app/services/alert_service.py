@@ -14,6 +14,44 @@ logger = logging.getLogger(__name__)
 
 
 class AlertService:
+    """Servicio para gestión de alertas operacionales"""
+
+    @staticmethod
+    def _to_related_id(value: Optional[object]) -> Optional[int]:
+        if isinstance(value, bool):
+            return None
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+        return None
+
+    @staticmethod
+    def _normalize_recipient_user_ids(recipient_user_ids: Optional[List[int]]) -> List[int]:
+        if not recipient_user_ids:
+            return []
+        normalized: List[int] = []
+        for user_id in recipient_user_ids:
+            if isinstance(user_id, bool):
+                continue
+            if isinstance(user_id, int) and user_id > 0 and user_id not in normalized:
+                normalized.append(user_id)
+        return normalized
+
+    @staticmethod
+    def _normalize_severity_key(severity: object) -> str:
+        if not isinstance(severity, str):
+            return "medium"
+        normalized = severity.strip().lower()
+        aliases = {
+            "baja": "low",
+            "normal": "medium",
+            "media": "medium",
+            "alta": "high",
+            "critica": "critical",
+            "crítica": "critical",
+        }
+        return aliases.get(normalized, normalized)
     
     async def create_alert(
         self,
@@ -26,6 +64,7 @@ class AlertService:
         related_entity_type: Optional[str] = None,
         recipient_user_ids: Optional[List[int]] = None
     ) -> Notification:
+        """Crear una nueva alerta"""
         priority_map = {
             "low": NotificationPriority.BAJA,
             "medium": NotificationPriority.NORMAL,
@@ -68,6 +107,7 @@ class AlertService:
         return notifications[0]
     
     async def check_sla_alerts(self, db: AsyncSession, threshold_minutes: int = 5) -> List[Notification]:
+        """Verificar entregas próximas a vencer SLA"""
         now = datetime.utcnow()
         threshold_time = now + timedelta(minutes=threshold_minutes)
         
@@ -90,53 +130,6 @@ class AlertService:
                 related_entity_id=delivery.id,
                 related_entity_type="delivery"
             )
-            alerts.append(alert)
-        
-        return alerts
-    
-    async def check_inactive_riders(self, db: AsyncSession, inactive_minutes: int = 30) -> List[Notification]:
-        # Implementación pendiente de tracking en tiempo real
-        logger.info("Verificando repartidores inactivos...")
-        return []
-    
-    async def check_pending_orders(self, db: AsyncSession, threshold_minutes: int = 10) -> List[Notification]:
-        threshold_time = datetime.utcnow() - timedelta(minutes=threshold_minutes)
-        
-        result = await db.execute(
-            select(Order)
-            .where(Order.status == OrderStatus.PENDING)
-            .where(Order.created_at <= threshold_time)
-        )
-        pending_orders = result.scalars().all()
-        
-        alerts = []
-        for order in pending_orders:
-            alert = await self.create_alert(
-                db=db,
-                alert_type="pending_order",
-                severity="medium",
-                title=f"Pedido #{order.id} sin asignar",
-                message=f"El pedido {order.id} lleva {threshold_minutes}+ minutos sin repartidor",
-                related_entity_id=order.id,
-                related_entity_type="order"
-            )
-            alerts.append(alert)
-        
-        return alerts
-    
-    async def get_active_alerts(
-        self,
-        db: AsyncSession,
-        limit: int = 100
-    ) -> List[Notification]:
-        result = await db.execute(
-            select(Notification)
-            .where(Notification.type == NotificationType.ALERT)
-            .where(Notification.is_read == False)
-            .order_by(Notification.created_at.desc())
-            .limit(limit)
-        )
-        return result.scalars().all()
 
 
 alert_service = AlertService()
