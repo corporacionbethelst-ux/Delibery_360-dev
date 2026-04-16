@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function RiderStartDeliveryPage() {
   const [step, setStep] = useState(1);
-  const [pickupPhoto, setPickupPhoto] = useState<File | null>(null);
+  const [pickupPhoto, setPickupPhoto] = useState<File | null>(null); // State initialized to null
   const [notes, setNotes] = useState('');
 
   const handleTakePhoto = () => {

@@ -55,7 +55,7 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
   
   // FETCH
   fetchDeliveries: async (filters?: Partial<DeliveryFilters>) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null }); // Set loading state
     try {
       const allFilters = { ...get().filters, ...filters };
       const params = new URLSearchParams();
@@ -69,64 +69,64 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       if (allFilters.dateTo) params.append('dateTo', allFilters.dateTo.toISOString());
       if (allFilters.search) params.append('search', allFilters.search);
       
-      const response = await api.get(`/deliveries?${params.toString()}`);
+      const response = await api.get(`/deliveries?${params.toString()}`); // Call get API endpoint
       set({ 
         deliveries: response.data.items, 
         total: response.data.total,
         isLoading: false 
       });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoading: false }); // Clear loading state
       throw error;
     }
   },
   
   fetchDeliveryById: async (id: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null }); // Set loading state
     try {
-      const response = await api.get(`/deliveries/${id}`);
-      set({ selectedDelivery: response.data, isLoading: false });
+      const response = await api.get(`/deliveries/${id}`); // Call get API endpoint
+      set({ selectedDelivery: response.data, isLoading: false }); // Clear loading state
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoading: false }); // Clear loading state
       throw error;
     }
   },
   
   fetchActiveDeliveries: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null }); // Set loading state
     try {
-      const response = await api.get('/deliveries/active');
+      const response = await api.get('/deliveries/active'); // Call get API endpoint
       set({ 
         deliveries: response.data, 
         total: response.data.length,
         isLoading: false 
       });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoading: false }); // Clear loading state
       throw error;
     }
   },
   
   fetchPendingDeliveries: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null }); // Set loading state
     try {
-      const response = await api.get('/deliveries/pending');
+      const response = await api.get('/deliveries/pending'); // Call get API endpoint
       set({ 
         deliveries: response.data, 
         total: response.data.length,
         isLoading: false 
       });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoading: false }); // Clear loading state
       throw error;
     }
   },
   
   // CRUD OPERATIONS
   assignDelivery: async (deliveryId: string, riderId: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null }); // Set loading state
     try {
-      const response = await api.post(`/deliveries/${deliveryId}/assign`, { riderId });
+      const response = await api.post(`/deliveries/${deliveryId}/assign`, { riderId }); // Call post API endpoint
       const updatedDelivery = response.data;
       set((state) => ({
         deliveries: state.deliveries.map(d => d.id === deliveryId ? updatedDelivery : d),
@@ -135,15 +135,15 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoading: false }); // Clear loading state
       throw error;
     }
   },
   
   unassignDelivery: async (deliveryId: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null }); // Set loading state
     try {
-      const response = await api.post(`/deliveries/${deliveryId}/unassign`);
+      const response = await api.post(`/deliveries/${deliveryId}/unassign`); // Call post API endpoint
       const updatedDelivery = response.data;
       set((state) => ({
         deliveries: state.deliveries.map(d => d.id === deliveryId ? updatedDelivery : d),
@@ -152,15 +152,15 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoading: false }); // Clear loading state
       throw error;
     }
   },
   
   startDelivery: async (deliveryId: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null }); // Set loading state
     try {
-      const response = await api.post(`/deliveries/${deliveryId}/start`);
+      const response = await api.post(`/deliveries/${deliveryId}/start`); // Call post API endpoint
       const updatedDelivery = response.data;
       set((state) => ({
         deliveries: state.deliveries.map(d => d.id === deliveryId ? updatedDelivery : d),
@@ -169,15 +169,15 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoading: false }); // Clear loading state
       throw error;
     }
   },
   
   finishDelivery: async (deliveryId: string, proof: Omit<ProofOfDelivery, 'id' | 'deliveryId' | 'timestamp'>) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null }); // Set loading state
     try {
-      const response = await api.post(`/deliveries/${deliveryId}/finish`, proof);
+      const response = await api.post(`/deliveries/${deliveryId}/finish`, proof); // Call post API endpoint
       const updatedDelivery = response.data;
       set((state) => ({
         deliveries: state.deliveries.map(d => d.id === deliveryId ? updatedDelivery : d),
@@ -186,15 +186,15 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoading: false }); // Clear loading state
       throw error;
     }
   },
   
   cancelDelivery: async (deliveryId: string, reason: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null }); // Set loading state
     try {
-      const response = await api.post(`/deliveries/${deliveryId}/cancel`, { reason });
+      const response = await api.post(`/deliveries/${deliveryId}/cancel`, { reason }); // Call post API endpoint
       const updatedDelivery = response.data;
       set((state) => ({
         deliveries: state.deliveries.map(d => d.id === deliveryId ? updatedDelivery : d),
@@ -203,7 +203,7 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoading: false }); // Clear loading state
       throw error;
     }
   },

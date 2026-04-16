@@ -13,11 +13,9 @@ from app.services.auth_service import auth_service
 
 
 class UserService:
-    """Servicio para gestión de usuarios"""
 
     @staticmethod
     def _not_deleted_filter():
-        """Filtro común para usuarios activos lógicamente."""
         return User.is_deleted.is_(False)
 
     @staticmethod
@@ -25,7 +23,6 @@ class UserService:
         return email.strip().lower()
     
     async def get_user(self, db: AsyncSession, user_id: uuid.UUID) -> User:
-        """Obtiene usuario por ID"""
         result = await db.execute(select(User).where(User.id == user_id, self._not_deleted_filter()))
         user = result.scalar_one_or_none()
         if not user:
@@ -36,8 +33,6 @@ class UserService:
         return user
     
     async def get_user_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
-        """Obtiene usuario por email"""
-        normalized_email = self._normalize_email(email)
         result = await db.execute(
             select(User).where(User.email == normalized_email, self._not_deleted_filter())
         )
@@ -49,7 +44,6 @@ class UserService:
         user_data: UserCreate,
         created_by: int
     ) -> User:
-        """Crea un nuevo usuario"""
         # Verificar si email ya existe
         normalized_email = self._normalize_email(user_data.email)
         existing_user = await self.get_user_by_email(db, normalized_email)
@@ -82,7 +76,6 @@ class UserService:
         user_data: UserUpdate,
         updated_by: int
     ) -> User:
-        """Actualiza usuario existente"""
         user = await self.get_user(db, user_id)
         
         update_data = user_data.model_dump(exclude_unset=True)
@@ -108,7 +101,6 @@ class UserService:
         return user
     
     async def delete_user(self, db: AsyncSession, user_id: uuid.UUID, deleted_by: int) -> None:
-        """Elimina usuario (soft delete)"""
         user = await self.get_user(db, user_id)
         user.is_deleted = True
         user.is_active = False
@@ -123,7 +115,6 @@ class UserService:
         role: Optional[UserRole] = None,
         is_active: Optional[bool] = None
     ) -> List[User]:
-        """Lista usuarios con filtros"""
         q = select(User).where(self._not_deleted_filter())
         if role is not None:
             q = q.where(User.role == role)
@@ -135,7 +126,6 @@ class UserService:
         return list(result.scalars().all())
     
     async def deactivate_user(self, db: AsyncSession, user_id: uuid.UUID, deactivated_by: int) -> User:
-        """Desactiva usuario"""
         user = await self.get_user(db, user_id)
         user.is_active = False
         db.add(user)
@@ -144,7 +134,6 @@ class UserService:
         return user
     
     async def activate_user(self, db: AsyncSession, user_id: uuid.UUID, activated_by: int) -> User:
-        """Activa usuario"""
         user = await self.get_user(db, user_id)
         user.is_active = True
         db.add(user)

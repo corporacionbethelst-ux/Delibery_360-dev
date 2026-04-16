@@ -80,7 +80,7 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
   const getWebSocketUrl = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = process.env.NEXT_PUBLIC_WS_URL || window.location.host;
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken'); // Get from localStorage
     
     return `${protocol}//${host}/ws?token=${token}`;
   }, []);
@@ -119,16 +119,16 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
           break;
           
         default:
-          console.warn('Unknown message type:', data.type);
+          console.warn('Unknown message type:', data.type); // Warning log
       }
     } catch (err) {
-      console.error('Error parsing WebSocket message:', err);
+      console.error('Error parsing WebSocket message:', err); // Log error for debugging
     }
   }, [updateOrder, updateDelivery, updateRider, addAlert, mergedOptions]);
 
   // Manejar apertura de conexión
   const handleOpen = useCallback(() => {
-    console.log('WebSocket connected');
+    console.log('WebSocket connected'); // Debug log
     setConnected(true);
     setError(null);
     reconnectCountRef.current = 0;
@@ -141,13 +141,13 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
 
   // Manejar cierre de conexión
   const handleClose = useCallback(() => {
-    console.log('WebSocket disconnected');
+    console.log('WebSocket disconnected'); // Debug log
     setConnected(false);
     
     // Intentar reconectar
     if (reconnectCountRef.current < (mergedOptions.reconnectAttempts || 3)) {
       reconnectCountRef.current += 1;
-      console.log(`Reconnecting... attempt ${reconnectCountRef.current}`);
+      console.log(`Reconnecting... attempt ${reconnectCountRef.current}`); // Debug log
       
       reconnectTimerRef.current = setTimeout(() => {
         connect();
@@ -159,7 +159,7 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
 
   // Manejar error
   const handleError = useCallback((event: Event) => {
-    console.error('WebSocket error:', event);
+    console.error('WebSocket error:', event); // Log error for debugging
     setError('Connection error. Attempting to reconnect...');
   }, [setError]);
 
@@ -182,7 +182,7 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
       wsRef.current.onclose = handleClose;
       wsRef.current.onerror = handleError;
     } catch (err) {
-      console.error('Error creating WebSocket:', err);
+      console.error('Error creating WebSocket:', err); // Log error for debugging
       setError('Failed to establish connection');
     }
   }, [mergedOptions.autoConnect, getWebSocketUrl, handleMessage, handleOpen, handleClose, handleError, setError]);

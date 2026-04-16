@@ -5,7 +5,7 @@ import { TrendingUp, Clock, Target, Award, Package, Star } from 'lucide-react';
 
 export default function RiderProductivityPage() {
   const { getMetrics, loading } = useProductivity();
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<any>(null); // State initialized to null
 
   useEffect(() => {
     const loadMetrics = async () => {

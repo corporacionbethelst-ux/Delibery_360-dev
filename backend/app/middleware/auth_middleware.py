@@ -11,7 +11,6 @@ security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user_from_request(request: Request) -> Optional[dict]:
-    """Extract and validate JWT token from request."""
     credentials: Optional[HTTPAuthorizationCredentials] = await security(request)
     
     if not credentials:
@@ -25,7 +24,6 @@ async def get_current_user_from_request(request: Request) -> Optional[dict]:
 
 
 def require_auth():
-    """Decorator to require authentication for an endpoint."""
     async def dependency(request: Request):
         credentials: Optional[HTTPAuthorizationCredentials] = await security(request)
         
@@ -51,7 +49,6 @@ def require_auth():
 
 
 def require_role(*allowed_roles: str):
-    """Decorator to require specific roles for an endpoint."""
     async def dependency(request: Request):
         # Get user from request state (set by auth middleware)
         user = getattr(request.state, "current_user", None)

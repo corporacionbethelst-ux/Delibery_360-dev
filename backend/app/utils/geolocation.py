@@ -7,10 +7,6 @@ from typing import List, Dict
 def calculate_distance(
     lat1: float, lon1: float, lat2: float, lon2: float
 ) -> float:
-    """
-    Calcular distancia entre dos puntos GPS usando fórmula Haversine.
-    Retorna distancia en metros.
-    """
     R = 6371000  # Radio de la Tierra en metros
     
     phi1 = math.radians(lat1)
@@ -26,7 +22,6 @@ def calculate_distance(
 
 
 def calculate_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calcular bearing (dirección) entre dos puntos en grados"""
     phi1 = math.radians(lat1)
     phi2 = math.radians(lat2)
     delta_lambda = math.radians(lon2 - lon1)
@@ -45,10 +40,6 @@ def calculate_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> flo
 def is_point_in_polygon(
     lat: float, lon: float, polygon: List[Dict[str, float]]
 ) -> bool:
-    """
-    Verificar si un punto está dentro de un polígono usando ray casting.
-    polygon: lista de dicts con {'latitude': float, 'longitude': float}
-    """
     n = len(polygon)
     inside = False
     
@@ -68,7 +59,6 @@ def is_point_in_polygon(
 
 
 def validate_coordinates(latitude: float, longitude: float) -> bool:
-    """Validar que las coordenadas sean válidas"""
     if not (-90 <= latitude <= 90):
         return False
     if not (-180 <= longitude <= 180):
@@ -77,10 +67,6 @@ def validate_coordinates(latitude: float, longitude: float) -> bool:
 
 
 def simplify_route(points: List[Dict[str, float]], tolerance: float = 0.0001) -> List[Dict[str, float]]:
-    """
-    Simplificar ruta usando algoritmo Douglas-Peucker.
-    tolerance: tolerancia en grados (~10 metros)
-    """
     if len(points) <= 2:
         return points
     
@@ -109,7 +95,6 @@ def perpendicular_distance(
     line_start: Dict[str, float], 
     line_end: Dict[str, float]
 ) -> float:
-    """Calcular distancia perpendicular de un punto a una línea"""
     x0 = point['longitude']
     y0 = point['latitude']
     x1 = line_start['longitude']

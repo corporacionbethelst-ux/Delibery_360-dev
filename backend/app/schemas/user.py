@@ -17,7 +17,6 @@ class UserRole(str, Enum):
 
 
 class UserBase(BaseModel):
-    """Base user schema"""
     email: EmailStr
     full_name: str = Field(..., min_length=2, max_length=100)
     phone: str = Field(..., pattern=r'^\+?[1-9]\d{1,14}$')
@@ -25,13 +24,11 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    """User creation schema"""
     password: str = Field(..., min_length=8, max_length=128)
     is_active: bool = True
 
 
 class UserUpdate(BaseModel):
-    """User update schema"""
     email: Optional[EmailStr] = None
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)
     phone: Optional[str] = Field(None, pattern=r'^\+?[1-9]\d{1,14}$')
@@ -41,7 +38,6 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(UserBase):
-    """User response schema"""
     id: int
     is_active: bool
     created_at: datetime
@@ -52,5 +48,4 @@ class UserResponse(UserBase):
 
 
 class UserInDB(UserResponse):
-    """User in database schema"""
     hashed_password: str

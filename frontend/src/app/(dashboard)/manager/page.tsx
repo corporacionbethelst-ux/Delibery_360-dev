@@ -1,9 +1,5 @@
 'use client';
 
-/**
- * Dashboard del Gerente - Delivery360
- * Vista principal para gerentes con KPIs y resumen operativo
- */
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -46,10 +42,10 @@ interface RecentOrder {
 export default function ManagerDashboard() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null); // State initialized to null
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]); // State initialized to empty array
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // State initialized to null
 
   // Verificar autenticación y rol
   useEffect(() => {
@@ -84,7 +80,7 @@ export default function ManagerDashboard() {
         
         setError(null);
       } catch (err) {
-        console.error('Error loading dashboard:', err);
+        console.error('Error loading dashboard:', err); // Log error for debugging
         setError('No se pudieron cargar los datos del dashboard');
         
         // Datos mock para desarrollo

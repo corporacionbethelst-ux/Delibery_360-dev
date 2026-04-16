@@ -6,7 +6,6 @@ from typing import Dict, List, Optional
 
 
 class CostCalculator:
-    """Clase principal para cálculo de costos"""
     
     def __init__(
         self,
@@ -54,22 +53,6 @@ def calculate_delivery_cost(
     insurance_fee: float = 0.50,
     platform_fee_percentage: float = 0.15
 ) -> Dict[str, float]:
-    """
-    Calcula el costo total de una entrega
-    
-    Args:
-        distance_km: Distancia en kilómetros
-        base_rate: Tarifa base fija
-        per_km_rate: Costo por kilómetro
-        time_minutes: Tiempo estimado en minutos
-        per_minute_rate: Costo por minuto
-        fuel_surcharge: Recargo por combustible
-        insurance_fee: Tarifa de seguro
-        platform_fee_percentage: Porcentaje de comisión de plataforma
-    
-    Returns:
-        Dict con desglose de costos
-    """
     distance_cost = distance_km * per_km_rate
     time_cost = time_minutes * per_minute_rate
     subtotal = base_rate + distance_cost + time_cost + fuel_surcharge + insurance_fee
@@ -97,19 +80,6 @@ def calculate_rider_earnings(
     commission_rate: float = 0.20,
     bonus_rules: Optional[Dict] = None
 ) -> Dict[str, float]:
-    """
-    Calcula ganancias del repartidor basado en reglas de pago
-    
-    Args:
-        deliveries: Lista de entregas con distance_km, order_value
-        payment_rule: 'fixed', 'commission', o 'hybrid'
-        fixed_rate: Tarifa fija por entrega
-        commission_rate: Porcentaje de comisión sobre valor del pedido
-        bonus_rules: Reglas de bonificación opcionales
-    
-    Returns:
-        Dict con total ganado y desglose
-    """
     if bonus_rules is None:
         bonus_rules = {}
     
@@ -160,16 +130,6 @@ def calculate_profit_margin(
     revenue: float,
     costs: Dict[str, float]
 ) -> Dict[str, float]:
-    """
-    Calcula margen de ganancia de una entrega u operación
-    
-    Args:
-        revenue: Ingreso total
-        costs: Dict con todos los costos (rider_payment, operational, etc.)
-    
-    Returns:
-        Dict con margen absoluto y porcentual
-    """
     total_costs = sum(costs.values())
     profit = revenue - total_costs
     margin_percentage = (profit / revenue * 100) if revenue > 0 else 0
@@ -188,17 +148,6 @@ def simulate_pricing_scenarios(
     base_time: float,
     scenarios: List[Dict]
 ) -> List[Dict]:
-    """
-    Simula diferentes escenarios de precios
-    
-    Args:
-        base_distance: Distancia base en km
-        base_time: Tiempo base en minutos
-        scenarios: Lista de escenarios con variaciones
-    
-    Returns:
-        Lista de resultados por escenario
-    """
     results = []
     
     for scenario in scenarios:
@@ -232,17 +181,6 @@ def get_operational_cost_summary(
     rider_payments: List[float],
     fixed_costs: Dict[str, float]
 ) -> Dict:
-    """
-    Genera resumen de costos operacionales para un período
-    
-    Args:
-        period_deliveries: Entregas del período
-        rider_payments: Pagos a repartidores
-        fixed_costs: Costos fijos (alquiler, software, etc.)
-    
-    Returns:
-        Resumen completo de costos
-    """
     total_deliveries = len(period_deliveries)
     total_rider_payments = sum(rider_payments)
     total_fixed_costs = sum(fixed_costs.values())

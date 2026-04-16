@@ -8,7 +8,6 @@ from app.core.database import get_db_session
 
 @shared_task(bind=True, max_retries=3)
 def analyze_route_deviations(self, delivery_id: int):
-    """Analizar desviaciones de ruta en una entrega"""
     try:
         db_session = next(get_db_session())
         

@@ -1,7 +1,3 @@
-/**
- * LGPD (Lei Geral de Proteção de Dados) utilities for Delivery360
- * Handles data anonymization, consent management, and privacy compliance
- */
 
 export interface ConsentRecord {
   userId: string;

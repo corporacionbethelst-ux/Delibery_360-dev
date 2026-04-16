@@ -55,7 +55,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           break;
       }
     } catch (error) {
-      console.error('Error parsing WebSocket message:', error);
+      console.error('Error parsing WebSocket message:', error); // Log error for debugging
     }
   }, [lastMessage, orderSubscribers, deliverySubscribers, riderLocationSubscribers, alertSubscribers]);
 

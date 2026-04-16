@@ -1,9 +1,5 @@
 'use client';
 
-/**
- * Página de Login - Delivery360
- * Formulario de autenticación para todos los roles
- */
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -19,7 +15,7 @@ export default function LoginPage() {
     email: '',
     password: '',
   });
-  const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
+  const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({}); // State initialized to empty object
 
   const validateForm = () => {
     const errors: { email?: string; password?: string } = {};
@@ -51,7 +47,7 @@ export default function LoginPage() {
       // La redirección se maneja en el layout o dashboard según el rol
       router.push('/manager');
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('Login error:', err); // Log error for debugging
       // El error ya está manejado por el store
     }
   };

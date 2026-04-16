@@ -1,7 +1,3 @@
-/**
- * Authentication utilities for Delivery360
- * Handles token management, session validation, and auth state
- */
 
 import { AuthTokens, User } from '@/types';
 
@@ -21,9 +17,9 @@ const REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes before expiration
  */
 export function saveTokens(tokens: AuthTokens): void {
   try {
-    localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens)); // Store in localStorage
   } catch (error) {
-    console.error('Error saving tokens:', error);
+    console.error('Error saving tokens:', error); // Log error for debugging
   }
 }
 
@@ -32,11 +28,11 @@ export function saveTokens(tokens: AuthTokens): void {
  */
 export function getTokens(): AuthTokens | null {
   try {
-    const tokensStr = localStorage.getItem(TOKEN_KEY);
+    const tokensStr = localStorage.getItem(TOKEN_KEY); // Get from localStorage
     if (!tokensStr) return null;
     return JSON.parse(tokensStr);
   } catch (error) {
-    console.error('Error getting tokens:', error);
+    console.error('Error getting tokens:', error); // Log error for debugging
     return null;
   }
 }
@@ -46,9 +42,9 @@ export function getTokens(): AuthTokens | null {
  */
 export function clearTokens(): void {
   try {
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY); // Remove from localStorage
   } catch (error) {
-    console.error('Error clearing tokens:', error);
+    console.error('Error clearing tokens:', error); // Log error for debugging
   }
 }
 
@@ -70,7 +66,7 @@ export function decodeToken(token: string): TokenPayload | null {
     
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Error decoding token:', error);
+    console.error('Error decoding token:', error); // Log error for debugging
     return null;
   }
 }

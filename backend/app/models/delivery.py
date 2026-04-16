@@ -12,7 +12,6 @@ from app.core.database import Base
 
 
 class DeliveryStatus(str, enum.Enum):
-    """Delivery execution status."""
     PENDIENTE = "pendiente"  # Esperando inicio
     INICIADA = "iniciada"  # Repartidor inició entrega
     EN_PICKUP = "en_pickup"  # En punto de recogida
@@ -29,7 +28,6 @@ class DeliveryStatus(str, enum.Enum):
 
 
 class ProofType(str, enum.Enum):
-    """Types of proof of delivery."""
     FOTO = "foto"
     FIRMA = "firma"
     OTP = "otp"  # One-time password
@@ -37,7 +35,6 @@ class ProofType(str, enum.Enum):
 
 
 class Delivery(Base):
-    """Delivery model tracking the execution of an order delivery."""
     
     __tablename__ = "deliveries"
     

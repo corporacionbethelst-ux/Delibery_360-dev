@@ -10,7 +10,6 @@ from datetime import datetime
 
 
 class WebhookHandler:
-    """Manejador para envío y recepción de webhooks"""
     
     def __init__(self, secret: Optional[str] = None):
         self.secret = secret
@@ -18,7 +17,6 @@ class WebhookHandler:
         self.max_retries = 3
     
     def generate_signature(self, payload: str, secret: str) -> str:
-        """Generar firma HMAC para webhook"""
         return hmac.new(
             secret.encode(),
             payload.encode(),
@@ -26,7 +24,6 @@ class WebhookHandler:
         ).hexdigest()
     
     def verify_signature(self, payload: str, signature: str, secret: str) -> bool:
-        """Verificar firma de webhook recibido"""
         expected = self.generate_signature(payload, secret)
         return hmac.compare_digest(expected, signature)
     
@@ -37,18 +34,6 @@ class WebhookHandler:
         payload: Dict[str, Any],
         secret: Optional[str] = None
     ) -> bool:
-        """
-        Enviar webhook a URL externa
-        
-        Args:
-            url: URL del webhook
-            event_type: Tipo de evento
-            payload: Datos del evento
-            secret: Secreto para firmar (opcional)
-            
-        Returns:
-            True si exitoso, False si falló
-        """
         headers = {
             "Content-Type": "application/json",
             "X-Webhook-Event": event_type,
@@ -83,18 +68,6 @@ class WebhookHandler:
         event_type: str,
         secret: Optional[str] = None
     ) -> Dict[str, Any]:
-        """
-        Recibir y verificar webhook
-        
-        Args:
-            payload: Body del webhook
-            signature: Firma recibida
-            event_type: Tipo de evento
-            secret: Secreto para verificar
-            
-        Returns:
-            Datos verificados o error
-        """
         if secret:
             if not self.verify_signature(payload, signature, secret):
                 return {"success": False, "error": "Invalid signature"}

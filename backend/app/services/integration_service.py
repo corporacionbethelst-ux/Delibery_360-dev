@@ -12,7 +12,6 @@ from app.integrations.webhook_handler import WebhookHandler
 
 
 class IntegrationService:
-    """Servicio para gestión de integraciones"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -27,7 +26,6 @@ class IntegrationService:
         config: Dict[str, Any],
         enabled: bool = True
     ) -> Integration:
-        """Crear nueva integración"""
         integration = Integration(
             name=name,
             integration_type=integration_type,
@@ -44,7 +42,6 @@ class IntegrationService:
         return integration
     
     async def get_integration(self, integration_id: int) -> Optional[Integration]:
-        """Obtener integración por ID"""
         query = select(Integration).where(Integration.id == integration_id)
         result = await self.db.execute(query)
         return result.scalars().first()
@@ -54,7 +51,6 @@ class IntegrationService:
         integration_type: Optional[IntegrationType] = None,
         status: Optional[IntegrationStatus] = None
     ) -> List[Integration]:
-        """Listar integraciones con filtros"""
         query = select(Integration)
         
         if integration_type:
@@ -73,7 +69,6 @@ class IntegrationService:
         integration_id: int,
         status: IntegrationStatus
     ) -> Optional[Integration]:
-        """Actualizar estado de integración"""
         integration = await self.get_integration(integration_id)
         
         if not integration:
@@ -86,11 +81,9 @@ class IntegrationService:
         return integration
     
     async def sync_with_pos(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Sincronizar pedido con sistema POS"""
         return await self.pos_connector.send_order(order_data)
     
     async def sync_with_erp(self, financial_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Sincronizar datos financieros con ERP"""
         return await self.erp_connector.send_financial_data(financial_data)
     
     async def trigger_webhook(
@@ -99,7 +92,6 @@ class IntegrationService:
         payload: Dict[str, Any],
         webhook_url: str
     ) -> bool:
-        """Disparar webhook externo"""
         return await self.webhook_handler.send_webhook(webhook_url, event_type, payload)
     
     async def register_webhook_event(
@@ -110,7 +102,6 @@ class IntegrationService:
         success: bool,
         response_code: Optional[int] = None
     ) -> WebhookEvent:
-        """Registrar evento de webhook"""
         event = WebhookEvent(
             integration_id=integration_id,
             event_type=event_type,
@@ -126,7 +117,6 @@ class IntegrationService:
         return event
     
     async def test_connection(self, integration_id: int) -> Dict[str, Any]:
-        """Probar conexión con integración"""
         integration = await self.get_integration(integration_id)
         
         if not integration:
@@ -146,5 +136,4 @@ class IntegrationService:
 
 
 def get_integration_service(db: AsyncSession) -> IntegrationService:
-    """Factory para obtener servicio de integraciones"""
     return IntegrationService(db)

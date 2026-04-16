@@ -29,7 +29,7 @@ export default function OperatorDashboard() {
   const [riders, setRiders] = useState(MOCK_RIDERS);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null); // State initialized to null
 
   useEffect(() => {
     // Simulación de fetch inicial
@@ -40,7 +40,7 @@ export default function OperatorDashboard() {
         // setRiders(ridersRes.data);
         setLoading(false);
       } catch (error) {
-        console.error("Error cargando datos", error);
+        console.error("Error cargando datos", error); // Log error for debugging
         setLoading(false);
       }
     };

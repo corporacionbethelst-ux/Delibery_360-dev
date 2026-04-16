@@ -14,10 +14,6 @@ from datetime import datetime
 logger = logging.getLogger("app.exceptions")
 
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """
-    Manejador global de excepciones no capturadas.
-    Loguea el error y devuelve una respuesta JSON estandarizada.
-    """
     # Generar ID de traza para seguimiento
     trace_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}-{id(exc)}"
     
@@ -50,10 +46,6 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    """
-    Manejador específico para errores de validación de Pydantic/FastAPI.
-    Devuelve detalles claros sobre qué campos fallaron.
-    """
     errors = []
     for error in exc.errors():
         errors.append({
@@ -84,9 +76,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """
-    Manejador para excepciones HTTP estándar (404, 403, etc.).
-    """
     from fastapi import HTTPException
     
     if isinstance(exc, HTTPException):
@@ -113,9 +102,6 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
 
 
 async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
-    """
-    Manejador específico para errores de base de datos.
-    """
     trace_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}-{id(exc)}"
     
     logger.error(
@@ -142,10 +128,6 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -
 
 
 def register_exception_handlers(app):
-    """
-    Registra todos los manejadores de excepciones en la aplicación FastAPI.
-    Debe llamarse en main.py después de crear la app.
-    """
     app.add_exception_handler(Exception, global_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)

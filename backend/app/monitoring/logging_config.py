@@ -9,7 +9,6 @@ from pythonjsonlogger import jsonlogger
 
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
-    """Formatter JSON personalizado para logs estructurados"""
     
     def add_fields(self, log_record: Dict[str, Any], record: logging.LogRecord, message_dict: Dict[str, Any]):
         super().add_fields(log_record, record, message_dict)
@@ -32,14 +31,6 @@ def setup_logging(
     log_format: str = "json",
     log_file: str = None
 ):
-    """
-    Configurar logging para la aplicación
-    
-    Args:
-        level: Nivel de logging (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        log_format: Formato (json o text)
-        log_file: Archivo de log opcional
-    """
     
     # Crear logger raíz
     root_logger = logging.getLogger()
@@ -81,5 +72,4 @@ def setup_logging(
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Obtener logger con nombre específico"""
     return logging.getLogger(name)

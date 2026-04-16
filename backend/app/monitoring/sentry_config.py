@@ -16,15 +16,6 @@ def setup_sentry(
     traces_sample_rate: float = 0.1,
     send_default_pii: bool = False
 ):
-    """
-    Configurar Sentry para monitoreo de errores
-    
-    Args:
-        dsn: DSN de Sentry (URL del proyecto)
-        environment: Entorno (development, staging, production)
-        traces_sample_rate: Porcentaje de transacciones a muestrear (0.0 a 1.0)
-        send_default_pii: Enviar información personal identificable
-    """
     
     dsn = dsn or settings.SENTRY_DSN
     
@@ -53,7 +44,6 @@ def setup_sentry(
 
 
 def set_user_context(user_id: str, email: Optional[str] = None, username: Optional[str] = None):
-    """Establecer contexto de usuario para debugging"""
     sentry_sdk.set_user({
         "id": user_id,
         "email": email,
@@ -62,20 +52,16 @@ def set_user_context(user_id: str, email: Optional[str] = None, username: Option
 
 
 def set_tag(key: str, value: str):
-    """Agregar tag para filtrado de eventos"""
     sentry_sdk.set_tag(key, value)
 
 
 def set_extra(key: str, value: Any):
-    """Agregar información adicional al evento"""
     sentry_sdk.set_extra(key, value)
 
 
 def capture_exception(exception: Exception, **kwargs):
-    """Capturar excepción manualmente"""
     sentry_sdk.capture_exception(exception, **kwargs)
 
 
 def capture_message(message: str, level: str = "info"):
-    """Capturar mensaje manualmente"""
     sentry_sdk.capture_message(message, level=level)

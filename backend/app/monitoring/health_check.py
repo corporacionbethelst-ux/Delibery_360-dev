@@ -8,13 +8,11 @@ router = APIRouter()
 
 @router.get("/check", tags=["Health"])
 async def health_check():
-    """Basic health check"""
     return {"status": "healthy", "service": "delivery360-api"}
 
 
 @router.get("/ready", tags=["Health"])
 async def readiness_check():
-    """Readiness check with database connectivity"""
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
@@ -25,7 +23,6 @@ async def readiness_check():
 
 @router.get("/live", tags=["Health"])
 async def liveness_check():
-    """Liveness probe"""
     return {"status": "alive"}
 
 

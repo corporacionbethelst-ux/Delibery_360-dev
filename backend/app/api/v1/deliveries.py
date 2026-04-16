@@ -90,7 +90,6 @@ async def _get_rider_for_user(db: AsyncSession, user_id) -> Optional[Rider]:
 
 
 async def _ensure_rider_delivery_access(db: AsyncSession, current_user: User, delivery: Delivery) -> None:
-    """Restringe acceso de repartidores a sus propias entregas."""
     if current_user.role != UserRole.REPARTIDOR:
         return
     rider = await _get_rider_for_user(db, current_user.id)

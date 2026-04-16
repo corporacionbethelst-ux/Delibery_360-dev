@@ -11,7 +11,6 @@ from app.core.database import Base
 
 
 class RouteStatus(str, enum.Enum):
-    """Route status."""
     PLANIFICADA = "planificada"
     EN_PROGRESO = "en_progreso"
     COMPLETADA = "completada"
@@ -19,7 +18,6 @@ class RouteStatus(str, enum.Enum):
 
 
 class Route(Base):
-    """Route model for tracking delivery paths."""
     
     __tablename__ = "routes"
     
@@ -72,7 +70,6 @@ class Route(Base):
 
 
 class RoutePoint(Base):
-    """Individual GPS point in a route for detailed tracking."""
     
     __tablename__ = "route_points"
     
@@ -113,7 +110,6 @@ Route.points = relationship("RoutePoint", back_populates="route", cascade="all, 
 
 
 class RouteDeviation(Base):
-    """Route deviation tracking for anomaly detection."""
     
     __tablename__ = "route_deviations"
     
