@@ -1,70 +1,70 @@
+// Financial Store - Zustand para gestión financiera
 import { create } from 'zustand';
 import api from '@/lib/api';
 
-// Definición de tipos financieros
 export interface FinancialSummary {
   totalRevenue: number;
   totalCosts: number;
   netProfit: number;
-  period: string;
+  activeDeliveries: number;
+  pendingPayments: number;
 }
 
 export interface PaymentRule {
   id: string;
   name: string;
   baseRate: number;
-  distanceRate: number;
-  isActive: boolean;
+  perKmRate: number;
+  priorityMultiplier: number;
 }
 
 interface FinancialState {
   summary: FinancialSummary | null;
   rules: PaymentRule[];
-  loading: boolean;
+  isLoading: boolean;
   error: string | null;
   
-  // Acciones
-  fetchSummary: (period: string) => Promise<void>;
-  fetchRules: () => Promise<void>;
-  clearError: () => void;
+  fetchSummary: () => Promise<void>;
+  fetchPaymentRules: () => Promise<void>;
+  updatePaymentRule: (id: string, data: Partial<PaymentRule>) => Promise<void>;
 }
 
-export const useFinancial = create<FinancialState>((set) => ({
+export const useFinancialStore = create<FinancialState>((set) => ({
   summary: null,
   rules: [],
-  loading: false,
+  isLoading: false,
   error: null,
 
-  fetchSummary: async (period) => {
-    set({ loading: true, error: null });
+  fetchSummary: async () => {
+    set({ isLoading: true, error: null });
     try {
-      // Simulación de llamada API si el endpoint no existe aún
-      // const response = await api.get(`/financial/summary?period=${period}`);
-      const mockData: FinancialSummary = {
-        totalRevenue: 15420.50,
-        totalCosts: 8300.20,
-        netProfit: 7120.30,
-        period
-      };
-      set({ summary: mockData, loading: false });
-    } catch (err) {
-      set({ error: 'Error al cargar datos financieros', loading: false });
+      const response = await api.get('/financial/summary');
+      set({ summary: response.data, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
     }
   },
 
-  fetchRules: async () => {
-    set({ loading: true, error: null });
+  fetchPaymentRules: async () => {
+    set({ isLoading: true, error: null });
     try {
-      // const response = await api.get('/financial/rules');
-      const mockRules: PaymentRule[] = [
-        { id: '1', name: 'Tarifa Estándar', baseRate: 2.5, distanceRate: 0.8, isActive: true },
-        { id: '2', name: 'Tarifa Nocturna', baseRate: 3.5, distanceRate: 1.2, isActive: true },
-      ];
-      set({ rules: mockRules, loading: false });
-    } catch (err) {
-      set({ error: 'Error al cargar reglas de pago', loading: false });
+      const response = await api.get('/financial/rules');
+      set({ rules: response.data, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
     }
   },
 
-  clearError: () => set({ error: null }),
+  updatePaymentRule: async (id: string, data: Partial<PaymentRule>) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.put(`/financial/rules/${id}`, data);
+      // Recargar reglas
+      const response = await api.get('/financial/rules');
+      set({ rules: response.data, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 }));
