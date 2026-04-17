@@ -1,41 +1,25 @@
-# Frontend Dockerfile - Delivery360
-FROM node:20-alpine
+# Usamos una imagen oficial de Node.js
+FROM node:18-alpine
 
-# Set environment variables
-ENV NODE_ENV=production \
-    PORT=3000
-
-# Set work directory
+# Establecemos el directorio de trabajo
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache libc6-compat
-
-# Copy package files
+# Copiamos los archivos de configuración de dependencias
 COPY package.json package-lock.json* ./
 
-# Install dependencies
-RUN npm ci
+# Instalamos dependencias (incluyendo las que faltaban como leaflet, recharts, etc.)
+# Nota: Si faltan algunas en tu package.json real, las instalaremos manual luego, 
+# pero este Dockerfile asume que están listadas o las instalaremos al vuelo si es necesario.
+RUN npm install
 
-# Copy application code
+# Si necesitas instalar librerías extra que no están en package.json, descomenta esto:
+# RUN npm install leaflet react-leaflet recharts date-fns lucide-react clsx tailwind-merge
+
+# Copiamos el resto del código fuente
 COPY . .
 
-# Build the application
-RUN npm run build
-
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001 && \
-    chown -R nextjs:nodejs /app/.next
-
-USER nextjs
-
-# Expose port
+# Expone el puerto 3000 de Next.js
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
-
-# Start the application
-CMD ["npm", "start"]
+# Comando para modo desarrollo (con hot-reload)
+CMD ["npm", "run", "dev"]

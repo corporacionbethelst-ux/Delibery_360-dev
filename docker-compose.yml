@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-delivery360}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Soporte}
       POSTGRES_DB: ${POSTGRES_DB:-delivery360}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -50,8 +50,8 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+async://postgres:${POSTGRES_PASSWORD:-changeme123}@postgres:5432/delivery360
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme123}@redis:6379/0
+      DATABASE_URL: postgresql+async://postgres:${POSTGRES_PASSWORD:-Soporte}@postgres:5432/delivery360
+      REDIS_URL: redis://:${REDIS_PASSWORD:-Soporte}@redis:6379/0
     volumes:
       - ./app:/app/app
     ports:
@@ -97,8 +97,8 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+async://postgres:${POSTGRES_PASSWORD:-changeme123}@postgres:5432/delivery360
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme123}@redis:6379/0
+      DATABASE_URL: postgresql+async://postgres:${POSTGRES_PASSWORD:-Soporte}@postgres:5432/delivery360
+      REDIS_URL: redis://:${REDIS_PASSWORD:-Soporte}@redis:6379/0
     volumes:
       - ./app:/app/app
     depends_on:
@@ -120,8 +120,8 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+async://postgres:${POSTGRES_PASSWORD:-changeme123}@postgres:5432/delivery360
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme123}@redis:6379/0
+      DATABASE_URL: postgresql+async://postgres:${POSTGRES_PASSWORD:-Soporte}@postgres:5432/delivery360
+      REDIS_URL: redis://:${REDIS_PASSWORD:-Soporte}@redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy
