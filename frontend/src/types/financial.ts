@@ -13,6 +13,21 @@ export interface Money {
   currency: 'BRL' | 'USD' | 'EUR';
 }
 
+export interface FinancialReport {
+  id: string;
+  date: string;
+  totalIncome: number;
+  totalExpenses: number;
+  netProfit: number;
+  status: 'completed' | 'processing';
+}
+
+export interface CostBreakdown {
+  category: string;
+  amount: number;
+  percentage: number;
+}
+
 export interface PaymentRule {
   id: string;
   name: string;

@@ -10,6 +10,18 @@ export interface RiderLocation {
   lastUpdate: Date;
 }
 
+export interface RiderProfile {
+  id: string;
+  userId: string;
+  fullName: string;
+  phoneNumber: string;
+  vehicleType: 'motorcycle' | 'bicycle' | 'car' | 'van';
+  vehiclePlate?: string;
+  status: 'active' | 'inactive' | 'suspended';
+  rating: number;
+  completedDeliveries: number;
+}
+
 export interface RiderVehicle {
   type: RiderVehicleType;
   plate?: string;
