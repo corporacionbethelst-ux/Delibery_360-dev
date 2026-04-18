@@ -49,7 +49,7 @@ export default function RegisterRiderPage() {
     setError(null);
     try {
       // Llamada real a la API del backend
-      await api.registerRider(data);
+      await api.post('/auth/register-rider',data);
       setSuccess(true);
       setTimeout(() => router.push('/rider'), 2000);
     } catch (err: any) {
