@@ -19,31 +19,79 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Crear extensión para UUID
+    # Crear extensión para UUID si no existe
     op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
     
-    # Crear tipos ENUM
-    user_role = postgresql.ENUM('superadmin', 'gerente', 'operador', 'repartidor', name='userrole')
-    user_role.create(op.get_bind())
+    # --- CREACIÓN DE TIPOS ENUM CON VERIFICACIÓN DE EXISTENCIA ---
     
-    vehicle_type = postgresql.ENUM('moto', 'bicicleta', 'auto', 'pie', name='vehicletype')
-    vehicle_type.create(op.get_bind())
+    # 1. userrole
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE userrole AS ENUM ('superadmin', 'gerente', 'operador', 'repartidor');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    user_role = postgresql.ENUM('superadmin', 'gerente', 'operador', 'repartidor', name='userrole', create_type=False)
     
-    rider_status = postgresql.ENUM('pendiente', 'activo', 'inactivo', 'suspendido', name='riderstatus')
-    rider_status.create(op.get_bind())
+    # 2. vehicletype
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE vehicletype AS ENUM ('moto', 'bicicleta', 'auto', 'pie');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    vehicle_type = postgresql.ENUM('moto', 'bicicleta', 'auto', 'pie', name='vehicletype', create_type=False)
     
+    # 3. riderstatus
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE riderstatus AS ENUM ('pendiente', 'activo', 'inactivo', 'suspendido');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    rider_status = postgresql.ENUM('pendiente', 'activo', 'inactivo', 'suspendido', name='riderstatus', create_type=False)
+    
+    # 4. orderstatus
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE orderstatus AS ENUM (
+                'pendiente', 'confirmado', 'en_preparacion', 'listo_para_recoger',
+                'en_camino', 'entregado', 'fallido', 'cancelado'
+            );
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
     order_status = postgresql.ENUM(
         'pendiente', 'confirmado', 'en_preparacion', 'listo_para_recoger',
         'en_camino', 'entregado', 'fallido', 'cancelado',
-        name='orderstatus'
+        name='orderstatus', create_type=False
     )
-    order_status.create(op.get_bind())
     
-    shift_status = postgresql.ENUM('activo', 'cerrado', name='shiftstatus')
-    shift_status.create(op.get_bind())
+    # 5. shiftstatus
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE shiftstatus AS ENUM ('activo', 'cerrado');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    shift_status = postgresql.ENUM('activo', 'cerrado', name='shiftstatus', create_type=False)
     
-    notification_type = postgresql.ENUM('push', 'email', 'sms', 'in_app', name='notificationtype')
-    notification_type.create(op.get_bind())
+    # 6. notificationtype
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE notificationtype AS ENUM ('push', 'email', 'sms', 'in_app');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    notification_type = postgresql.ENUM('push', 'email', 'sms', 'in_app', name='notificationtype', create_type=False)
+    
+    # --- CREACIÓN DE TABLAS ---
     
     # Tabla: users
     op.create_table('users',
@@ -327,13 +375,13 @@ def downgrade() -> None:
     op.drop_table('riders')
     op.drop_table('users')
     
-    # Eliminar tipos ENUM
-    sa.Enum(name='notificationtype').drop(op.get_bind())
-    sa.Enum(name='shiftstatus').drop(op.get_bind())
-    sa.Enum(name='orderstatus').drop(op.get_bind())
-    sa.Enum(name='riderstatus').drop(op.get_bind())
-    sa.Enum(name='vehicletype').drop(op.get_bind())
-    sa.Enum(name='userrole').drop(op.get_bind())
+    # Eliminar tipos ENUM con verificación de existencia
+    # Usamos DROP TYPE ... IF EXISTS para evitar errores si ya fueron borrados
+    op.execute('DROP TYPE IF EXISTS notificationtype')
+    op.execute('DROP TYPE IF EXISTS shiftstatus')
+    op.execute('DROP TYPE IF EXISTS orderstatus')
+    op.execute('DROP TYPE IF EXISTS riderstatus')
+    op.execute('DROP TYPE IF EXISTS vehicletype')
+    op.execute('DROP TYPE IF EXISTS userrole')
     
-    # Eliminar extensión UUID (opcional, solo si no hay otras tablas usándola)
-    # op.execute('DROP EXTENSION IF EXISTS "uuid-ossp"')
+    # Nota: No eliminamos la extensión uuid-ossp por si otras tablas la usan

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Clock, Plus, Calendar, Users, CheckCircle, XCircle } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
-import { api } from "@/lib/api"
+import api from "@/lib/api"
 
 // Página de gestión de turnos para operadores
 export default function OperatorShiftsPage() {

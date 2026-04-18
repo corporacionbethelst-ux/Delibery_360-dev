@@ -20,7 +20,7 @@ import {
   TrendingUp,
   AlertCircle
 } from "lucide-react"
-import { api } from "@/lib/api"
+import api from "@/lib/api"
 
 // Definir tipo para las alertas del sistema
 interface Alert {

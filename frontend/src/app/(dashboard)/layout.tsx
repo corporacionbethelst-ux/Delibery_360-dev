@@ -22,7 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (!user) return []
     
     switch (user.role) {
-      case "manager":
+      case "gerente":
         return [
           { name: "Dashboard", href: "/manager" },
           { name: "Repartidores", href: "/manager/riders" },
@@ -31,7 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { name: "Reportes", href: "/manager/reports" },
           { name: "Configuración", href: "/manager/settings" },
         ]
-      case "operator":
+      case "operador":
         return [
           { name: "Dashboard", href: "/operator" },
           { name: "Mapa en Vivo", href: "/operator/live-map" },
@@ -40,7 +40,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { name: "Turnos", href: "/operator/shifts" },
           { name: "Alertas", href: "/operator/alerts" },
         ]
-      case "rider":
+      case "repartidor":
         return [
           { name: "Dashboard", href: "/rider" },
           { name: "Mis Órdenes", href: "/rider/my-orders" },

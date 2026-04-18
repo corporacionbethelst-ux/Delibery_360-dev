@@ -12,11 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Motorcycle, Bike, Car, CheckCircle } from 'lucide-react';
+import { Loader2, Motorbike, Bike, Car, CheckCircle } from 'lucide-react';
 
 const vehicleOptions = [
   { value: 'bicycle', label: 'Bicicleta', icon: Bike },
-  { value: 'motorcycle', label: 'Motocicleta', icon: Motorcycle },
+  { value: 'motorcycle', label: 'Motocicleta', icon: Motorbike },
   { value: 'car', label: 'Automóvil', icon: Car },
 ];
 

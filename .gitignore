@@ -1,6 +1,9 @@
 ```
 # Dependencies
 node_modules/
+.next/cache/
+.npm/
+.next/
 
 # Build artifacts
 dist/
