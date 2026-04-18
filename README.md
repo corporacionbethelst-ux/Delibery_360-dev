@@ -108,7 +108,7 @@ docker-compose logs -f
 - Redis: localhost:6379
 - pgAdmin: http://localhost:5050
 
-### Opción 2: Desarrollo Local
+### Opción 2: Desarrollo Local 
 
 #### Backend
 
