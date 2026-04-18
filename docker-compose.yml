@@ -54,7 +54,7 @@ services:
     environment:
       DATABASE_URL: postgresql://admin:admin123@db:5432/delivery360
       REDIS_URL: redis://redis:6379
-      SECRET_KEY: super_secret_key_change_in_production_12345
+      SECRET_KEY: DVb1Bx3McB2IkOCcnLjGJfEcuVzbOYvVDMdbr8kEt1E
       ENVIRONMENT: development
       PROJECT_NAME: Delivery360
     depends_on:
