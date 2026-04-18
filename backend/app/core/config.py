@@ -1,8 +1,5 @@
-# Importar BaseSettings de pydantic_settings para manejar configuración desde variables de ambiente
 from pydantic_settings import BaseSettings
-# Importar tipos para definir listas y valores opcionales en la configuración
 from typing import List, Optional
-# Importar módulo json para parsear strings JSON de variables de ambiente
 import json
 
 

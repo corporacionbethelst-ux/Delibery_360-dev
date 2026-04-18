@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   db:
@@ -38,11 +37,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: delivery360_api
-    # Usamos wait-for-it correcto y luego migraciones + servidor
+    # Usamos un bucle bash nativo para esperar sin dependencias externas
     command: >
-      sh -c "wait-for-it db:5432 --timeout=30 --strict -- 
-             wait-for-it redis:6379 --timeout=30 --strict -- 
+      sh -c "echo 'Esperando a la base de datos...' && 
+             while ! nc -z db 5432; do sleep 1; done && 
+             echo 'Esperando a Redis...' && 
+             while ! nc -z redis 6379; do sleep 1; done && 
+             echo 'Iniciando migraciones...' && 
              alembic upgrade head && 
+             echo 'Iniciando servidor API...' && 
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
       - ./backend:/app

@@ -7,8 +7,9 @@ WORKDIR /app
 # Instalamos dependencias del sistema necesarias para compilar librerías Python
 RUN apt-get update && apt-get install -y \
     gcc \
+    libpq-dev \
     postgresql-client \
-    wait-for-it \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiamos primero el archivo de requisitos para aprovechar la caché de Docker
