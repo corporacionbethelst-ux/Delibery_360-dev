@@ -1,9 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
-from sqlalchemy import create_engine
-from typing import AsyncGenerator, Generator
+from sqlalchemy.orm import DeclarativeBase
+from typing import AsyncGenerator
 from app.core.config import settings
-import os
 
 class Base(DeclarativeBase):
     """
@@ -11,56 +9,34 @@ class Base(DeclarativeBase):
     """
     pass
 
-# Helper para asegurar que la URL tenga el prefijo correcto para asyncpg
-def get_async_url():
-    url = settings.DATABASE_URL
-    if not url.startswith("postgresql+asyncpg://"):
-        url = url.replace("postgresql://", "postgresql+asyncpg://")
-    return url
+# Validar que la URL tenga el prefijo correcto para asyncpg
+# Si la URL en .env es 'postgresql://', la convertimos a 'postgresql+asyncpg://'
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-def get_sync_url():
-    url = settings.DATABASE_URL
-    # Asegurar que sea síncrona para workers
-    if url.startswith("postgresql+asyncpg://"):
-        url = url.replace("postgresql+asyncpg://", "postgresql://")
-    return url
-
-# Crear engine asíncrono
-# NOTA: No pasamos 'driver' como argumento separado, debe ir en la URL
-async_engine = create_async_engine(
-    get_async_url(),
+# Crear engine asíncrono para conexión a PostgreSQL usando asyncpg
+engine = create_async_engine(
+    db_url,
     echo=settings.DEBUG,
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
 )
 
+# Crear fábrica de sesiones asíncronas
 AsyncSessionLocal = async_sessionmaker(
-    async_engine,
+    engine,
     class_=AsyncSession,
     expire_on_commit=False,
     autocommit=False,
     autoflush=False,
 )
 
-# Engine síncrono para workers
-sync_engine = create_engine(
-    get_sync_url(),
-    echo=settings.DEBUG,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-)
-
-SessionLocal = sessionmaker(
-    bind=sync_engine,
-    class_=Session,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
-
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Dependencia de FastAPI para obtener sesión de base de datos asíncrona
+    """
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -70,10 +46,3 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
-
-def get_db_session() -> Generator[Session, None, None]:
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
