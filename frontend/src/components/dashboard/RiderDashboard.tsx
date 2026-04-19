@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Package, DollarSign, Clock, TrendingUp, MapPin, Star, Award, Truck } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
-import { api } from "@/lib/api"
+import api from "@/lib/api"
 import { formatCurrency } from "@/lib/financial-utils"
 
 // Componente de dashboard para repartidores con métricas y estadísticas

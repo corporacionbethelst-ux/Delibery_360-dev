@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Bell, CheckCircle, XCircle, Clock, Filter } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { api } from "@/lib/api"
+import api from "@/lib/api"
 
 // Componente de panel de alertas para mostrar y gestionar alertas del sistema
 export default function AlertPanel() {

@@ -2,7 +2,7 @@ import React from 'react';
 import { Trophy, Medal, Award, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { Rider } from '@/types/riders';
+import type { Rider } from '@/types/rider';
 
 interface PerformanceRankingProps {
   riders: (Rider & { 

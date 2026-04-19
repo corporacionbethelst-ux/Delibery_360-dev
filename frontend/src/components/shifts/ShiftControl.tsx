@@ -3,7 +3,7 @@ import { Clock, Sun, Moon, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { Rider, Shift } from '@/types/riders';
+import type { Rider, Shift } from '@/types/rider';
 
 interface ShiftControlProps {
   riders: (Rider & { currentShift?: Shift })[];

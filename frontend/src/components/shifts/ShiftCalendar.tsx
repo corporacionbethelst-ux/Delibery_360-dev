@@ -3,7 +3,7 @@ import { Calendar, ChevronLeft, ChevronRight, Clock, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import type { Shift, Rider } from '@/types/riders';
+import type { Shift, Rider } from '@/types/rider';
 
 interface ShiftCalendarProps {
   shifts: (Shift & { rider: Rider })[];

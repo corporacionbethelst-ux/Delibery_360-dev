@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { Rider } from '@/types/riders';
+import type { Rider } from '@/types/rider';
 
 interface CheckInOutProps {
   rider: Rider & { currentShift?: { isActive: boolean; startTime?: string; type?: string } };
