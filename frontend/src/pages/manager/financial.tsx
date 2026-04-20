@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useFinancialStore } from '@/stores/financialStore';
-import { StatsCard } from '@/components/dashboard/StatsCard';
+import { StatsCard } from '@/components/dashboard/StatsCards';
 import { formatCurrency } from '@/lib/financial-utils';
 import { DollarSign, TrendingUp, CreditCard, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
