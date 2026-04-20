@@ -1,47 +1,74 @@
-```
-# Dependencies
-node_modules/
-.next/cache/
-.npm/
-.next/
+# ============================================
+# DELIVERY360 - .gitignore Global
+# ============================================
 
-# Build artifacts
-dist/
-build/
-target/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# --- Dependencias (Lo más pesado) ---
+/node_modules
+/frontend/node_modules
+/backend/__pycache__
+/backend/**/__pycache__
+/*.pyc
+/*.pyo
+/*.pyd
 .Python
 env/
 venv/
 .venv/
-.ENV
-.ENV.*
-.env
-.env.*
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Logs
+# --- Build Outputs (Generados por Next.js y Python) ---
+.next/
+/out/
+/build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Logs y Caché ---
+logs/
 *.log
-
-# Coverage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+.mypy_cache/
+.pytest_cache/
 .coverage
-coverage/
 htmlcov/
 
-# IDE
+# --- Entornos Locales (Credenciales) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+frontend/.env.local
+
+# --- IDE y Editores ---
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
-
-# OS
+*~
 .DS_Store
 Thumbs.db
+
+# --- Docker (Opcional: si no quieres subir configs locales) ---
+# .docker/
+
+# --- Datos de Base de Datos (Volúmenes locales si los hubiera) ---
+# Asegura que los datos solo vivan en volúmenes de Docker, no en el repo
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Archivos Temporales ---
+tmp/
+temp/
+.cache/
 
 # Compressed
 *.zip

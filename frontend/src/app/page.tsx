@@ -13,11 +13,11 @@ export default function Page() {
             <span className="text-2xl font-bold text-white">Delivery360</span>
           </div>
           <div className="space-x-6">
-            <Link href="/auth/login" className="text-gray-300 hover:text-white transition">
+            <Link href="/login" className="text-gray-300 hover:text-white transition">
               Iniciar Sesión
             </Link>
             <Link 
-              href="/auth/register" 
+              href="/register" 
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
             >
               Registrarse
@@ -38,7 +38,7 @@ export default function Page() {
           </p>
           <div className="flex justify-center gap-4">
             <Link 
-              href="/auth/register" 
+              href="/register" 
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition flex items-center"
             >
               Comenzar Gratis
@@ -100,7 +100,7 @@ export default function Page() {
             Únete a cientos de empresas que ya confían en Delivery360 para gestionar sus entregas diarias.
           </p>
           <Link 
-            href="/auth/register" 
+            href="/register" 
             className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-lg text-lg font-semibold transition inline-block"
           >
             Crear Cuenta Gratuita

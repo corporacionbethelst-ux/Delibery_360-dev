@@ -1,31 +1,25 @@
-# Usamos una imagen ligera de Python 3.11
 FROM python:3.11-slim
 
-# Establecemos el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Instalamos dependencias del sistema necesarias para compilar librerías Python
+# Instalar dependencias del sistema y netcat para esperar servicios
 RUN apt-get update && apt-get install -y \
     gcc \
-    libpq-dev \
     postgresql-client \
     netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiamos primero el archivo de requisitos para aprovechar la caché de Docker
+# Copiar requirements primero para aprovechar caché de Docker
 COPY requirements.txt .
 
-# Instalamos las dependencias de Python
+# Instalar dependencias Python de forma estricta
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Instalamos una pequeña utilidad para esperar a que la DB esté lista
-RUN pip install wait-for-it
-
-# Copiamos todo el código del backend
+# Copiar el resto del código
 COPY . .
 
-# Expone el puerto 8000
+# Exponer puerto
 EXPOSE 8000
 
-# Comando por defecto (se sobreescribe en docker-compose para migraciones)
+# Comando por defecto (se sobreescribe en docker-compose)
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

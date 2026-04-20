@@ -289,10 +289,4 @@ export const authApi = {
 // Exportar instancia principal para uso directo
 export default apiClient;
 
-// Exportar metodos utilitarios
-export {
-  API_BASE_URL,
-  getStoredTokens,
-  storeTokens,
-  clearStoredTokens,
-};
+
