@@ -1134,7 +1134,7 @@ POST   /auth/refresh                  # Refresh de token
        - Recibe: refresh_token
        - Retorna: Nuevo access_token y refresh_token
        
-POST   /auth/register-rider           # Registro publico de repartidores
+POST   /register           # Registro publico de repartidores
        - Recibe: email, password, full_name, phone, vehicle_type, lgpd_consent
        - Retorna: Mensaje de exito, user_id
        
