@@ -40,6 +40,8 @@ class Delivery(Base):
     """Delivery model tracking the execution of an order delivery."""
     
     __tablename__ = "deliveries"
+
+    __table_args__ = {'extend_existing': True}
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id"), unique=True, nullable=False, index=True)

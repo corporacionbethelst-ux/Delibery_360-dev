@@ -1,17 +1,14 @@
 /**
  * Auth Store - Zustand store para gestión de autenticación
+ * CORREGIDO: Login envía form-data compatible con FastAPI OAuth2
  */
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi, clearStoredTokens } from '../lib/api';
+import api from '../lib/api'; // Importamos la instancia base de axios
+import { clearStoredTokens, getStoredTokens } from '../lib/api';
 
-// Tipos locales ya que api.ts no los exporta directamente
-interface LoginRequest {
-  email: string;
-  password: string;
-}
-
+// Tipos locales
 interface User {
   id: string;
   email: string;
@@ -19,14 +16,32 @@ interface User {
   role: 'superadmin' | 'gerente' | 'operador' | 'repartidor';
 }
 
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+// Definimos explícitamente lo que esperamos del backend al hacer login
+interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user_id: string;
+  role: string;
+  full_name: string;
+  email?: string;
+}
+
+interface RegisterResponse {
+  message: string;
+  user_id: string;
+}
+
 interface AuthState {
-  // Estado
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
 
-  // Acciones
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
   registerRider: (data: {
@@ -45,25 +60,38 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      // Estado inicial
       user: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
 
-      // Login
+      // --- LOGIN CORREGIDO ---
       login: async (credentials: LoginRequest) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authApi.login(credentials.email, credentials.password);
-          
-          // Construir usuario desde la respuesta plana del backend
+          // 1. Preparar datos como formulario (x-www-form-urlencoded)
+          const params = new URLSearchParams();
+          params.append('username', credentials.email); // FastAPI OAuth2 requiere 'username'
+          params.append('password', credentials.password);
+
+          // 2. Enviar petición manual con axios
+          const response = await api.post<LoginResponse>('/auth/login', params, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          });
+
+          const data = response.data;
+
+          // 3. Construir objeto de usuario
           const user: User = {
-            id: response.user_id,
-            email: credentials.email,
-            full_name: response.full_name,
-            role: response.role as User['role'],
+            id: data.user_id,
+            email: data.email || credentials.email,
+            full_name: data.full_name,
+            role: data.role as User['role'],
           };
+
+          // 4. Guardar en localStorage y estado
           localStorage.setItem('user', JSON.stringify(user));
           
           set({
@@ -71,15 +99,16 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
+        } catch (error: any) {
+          console.error('Login error:', error);
+          const errorMessage = error.response?.data?.detail || 'Error al iniciar sesión';
           set({
             error: errorMessage,
             isLoading: false,
             isAuthenticated: false,
             user: null,
           });
-          throw error;
+          throw new Error(errorMessage);
         }
       },
 
@@ -87,18 +116,18 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         set({ isLoading: true });
         try {
-          authApi.logout();
+          // Llamada opcional al backend para invalidar token si existiera
+          // await api.post('/auth/logout'); 
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
+          clearStoredTokens();
+          localStorage.removeItem('user');
           set({
             user: null,
             isAuthenticated: false,
             isLoading: false,
           });
-          
-          // Limpiar localStorage
-          localStorage.removeItem('user');
         }
       },
 
@@ -106,14 +135,14 @@ export const useAuthStore = create<AuthState>()(
       registerRider: async (data) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await authApi.registerRider(data);
+          // Nota: Asumimos que registerRider acepta JSON según tu schema Pydantic
+          const response = await api.post<RegisterResponse>('/register', data);
           
-          // Construir usuario desde la respuesta plana del backend
           const user: User = {
-            id: response.user_id,
+            id: response.data.user_id,
             email: data.email,
             full_name: data.full_name,
-            role: response.role as User['role'],
+            role: 'repartidor',
           };
           localStorage.setItem('user', JSON.stringify(user));
           
@@ -122,30 +151,47 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Error al registrar';
-          set({
-            error: errorMessage,
-            isLoading: false,
-          });
-          throw error;
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.detail || 'Error al registrar';
+          set({ error: errorMessage, isLoading: false });
+          throw new Error(errorMessage);
         }
       },
 
-      // Verificar autenticación al cargar la app
+      // Verificar autenticación
       checkAuth: async () => {
-        const token = localStorage.getItem('access_token');
+        const tokens = getStoredTokens();
         
-        if (!token) {
+        if (!tokens.accessToken) {
           set({ isAuthenticated: false, user: null });
           return;
         }
 
+        // Si hay usuario en localStorage, lo restauramos rápido (optimista)
+        const storedUserStr = localStorage.getItem('user');
+        if (storedUserStr) {
+          try {
+            const storedUser = JSON.parse(storedUserStr);
+            set({ user: storedUser, isAuthenticated: true });
+          } catch (e) {
+            localStorage.removeItem('user');
+          }
+        }
+
         set({ isLoading: true });
         try {
-          const user = await authApi.me();
-          localStorage.setItem('user', JSON.stringify(user));
+          // Validamos con el backend
+          const response = await api.get<{ id: string; email: string; full_name: string; role: string }>('/auth/me');
+          const userData = response.data;
           
+          const user: User = {
+            id: userData.id,
+            email: userData.email,
+            full_name: userData.full_name,
+            role: userData.role as User['role'],
+          };
+          
+          localStorage.setItem('user', JSON.stringify(user));
           set({
             user,
             isAuthenticated: true,
@@ -154,6 +200,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Auth check failed:', error);
           clearStoredTokens();
+          localStorage.removeItem('user');
           set({
             isAuthenticated: false,
             user: null,
@@ -162,10 +209,8 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Limpiar error
       clearError: () => set({ error: null }),
 
-      // Actualizar usuario
       updateUser: (userData: Partial<User>) => {
         const currentUser = get().user;
         if (currentUser) {
