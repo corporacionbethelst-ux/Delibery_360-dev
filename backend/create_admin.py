@@ -24,8 +24,7 @@ async def create_admin():
                 email=email,
                 hashed_password=pwd_context.hash('Admin123!'),
                 full_name='Administrador Principal',
-                # Usamos el valor .value.lower() para garantizar que sea 'superadmin' en minúsculas
-                role=UserRole.SUPERADMIN.value.lower(), 
+                role=UserRole.SUPERADMIN,
                 is_active=True,
                 phone='+5511999999999',
                 lgpd_consent=True,
