@@ -24,8 +24,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     if (!currentRole) return false;
 
     const rolePageAccess: Record<UserRole, string[]> = {
-      admin: ['*'], // Admin can access all pages
-      manager: [
+      superadmin: ['*'], // Admin can access all pages
+      gerente: [
         '/manager',
         '/manager/financial',
         '/manager/riders',
@@ -33,7 +33,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         '/manager/settings',
         '/orders',
       ],
-      operator: [
+      operador: [
         '/operator',
         '/operator/orders',
         '/operator/deliveries',
@@ -41,7 +41,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         '/operator/alerts',
         '/operator/live-map',
       ],
-      rider: [
+      repartidor: [
         '/rider',
         '/rider/my-orders',
         '/rider/productivity',

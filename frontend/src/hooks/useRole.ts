@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 
-export type Role = 'MANAGER' | 'OPERATOR' | 'RIDER';
+export type Role = 'superadmin' | 'gerente' | 'operador' | 'repartidor';
 
 interface Permission {
   module: string;
@@ -16,7 +16,22 @@ interface RoleConfig {
 }
 
 const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
-  MANAGER: {
+  superadmin: {
+    name: 'Superadministrador',
+    description: 'Acceso completo al sistema',
+    permissions: [
+      { module: 'orders', actions: ['create', 'read', 'update', 'delete', 'approve', 'export'] },
+      { module: 'deliveries', actions: ['create', 'read', 'update', 'delete', 'assign', 'export'] },
+      { module: 'riders', actions: ['create', 'read', 'update', 'delete', 'approve', 'suspend', 'export'] },
+      { module: 'financial', actions: ['read', 'export', 'configure', 'approve_payments'] },
+      { module: 'reports', actions: ['read', 'export', 'configure'] },
+      { module: 'settings', actions: ['read', 'update', 'configure'] },
+      { module: 'users', actions: ['create', 'read', 'update', 'delete', 'manage_roles'] },
+      { module: 'alerts', actions: ['read', 'create', 'update', 'delete', 'configure'] },
+      { module: 'audit', actions: ['read', 'export'] },
+    ],
+  },
+  gerente: {
     name: 'Gerente',
     description: 'Acceso completo al sistema',
     permissions: [
@@ -31,7 +46,7 @@ const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
       { module: 'audit', actions: ['read', 'export'] },
     ],
   },
-  OPERATOR: {
+  operador: {
     name: 'Operador',
     description: 'Gestión operativa diaria',
     permissions: [
@@ -43,7 +58,7 @@ const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
       { module: 'alerts', actions: ['read', 'create', 'update'] },
     ],
   },
-  RIDER: {
+  repartidor: {
     name: 'Repartidor',
     description: 'App del repartidor',
     permissions: [
@@ -101,9 +116,10 @@ export const useRole = () => {
     return roleConfig.permissions.some(p => p.module === module);
   };
 
-  const isManager = (): boolean => currentRole === 'MANAGER';
-  const isOperator = (): boolean => currentRole === 'OPERATOR';
-  const isRider = (): boolean => currentRole === 'RIDER';
+  const isSuperadmin = (): boolean => currentRole === 'superadmin';
+  const isGerente = (): boolean => currentRole === 'gerente';
+  const isOperador = (): boolean => currentRole === 'operador';
+  const isRepartidor = (): boolean => currentRole === 'repartidor';
 
   const getAvailableModules = (): string[] => {
     if (!roleConfig) return [];
@@ -124,9 +140,10 @@ export const useRole = () => {
     isAuthenticated,
     
     // Verificaciones de rol
-    isManager,
-    isOperator,
-    isRider,
+    isSuperadmin,
+    isGerente,
+    isOperador,
+    isRepartidor,
     checkRoleAccess,
     
     // Verificaciones de permisos

@@ -48,6 +48,11 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
 
 export type UserRole = 'superadmin' | 'gerente' | 'operador' | 'repartidor';
 
+export type Permission = {
+  module: string;
+  action: string;
+};
+
 export type RiderStatus = 'pendiente' | 'activo' | 'inactivo' | 'suspendido';
 
 export type VehicleType = 'moto' | 'bicicleta' | 'auto' | 'pie';
