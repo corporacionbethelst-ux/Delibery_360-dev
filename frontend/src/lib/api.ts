@@ -246,7 +246,7 @@ export const authApi = {
     vehicle_type: string;
     license_plate?: string;
   }) => {
-    const response = await apiClient.post<TokenPair>('/auth/register-rider', data);
+    const response = await apiClient.post<TokenPair>('/register', data);
 
     if (response.data.access_token && response.data.refresh_token) {
       storeTokens(response.data);
