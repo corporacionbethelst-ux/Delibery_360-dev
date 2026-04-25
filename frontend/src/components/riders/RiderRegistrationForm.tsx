@@ -11,15 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useRidersStore } from '@/stores/ridersStore';
-import type { RiderCreateInput } from '@/types/rider';
+import type { RiderCreateInput, RiderVehicleType } from '@/types/rider';
 
+// Esquema de validación actualizado con campos requeridos por el modelo Rider
 const riderFormSchema = z.object({
   fullName: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
   email: z.string().email('Email inválido'),
   phone: z.string().min(8, 'Teléfono inválido'),
-  vehicleType: z.enum(['BICICLETA', 'MOTO', 'AUTO'], {
+  cpf: z.string().min(9, 'CPF requerido'), // Campo añadido
+  birthDate: z.string().min(1, 'Fecha de nacimiento requerida'), // Campo añadido
+  vehicleType: z.enum(['MOTO', 'BICICLETA', 'AUTO', 'PIE'], {
     required_error: 'Selecciona un tipo de vehículo',
   }),
+  vehiclePlate: z.string().optional(),
   operatingZone: z.string().min(1, 'Zona requerida'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
 });
@@ -41,7 +45,10 @@ export default function RiderRegistrationForm({ onSuccess, onCancel }: RiderRegi
       fullName: '',
       email: '',
       phone: '',
-      vehicleType: 'BICICLETA',
+      cpf: '',
+      birthDate: '',
+      vehicleType: 'MOTO',
+      vehiclePlate: '',
       operatingZone: '',
       password: '',
     },
@@ -50,11 +57,31 @@ export default function RiderRegistrationForm({ onSuccess, onCancel }: RiderRegi
   const onSubmit = async (data: RiderFormValues) => {
     setIsSubmitting(true);
     try {
-      await createRider(data as RiderCreateInput);
+      // Transformar los datos del formulario para que coincidan con RiderCreateInput
+      const payload: RiderCreateInput = {
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+        phone: data.phone,
+        cpf: data.cpf,
+        cnh: undefined, // Opcional, podrías añadirlo al formulario si lo necesitas
+        birthDate: new Date(data.birthDate), // Convertir string a Date
+        vehicle: {
+          type: data.vehicleType as RiderVehicleType,
+          plate: data.vehiclePlate || undefined,
+          model: undefined,
+          color: undefined,
+          year: undefined,
+        },
+        operatingZone: data.operatingZone,
+      };
+
+      await createRider(payload);
       form.reset();
       onSuccess?.();
     } catch (error: any) {
       console.error('Error al crear repartidor:', error);
+      // Aquí podrías mostrar un toast de error
     } finally {
       setIsSubmitting(false);
     }
@@ -104,7 +131,37 @@ export default function RiderRegistrationForm({ onSuccess, onCancel }: RiderRegi
                   <FormItem>
                     <FormLabel>Teléfono</FormLabel>
                     <FormControl>
-                      <Input placeholder="+34 600 000 000" {...field} />
+                      <Input placeholder="+55 11 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="cpf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF / Documento</FormLabel>
+                    <FormControl>
+                      <Input placeholder="000.000.000-00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="birthDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha de Nacimiento</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -126,9 +183,10 @@ export default function RiderRegistrationForm({ onSuccess, onCancel }: RiderRegi
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="BICICLETA">🚴 Bicicleta</SelectItem>
                         <SelectItem value="MOTO">🏍️ Moto</SelectItem>
+                        <SelectItem value="BICICLETA">🚴 Bicicleta</SelectItem>
                         <SelectItem value="AUTO">🚗 Auto</SelectItem>
+                        <SelectItem value="PIE">🚶 A pie</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -138,18 +196,32 @@ export default function RiderRegistrationForm({ onSuccess, onCancel }: RiderRegi
 
               <FormField
                 control={form.control}
-                name="operatingZone"
+                name="vehiclePlate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Zona de Operación</FormLabel>
+                    <FormLabel>Placa / Patente (Opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ej. Centro, Norte, Sur..." {...field} />
+                      <Input placeholder="ABC-1234" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="operatingZone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Zona de Operación</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ej. Centro, Norte, Sur..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

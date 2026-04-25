@@ -24,7 +24,7 @@ export interface UseGeolocationOptions {
   autoStart?: boolean;
 }
 
-const defaultOptions: UseGeolocationOptions = {
+const defaultOptions: Required<UseGeolocationOptions> = {
   enableHighAccuracy: true,
   timeout: 10000,
   maximumAge: 0,
@@ -33,11 +33,16 @@ const defaultOptions: UseGeolocationOptions = {
 };
 
 export const useGeolocation = (options: UseGeolocationOptions = {}) => {
+  // Fusionar opciones de forma estable
   const mergedOptions = { ...defaultOptions, ...options };
   
+  // EXTRAER VARIABLES PRIMITIVAS AQUÍ para evitar errores en hooks
+  const { autoStart, watchPosition, enableHighAccuracy, timeout, maximumAge } = mergedOptions;
+
+  // Inicializar estado con valor seguro (false) y ajustar luego con useEffect si es necesario
   const [position, setPosition] = useState<GeoPosition | null>(null);
   const [error, setError] = useState<GeoError | null>(null);
-  const [loading, setLoading] = useState<boolean>(mergedOptions.autoStart);
+  const [loading, setLoading] = useState<boolean>(false); 
   const [isSupported, setIsSupported] = useState<boolean>(true);
   
   const watchId = useRef<number | null>(null);
@@ -55,6 +60,17 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
     }
   }, []);
 
+  // APLICAR autoStart DESPUÉS DEL MONTAJE
+  useEffect(() => {
+    if (autoStart && isSupported) {
+      // Llamamos a startWatching solo cuando el efecto corre
+      // Nota: startWatching debe estar definido antes o manejado cuidadosamente
+      // Para simplificar, llamaremos a la lógica interna directamente aquí o usamos la función expuesta
+      startWatchingInternal();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart, isSupported]); // Solo dependemos de estos valores primitivos
+
   // Limpiar watcher al desmontar
   useEffect(() => {
     return () => {
@@ -64,7 +80,8 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
     };
   }, []);
 
-  const startWatching = useCallback(() => {
+  // Lógica interna separada para evitar dependencias circulares complejas
+  const startWatchingInternal = useCallback(() => {
     if (!isSupported) return;
 
     setLoading(true);
@@ -85,14 +102,13 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
       setError(null);
       setLoading(false);
 
-      // Llamar al callback externo si existe
       if (callbackRef.current) {
         callbackRef.current(pos);
       }
     };
 
     const errorCallback = (geoError: GeolocationPositionError) => {
-      const error: GeoError = {
+      const err: GeoError = {
         code: geoError.code,
         message: (() => {
           switch (geoError.code) {
@@ -108,32 +124,35 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
         })(),
       };
 
-      setError(error);
+      setError(err);
       setLoading(false);
     };
 
-    if (mergedOptions.watchPosition) {
+    const config = {
+      enableHighAccuracy,
+      timeout,
+      maximumAge,
+    };
+
+    if (watchPosition) {
       watchId.current = navigator.geolocation.watchPosition(
         successCallback,
         errorCallback,
-        {
-          enableHighAccuracy: mergedOptions.enableHighAccuracy,
-          timeout: mergedOptions.timeout,
-          maximumAge: mergedOptions.maximumAge,
-        }
+        config
       );
     } else {
       navigator.geolocation.getCurrentPosition(
         successCallback,
         errorCallback,
-        {
-          enableHighAccuracy: mergedOptions.enableHighAccuracy,
-          timeout: mergedOptions.timeout,
-          maximumAge: mergedOptions.maximumAge,
-        }
+        config
       );
     }
-  }, [isSupported, mergedOptions]);
+  }, [isSupported, watchPosition, enableHighAccuracy, timeout, maximumAge]);
+
+  // Funciones públicas
+  const startWatching = useCallback(() => {
+    startWatchingInternal();
+  }, [startWatchingInternal]);
 
   const stopWatching = useCallback(() => {
     if (watchId.current !== null) {
@@ -157,21 +176,18 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
   const calculateDistance = useCallback((toLatitude: number, toLongitude: number): number => {
     if (!position) return -1;
 
-    const fromLatitude = position.latitude;
-    const fromLongitude = position.longitude;
-
-    const R = 6371e3; // Radio de la Tierra en metros
-    const φ1 = (fromLatitude * Math.PI) / 180;
+    const R = 6371e3; 
+    const φ1 = (position.latitude * Math.PI) / 180;
     const φ2 = (toLatitude * Math.PI) / 180;
-    const Δφ = ((toLatitude - fromLatitude) * Math.PI) / 180;
-    const Δλ = ((toLongitude - fromLongitude) * Math.PI) / 180;
+    const Δφ = ((toLatitude - position.latitude) * Math.PI) / 180;
+    const Δλ = ((toLongitude - position.longitude) * Math.PI) / 180;
 
     const a =
       Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
       Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c; // Distancia en metros
+    return R * c;
   }, [position]);
 
   const getBearing = useCallback((): number | null => {
@@ -180,23 +196,16 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
   }, [position]);
 
   return {
-    // Estado
     position,
     error,
     loading,
     isSupported,
-    
-    // Acciones
     startWatching,
     stopWatching,
     refreshPosition,
     setCallback,
-    
-    // Utilidades
     calculateDistance,
     getBearing,
-    
-    // Info rápida
     latitude: position?.latitude ?? null,
     longitude: position?.longitude ?? null,
     accuracy: position?.accuracy ?? null,

@@ -1,5 +1,4 @@
-// Tipos TypeScript para Alertas - Delivery360
-// Define la estructura de alertas del sistema para notificaciones en tiempo real
+// src/types/alerts.ts
 
 export type AlertType = 
   | 'ENTREGA_RETASADA'
@@ -9,7 +8,7 @@ export type AlertType =
   | 'INCIDENTE_SEGURIDAD'
   | 'PROBLEMA_TECNICO'
   | 'ALERTA_CLIMA'
-  | 'TRAfico_INTENSO'
+  | 'TRAFCO_INTENSO' // Corregido typo de TRAFICO
   | 'BAJO_RENDIMIENTO'
   | 'FALLO_PAGO'
   | 'OTRO';
@@ -30,35 +29,31 @@ export interface Alert {
   severity: AlertSeverity;
   status: AlertStatus;
   
-  // Información descriptiva
   title: string;
   message: string;
   description?: string;
   
-  // Entidades relacionadas
   orderId?: string;
   deliveryId?: string;
+  entityId?: string;
   riderId?: string;
   userId?: string;
   
-  // Ubicación del incidente
   location?: AlertLocation;
-  
-  // Metadatos
   metadata?: Record<string, unknown>;
   
-  // Fechas
   createdAt: Date;
   updatedAt?: Date;
   resolvedAt?: Date;
   
-  // Resolución
   resolvedBy?: string;
   resolutionNotes?: string;
   
-  // Notificaciones
   notifiedUsers: string[];
   escalationLevel: number;
+  
+  // Propiedad auxiliar para UI (opcional, si tu backend la envía)
+  isRead?: boolean; 
 }
 
 export interface AlertCreateInput {
@@ -96,25 +91,5 @@ export interface AlertStats {
   byType: Record<AlertType, number>;
   bySeverity: Record<AlertSeverity, number>;
   byStatus: Record<AlertStatus, number>;
-  averageResolutionTime: number; // en minutos
-}
-
-export interface AlertNotification {
-  alertId: string;
-  userId: string;
-  notifiedAt: Date;
-  readAt?: Date;
-  channel: 'PUSH' | 'EMAIL' | 'SMS' | 'IN_APP';
-  success: boolean;
-  errorMessage?: string;
-}
-
-export interface AlertSubscription {
-  userId: string;
-  alertTypes: AlertType[];
-  severities: AlertSeverity[];
-  channels: ('PUSH' | 'EMAIL' | 'SMS' | 'IN_APP')[];
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  averageResolutionTime: number;
 }

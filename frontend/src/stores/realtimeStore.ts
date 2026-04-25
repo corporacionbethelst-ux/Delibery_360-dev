@@ -81,7 +81,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
         updatedOrders[existingIndex] = order;
         
         // Si el estado es final, remover de activas
-        const finalStatuses: OrderStatus[] = ['COMPLETADO', 'CANCELADO'];
+        const finalStatuses: OrderStatus[] = ['ENTREGADO', 'CANCELADO']; 
         if (finalStatuses.includes(order.status)) {
           updatedOrders.splice(existingIndex, 1);
         }

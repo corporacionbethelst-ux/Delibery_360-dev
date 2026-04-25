@@ -43,6 +43,29 @@ export interface ProductivityMetric {
   calculatedAt: Date;
 }
 
+// Agrega esto en src/types/productivity.ts
+
+export interface ProductivityMetrics {
+  // Resumen global (puedes usar TeamProductivity o definirlo aquí)
+  summary: {
+    totalDeliveries: number;
+    activeRiders: number;
+    averageDeliveryTime: number;
+    onTimePercentage: number;
+  };
+  
+  // Métricas del rider actual (si está disponible)
+  currentRider?: RiderProductivity;
+  
+  // Período de las métricas
+  period: {
+    from: Date;
+    to: Date;
+  };
+  
+  calculatedAt: Date;
+}
+
 export interface RiderProductivity {
   riderId: string;
   rider?: Rider;

@@ -15,7 +15,8 @@ interface ProofOfDeliveryProps {
 export function ProofOfDelivery({ delivery, onSubmit }: ProofOfDeliveryProps) {
   const [photos, setPhotos] = React.useState<File[]>([]);
   const [notes, setNotes] = React.useState('');
-  const [customerName, setCustomerName] = React.useState('');
+  // Inicializar con el nombre del cliente si existe en la orden asociada
+  const [customerName, setCustomerName] = React.useState(delivery.order?.customerName || '');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,8 +42,14 @@ export function ProofOfDelivery({ delivery, onSubmit }: ProofOfDeliveryProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-blue-50 p-4 rounded-lg">
             <h4 className="font-semibold mb-2">Entrega #{delivery.id.slice(0, 8)}</h4>
-            <p className="text-sm text-gray-600">Cliente: {delivery.customer.name}</p>
-            <p className="text-sm text-gray-600">Dirección: {delivery.address.street}</p>
+            {/* CORRECCIÓN: Acceder a delivery.order?.customerName */}
+            <p className="text-sm text-gray-600">
+              Cliente: {delivery.order?.customerName || 'N/A'}
+            </p>
+            {/* CORRECCIÓN: Acceder a delivery.deliveryLocation.address */}
+            <p className="text-sm text-gray-600">
+              Dirección: {delivery.deliveryLocation?.address || 'Sin dirección'}
+            </p>
           </div>
 
           <div className="space-y-2">

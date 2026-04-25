@@ -25,10 +25,11 @@ export function PerformanceRanking({ riders, period = 'Este mes', onRiderClick }
       if (!m) return null;
       
       // Puntuación compuesta (ponderada)
+      // Ajuste: (100 - avgDeliveryTime) asume que el tiempo es < 100. Si es mayor, la fórmula podría dar negativos.
       const score = 
         (m.totalDeliveries * 0.3) +
         (m.onTimeRate * 0.3) +
-        ((100 - m.avgDeliveryTime) * 0.2) +
+        (Math.max(0, 100 - m.avgDeliveryTime) * 0.2) + // Protegido contra negativos
         (m.customerRating * 20 * 0.2);
       
       return { ...rider, score };
@@ -77,6 +78,10 @@ export function PerformanceRanking({ riders, period = 'Este mes', onRiderClick }
               const rank = idx + 1;
               const trend = getTrend(rider.score, idx);
               
+              // CORRECCIÓN: Usar rider.fullName en lugar de rider.user.name
+              const displayName = rider.fullName || 'Sin nombre';
+              const initial = displayName.charAt(0).toUpperCase();
+
               return (
                 <div
                   key={rider.id}
@@ -104,10 +109,11 @@ export function PerformanceRanking({ riders, period = 'Este mes', onRiderClick }
                             : 'bg-amber-600'
                           : 'bg-blue-600'
                       }`}>
-                        {rider.user.name.charAt(0)}
+                        {initial}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">{rider.user.name}</p>
+                        {/* CORRECCIÓN: Usar displayName */}
+                        <p className="font-semibold truncate">{displayName}</p>
                         <div className="flex items-center gap-2 text-xs text-gray-600">
                           <span>{rider.vehicle?.type || 'Sin vehículo'}</span>
                           {trend && (

@@ -42,24 +42,32 @@ const defaultOptions: UseProductivityOptions = {
 };
 
 export const useProductivity = (options: UseProductivityOptions = {}): UseProductivityReturn => {
-  const mergedOptions = { ...defaultOptions, ...options };
+  // 1. Extraer valores explícitamente para evitar problemas de referencia en dependencias
+  const {
+    riderId,
+    dateFrom,
+    dateTo,
+    autoFetch = true,
+    refreshInterval = 0,
+  } = { ...defaultOptions, ...options };
   
   const [metrics, setMetrics] = useState<ProductivityMetrics | null>(null);
   const [riderProductivity, setRiderProductivity] = useState<RiderProductivity[]>([]);
   const [timeMetrics, setTimeMetrics] = useState<TimeMetrics | null>(null);
   const [slaMetrics, setSlaMetrics] = useState<SLAMetrics | null>(null);
   
-  const [loading, setLoading] = useState<boolean>(mergedOptions.autoFetch);
+  // 2. Inicializar estado en false siempre (seguro para SSR/Hydration)
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Fetch general metrics
+  // 3. Fetch general metrics
   const fetchMetrics = useCallback(async (overrideOptions?: Partial<UseProductivityOptions>) => {
-    const opts = { ...mergedOptions, ...overrideOptions };
     setLoading(true);
     setError(null);
     
     try {
+      const opts = { riderId, dateFrom, dateTo, ...overrideOptions };
       const params = new URLSearchParams();
       
       if (opts.riderId) params.append('riderId', opts.riderId);
@@ -74,24 +82,24 @@ export const useProductivity = (options: UseProductivityOptions = {}): UseProduc
     } finally {
       setLoading(false);
     }
-  }, [mergedOptions]);
+  }, [riderId, dateFrom, dateTo]);
 
-  // Fetch rider-specific productivity
+  // 4. Fetch rider-specific productivity
   const fetchRiderProductivity = useCallback(async (
-    riderId: string, 
-    dateFrom: Date, 
-    dateTo: Date
+    specificRiderId: string, 
+    specificDateFrom: Date, 
+    specificDateTo: Date
   ) => {
     setLoading(true);
     setError(null);
     
     try {
       const params = new URLSearchParams({
-        dateFrom: dateFrom.toISOString(),
-        dateTo: dateTo.toISOString(),
+        dateFrom: specificDateFrom.toISOString(),
+        dateTo: specificDateTo.toISOString(),
       });
       
-      const response = await api.get(`/productivity/riders/${riderId}?${params}`);
+      const response = await api.get(`/productivity/riders/${specificRiderId}?${params}`);
       setRiderProductivity([response.data]);
       setLastUpdated(new Date());
     } catch (err: any) {
@@ -101,7 +109,7 @@ export const useProductivity = (options: UseProductivityOptions = {}): UseProduc
     }
   }, []);
 
-  // Fetch time-based metrics (orders per hour, etc.)
+  // 5. Fetch time-based metrics
   const fetchTimeMetrics = useCallback(async (date: Date) => {
     setLoading(true);
     setError(null);
@@ -117,15 +125,15 @@ export const useProductivity = (options: UseProductivityOptions = {}): UseProduc
     }
   }, []);
 
-  // Fetch SLA compliance metrics
-  const fetchSLAMetrics = useCallback(async (dateFrom: Date, dateTo: Date) => {
+  // 6. Fetch SLA compliance metrics
+  const fetchSLAMetrics = useCallback(async (specificDateFrom: Date, specificDateTo: Date) => {
     setLoading(true);
     setError(null);
     
     try {
       const params = new URLSearchParams({
-        dateFrom: dateFrom.toISOString(),
-        dateTo: dateTo.toISOString(),
+        dateFrom: specificDateFrom.toISOString(),
+        dateTo: specificDateTo.toISOString(),
       });
       
       const response = await api.get(`/productivity/sla?${params}`);
@@ -138,31 +146,31 @@ export const useProductivity = (options: UseProductivityOptions = {}): UseProduc
     }
   }, []);
 
-  // Refresh data
+  // 7. Refresh data
   const refresh = useCallback(() => {
-    if (mergedOptions.riderId && mergedOptions.dateFrom && mergedOptions.dateTo) {
-      fetchRiderProductivity(mergedOptions.riderId, mergedOptions.dateFrom, mergedOptions.dateTo);
+    if (riderId && dateFrom && dateTo) {
+      fetchRiderProductivity(riderId, dateFrom, dateTo);
     }
     fetchMetrics();
-  }, [fetchMetrics, fetchRiderProductivity, mergedOptions]);
+  }, [fetchMetrics, fetchRiderProductivity, riderId, dateFrom, dateTo]);
 
-  // Auto-fetch on mount
+  // 8. Auto-fetch on mount (Solo depende de autoFetch y fetchMetrics)
   useEffect(() => {
-    if (mergedOptions.autoFetch) {
+    if (autoFetch) {
       fetchMetrics();
     }
-  }, [fetchMetrics, mergedOptions.autoFetch]);
+  }, [autoFetch, fetchMetrics]);
 
-  // Auto-refresh interval
+  // 9. Auto-refresh interval
   useEffect(() => {
-    if (mergedOptions.refreshInterval && mergedOptions.refreshInterval > 0) {
+    if (refreshInterval && refreshInterval > 0) {
       const interval = setInterval(() => {
         refresh();
-      }, mergedOptions.refreshInterval);
+      }, refreshInterval);
       
       return () => clearInterval(interval);
     }
-  }, [mergedOptions.refreshInterval, refresh]);
+  }, [refreshInterval, refresh]);
 
   // Utilidades
   const calculateEfficiency = useCallback((completed: number, total: number): number => {
@@ -177,7 +185,6 @@ export const useProductivity = (options: UseProductivityOptions = {}): UseProduc
   }, []);
 
   const getPerformanceLevel = useCallback((score: number): number => {
-    // Score 0-100, retorna nivel 1-10
     const level = Math.ceil(score / 10);
     return Math.min(Math.max(level, 1), 10);
   }, []);

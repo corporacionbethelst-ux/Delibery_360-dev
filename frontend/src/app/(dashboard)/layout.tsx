@@ -75,11 +75,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="absolute bottom-0 w-full p-4 border-t border-blue-800">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center">
-              {user?.name?.charAt(0) || "U"}
+              {user?.full_name?.charAt(0) || "U"}
             </div>
             {sidebarOpen && (
               <div className="ml-3">
-                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-sm font-medium">{user?.full_name}</p>
                 <p className="text-xs text-blue-300">{user?.role}</p>
               </div>
             )}

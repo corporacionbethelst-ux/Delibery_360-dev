@@ -36,7 +36,7 @@ export default function RiderDashboard() {
       <Card className={`${shiftActive ? 'bg-green-600 text-white' : 'bg-gray-800 text-white'}`}>
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
-            <CardTitle>Hola, {user?.name || 'Repartidor'}</CardTitle>
+            <CardTitle>Hola, {user?.full_name || 'Repartidor'}</CardTitle>
             <Badge variant="secondary" className={shiftActive ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}>
               {shiftActive ? 'EN TURNO' : 'FUERA DE TURNO'}
             </Badge>

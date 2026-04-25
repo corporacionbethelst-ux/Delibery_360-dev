@@ -13,7 +13,7 @@ interface User {
   id: string;
   email: string;
   full_name: string;
-  role: 'SUPERADMIN' | 'gerente' | 'operador' | 'repartidor';
+  role: 'superadmin' | 'gerente' | 'operador' | 'repartidor';
 }
 
 interface LoginRequest {

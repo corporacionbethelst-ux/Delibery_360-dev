@@ -28,7 +28,7 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
               <h1 className="text-xl font-bold text-blue-900">Delivery360 Rider</h1>
               {user && (
                 <span className="text-sm text-gray-600">
-                  {user.name} • {user.email}
+                  {user.full_name} • {user.email}
                 </span>
               )}
             </div>

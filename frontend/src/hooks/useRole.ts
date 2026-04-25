@@ -1,18 +1,19 @@
-// Hook personalizado para gestión de roles y permisos
+// src/hooks/useRole.ts
 import { useMemo } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 
 export type Role = 'superadmin' | 'gerente' | 'operador' | 'repartidor';
 
-interface Permission {
+// Definición simple de permisos para el hook
+interface PermissionDef {
   module: string;
-  actions: string[]; // 'create' | 'read' | 'update' | 'delete' | 'approve' | 'export'
+  actions: string[];
 }
 
 interface RoleConfig {
   name: string;
   description: string;
-  permissions: Permission[];
+  permissions: PermissionDef[];
 }
 
 const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
@@ -33,7 +34,7 @@ const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
   },
   gerente: {
     name: 'Gerente',
-    description: 'Acceso completo al sistema',
+    description: 'Gestión general',
     permissions: [
       { module: 'orders', actions: ['create', 'read', 'update', 'delete', 'approve', 'export'] },
       { module: 'deliveries', actions: ['create', 'read', 'update', 'delete', 'assign', 'export'] },
@@ -72,7 +73,7 @@ const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
 };
 
 export const useRole = () => {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isLoading } = useAuthStore(); // Asegúrate de extraer isLoading del store
 
   const currentRole = useMemo<Role | null>(() => {
     if (!user?.role) return null;
@@ -84,6 +85,7 @@ export const useRole = () => {
     return ROLE_CONFIGURATIONS[currentRole];
   }, [currentRole]);
 
+  // Función corregida: recibe module y action por separado
   const hasPermission = (module: string, action: string): boolean => {
     if (!roleConfig || !isAuthenticated) return false;
     
@@ -95,20 +97,9 @@ export const useRole = () => {
 
   const hasAnyPermission = (module: string, actions: string[]): boolean => {
     if (!roleConfig || !isAuthenticated) return false;
-    
     const permission = roleConfig.permissions.find(p => p.module === module);
     if (!permission) return false;
-    
     return actions.some(action => permission.actions.includes(action));
-  };
-
-  const hasAllPermissions = (module: string, actions: string[]): boolean => {
-    if (!roleConfig || !isAuthenticated) return false;
-    
-    const permission = roleConfig.permissions.find(p => p.module === module);
-    if (!permission) return false;
-    
-    return actions.every(action => permission.actions.includes(action));
   };
 
   const canAccessModule = (module: string): boolean => {
@@ -116,45 +107,31 @@ export const useRole = () => {
     return roleConfig.permissions.some(p => p.module === module);
   };
 
-  const isSuperadmin = (): boolean => currentRole === 'superadmin';
-  const isGerente = (): boolean => currentRole === 'gerente';
-  const isOperador = (): boolean => currentRole === 'operador';
-  const isRepartidor = (): boolean => currentRole === 'repartidor';
-
-  const getAvailableModules = (): string[] => {
-    if (!roleConfig) return [];
-    return roleConfig.permissions.map(p => p.module);
-  };
-
-  const checkRoleAccess = (allowedRoles: Role[]): boolean => {
-    if (!currentRole || !isAuthenticated) return false;
-    return allowedRoles.includes(currentRole);
+  const hasRole = (roleToCheck: Role): boolean => {
+    return currentRole === roleToCheck;
   };
 
   return {
     // Estado
-    role: currentRole,
+    currentRole, // Cambiado de 'role' a 'currentRole' para coincidir con el contexto
     roleName: roleConfig?.name || '',
     roleDescription: roleConfig?.description || '',
     permissions: roleConfig?.permissions || [],
     isAuthenticated,
+    isLoading, // Ahora se exporta explícitamente
     
-    // Verificaciones de rol
-    isSuperadmin,
-    isGerente,
-    isOperador,
-    isRepartidor,
-    checkRoleAccess,
-    
-    // Verificaciones de permisos
+    // Verificaciones
+    hasRole,
     hasPermission,
     hasAnyPermission,
-    hasAllPermissions,
     canAccessModule,
-    getAvailableModules,
     
     // Utilidades
     config: roleConfig,
+    isSuperadmin: () => currentRole === 'superadmin',
+    isGerente: () => currentRole === 'gerente',
+    isOperador: () => currentRole === 'operador',
+    isRepartidor: () => currentRole === 'repartidor',
   };
 };
 

@@ -3,14 +3,23 @@
  * Handles payment calculations, earnings, taxes, and financial reporting
  */
 
-import { PaymentTransaction, RiderEarnings, DeliveryPayment, FinancialReport } from '@/types';
+// Ajusta la ruta de importación según tu estructura
+import { 
+  PaymentTransaction, 
+  RiderEarnings, 
+  DeliveryPayment, 
+  FinancialReportDetailed,
+  PaymentStatus,
+  TransactionType,
+  PaymentMethod
+} from '@/types/financial'; 
 
 export type Currency = 'BRL' | 'USD' | 'EUR';
 
 export interface TaxConfig {
-  incomeTaxRate: number; // e.g., 0.15 for 15%
-  serviceTaxRate: number; // e.g., 0.05 for 5%
-  socialSecurityRate: number; // e.g., 0.11 for 11%
+  incomeTaxRate: number; 
+  serviceTaxRate: number; 
+  socialSecurityRate: number; 
 }
 
 const DEFAULT_TAX_CONFIG: TaxConfig = {
@@ -27,12 +36,6 @@ export function formatCurrency(value: number, currency: Currency = 'BRL'): strin
     BRL: 'pt-BR',
     USD: 'en-US',
     EUR: 'de-DE',
-  };
-
-  const symbols: Record<Currency, string> = {
-    BRL: 'R$',
-    USD: '$',
-    EUR: '€',
   };
 
   return new Intl.NumberFormat(locales[currency], {
@@ -76,7 +79,7 @@ export function calculateDeliveryPayment(options: {
  */
 export function calculateRiderEarnings(
   deliveryPayment: number,
-  commissionRate: number = 0.25, // 25% platform commission
+  commissionRate: number = 0.25, 
   bonus?: number
 ): number {
   const commission = deliveryPayment * commissionRate;
@@ -146,7 +149,7 @@ export function processPaymentTransaction(
     ...transaction,
     id: `txn_${Date.now}_${Math.random().toString(36).substr(2, 9)}`,
     createdAt: new Date().toISOString(),
-    status: 'pending',
+    status: 'PENDIENTE', // Alineado con PaymentStatus ('PENDIENTE' en lugar de 'pending')
   };
 }
 
@@ -165,7 +168,8 @@ export function calculatePlatformRevenue(
 } {
   const totalAmount = deliveries.reduce((sum, d) => sum + d.amount, 0);
   const totalCommission = totalAmount * commissionRate;
-  const processingFees = totalAmount * 0.029 + deliveries.length * 0.30; // Typical payment processor fees
+  // Ajuste de fees: 2.9% + 0.30 (asumiendo moneda base, ajustar si es necesario)
+  const processingFees = totalAmount * 0.029 + deliveries.length * 0.30; 
 
   return {
     totalRevenue: totalCommission - processingFees,
@@ -182,37 +186,46 @@ export function calculatePlatformRevenue(
 export function generateFinancialReport(
   transactions: PaymentTransaction[],
   period: { start: Date; end: Date }
-): FinancialReport {
+): FinancialReportDetailed {
   const filteredTransactions = transactions.filter(
     t => new Date(t.createdAt) >= period.start && new Date(t.createdAt) <= period.end
   );
 
-  const successfulTransactions = filteredTransactions.filter(t => t.status === 'completed');
-  const pendingTransactions = filteredTransactions.filter(t => t.status === 'pending');
-  const failedTransactions = filteredTransactions.filter(t => t.status === 'failed');
+  // Ajustar filtros de estado a mayúsculas si es necesario
+  const successfulTransactions = filteredTransactions.filter(t => t.status === 'PAGADO' || t.status === 'PROCESADO');
+  const pendingTransactions = filteredTransactions.filter(t => t.status === 'PENDIENTE');
+  const failedTransactions = filteredTransactions.filter(t => t.status === 'CANCELADO' || t.status === 'REEMBOLSADO');
 
   const totalRevenue = successfulTransactions.reduce((sum, t) => sum + t.amount, 0);
+  
+  // Sumar solo los pagos a riders (type === 'PAGO_RIDER') que estén completados
   const totalPaid = successfulTransactions
-    .filter(t => t.type === 'payout')
+    .filter(t => t.type === 'PAGO_RIDER')
     .reduce((sum, t) => sum + t.amount, 0);
 
+  // Construir el reporte acorde a tu interfaz FinancialReport existente
+  // Nota: Esta función simplificada devuelve un objeto parcial si no calculamos todo el desglose diario aquí
   return {
     period: {
-      start: period.start.toISOString(),
-      end: period.end.toISOString(),
+      from: period.start,
+      to: period.end,
     },
-    generatedAt: new Date().toISOString(),
-    summary: {
-      totalTransactions: filteredTransactions.length,
-      successfulTransactions: successfulTransactions.length,
-      pendingTransactions: pendingTransactions.length,
-      failedTransactions: failedTransactions.length,
-      totalRevenue,
-      totalPaid,
-      netBalance: totalRevenue - totalPaid,
-    },
-    transactions: filteredTransactions,
-  };
+    generatedAt: new Date(),
+    totalRevenue,
+    totalExpenses: 0, 
+    totalRiderPayments: totalPaid,
+    netProfit: totalRevenue - totalPaid,
+    profitMargin: totalRevenue > 0 ? ((totalRevenue - totalPaid) / totalRevenue) * 100 : 0,
+    dailyConsolidated: [], 
+    topRiders: [], 
+    metrics: {
+      averageTicket: 0,
+      averageDeliveryFee: 0,
+      averageDeliveryTime: 0,
+      onTimePercentage: 0,
+      cancellationRate: 0,
+    }
+  }; 
 }
 
 /**
@@ -228,7 +241,7 @@ export function calculateSurgeMultiplier(
   const demandRatio = activeOrders / availableRiders;
   
   if (demandRatio > 2) {
-    return Math.min(baseMultiplier + (demandRatio - 2) * 0.5, 3.0); // Cap at 3x
+    return Math.min(baseMultiplier + (demandRatio - 2) * 0.5, 3.0); 
   }
   
   return baseMultiplier;
@@ -255,7 +268,6 @@ export function validatePaymentAmount(amount: number): {
     errors.push('El monto excede el límite permitido');
   }
 
-  // Check for reasonable decimal places
   const decimals = (amount.toString().split('.')[1] || '').length;
   if (decimals > 2) {
     errors.push('El monto no puede tener más de 2 decimales');
@@ -308,10 +320,14 @@ export function getPaymentMethodDetails(method: string): {
   icon: string;
 } {
   const methods: Record<string, { label: string; icon: string }> = {
+    TARJETA: { label: 'Tarjeta', icon: '💳' },
+    EFECTIVO: { label: 'Efectivo', icon: '💵' },
+    PIX: { label: 'PIX', icon: '💠' },
+    TRANSFERENCIA: { label: 'Transferencia', icon: '🏦' },
+    ONLINE: { label: 'Online', icon: '🌐' },
+    // Soporte para valores en inglés si vienen de librerías externas
     credit_card: { label: 'Tarjeta de Crédito', icon: '💳' },
     debit_card: { label: 'Tarjeta de Débito', icon: '💳' },
-    pix: { label: 'PIX', icon: '💠' },
-    boleto: { label: 'Boleto', icon: '📄' },
     cash: { label: 'Efectivo', icon: '💵' },
     wallet: { label: 'Billetera Digital', icon: '📱' },
   };
@@ -356,8 +372,10 @@ export function generateTransactionId(prefix: string = 'txn'): string {
 /**
  * Check if payment is overdue
  */
-export function isPaymentOverdue(dueDate: string, status: string): boolean {
-  if (['completed', 'cancelled', 'refunded'].includes(status)) {
+export function isPaymentOverdue(dueDate: string, status: PaymentStatus): boolean {
+  // Estados finales que no pueden estar vencidos
+  const finalStates: PaymentStatus[] = ['PAGADO', 'REEMBOLSADO', 'CANCELADO'];
+  if (finalStates.includes(status)) {
     return false;
   }
   

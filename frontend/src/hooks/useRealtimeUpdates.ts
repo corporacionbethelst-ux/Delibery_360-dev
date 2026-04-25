@@ -6,6 +6,12 @@ import type { Delivery } from '@/types/delivery';
 import type { Rider } from '@/types/rider';
 import type { Alert } from '@/types/alerts';
 
+// Tipos adicionales necesarios para el contexto
+export interface OrderUpdate { orderId: string; data: any }
+export interface DeliveryUpdate { deliveryId: string; data: any }
+export interface RiderLocationUpdate { data: any }
+export interface AlertMessage { data: any }
+
 export interface UseRealtimeUpdatesOptions {
   autoConnect?: boolean;
   reconnectAttempts?: number;
@@ -17,11 +23,11 @@ export interface UseRealtimeUpdatesOptions {
 }
 
 interface UseRealtimeUpdatesReturn {
-  // Estado de conexión
+  // Estado de conexión (Nombres corregidos para coincidir con el contexto)
   isConnected: boolean;
   isConnecting: boolean;
-  lastMessageAt: Date | null;
-  error: string | null;
+  lastMessage: string | null; // Antes era lastMessageAt (Date)
+  connectionError: string | null; // Antes era error
   
   // Datos en tiempo real
   activeOrders: Order[];
@@ -33,6 +39,7 @@ interface UseRealtimeUpdatesReturn {
   connect: () => void;
   disconnect: () => void;
   reconnect: () => void;
+  sendMessage: (message: any) => void; // NUEVO: Función faltante
   
   // Utilidades
   getOrderById: (id: string) => Order | undefined;
@@ -75,20 +82,23 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectCountRef = useRef<number>(0);
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastMessageRef = useRef<string | null>(null); // Para almacenar el último mensaje crudo
 
   // Construir URL del WebSocket
   const getWebSocketUrl = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = process.env.NEXT_PUBLIC_WS_URL || window.location.host;
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('access_token'); // Ajustado al nombre real del token
     
-    return `${protocol}//${host}/ws?token=${token}`;
+    return `${protocol}//${host}/api/v1/ws?token=${token}`; // Ajusta la ruta según tu backend
   }, []);
 
   // Manejar mensaje recibido
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
-      const data = JSON.parse(event.data);
+      const rawData = event.data as string;
+      lastMessageRef.current = rawData; // Guardar el mensaje crudo para el estado
+      const data = JSON.parse(rawData);
       
       switch (data.type) {
         case 'ORDER_UPDATE':
@@ -112,7 +122,6 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
           break;
           
         case 'PING':
-          // Responder al ping para mantener la conexión viva
           if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({ type: 'PONG' }));
           }
@@ -144,7 +153,6 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
     console.log('WebSocket disconnected');
     setConnected(false);
     
-    // Intentar reconectar
     if (reconnectCountRef.current < (mergedOptions.reconnectAttempts || 3)) {
       reconnectCountRef.current += 1;
       console.log(`Reconnecting... attempt ${reconnectCountRef.current}`);
@@ -167,7 +175,6 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
   const establishConnection = useCallback(() => {
     if (!mergedOptions.autoConnect) return;
     
-    // Cerrar conexión existente si hay
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -202,6 +209,15 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
     disconnect();
   }, [disconnect]);
 
+  // NUEVO: Enviar mensaje
+  const sendMessage = useCallback((message: any) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(message));
+    } else {
+      console.warn('Cannot send message: WebSocket is not connected');
+    }
+  }, []);
+
   // Reconectar manualmente
   const manualReconnect = useCallback(() => {
     reconnectCountRef.current = 0;
@@ -227,18 +243,17 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
       establishConnection();
     }
     
-    // Cleanup al desmontar
     return () => {
       disconnectWs();
     };
   }, [mergedOptions.autoConnect, establishConnection, disconnectWs]);
 
   return {
-    // Estado de conexión
+    // Estado de conexión (Mapeo de nombres corregidos)
     isConnected,
     isConnecting,
-    lastMessageAt,
-    error,
+    lastMessage: lastMessageRef.current, // Usamos el ref o null
+    connectionError: error, // Mapeamos error a connectionError
     
     // Datos en tiempo real
     activeOrders,
@@ -250,6 +265,7 @@ export const useRealtimeUpdates = (options: UseRealtimeUpdatesOptions = {}): Use
     connect: establishConnection,
     disconnect: disconnectWs,
     reconnect: manualReconnect,
+    sendMessage, // Retornamos la nueva función
     
     // Utilidades
     getOrderById,

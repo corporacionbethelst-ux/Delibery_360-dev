@@ -185,3 +185,47 @@ export interface RiderFilters extends PaginationParams {
   status?: Rider['status'];
   vehicle_type?: Rider['vehicle_type'];
 }
+
+export interface OrderUpdate {
+  orderId: string;
+  status: string;
+  data: any;
+  timestamp: string;
+}
+
+export interface DeliveryUpdate {
+  deliveryId: string;
+  status: string;
+  data: any;
+  timestamp: string;
+}
+
+export interface RiderLocationUpdate {
+  riderId: string;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+}
+
+export interface AlertMessage {
+  id: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  message: string;
+  timestamp: string;
+}
+
+// Auth & Usuarios
+export * from './user';
+
+// Órdenes y Entregas
+export * from './order';      // ✅ Usando el archivo que ya tienes (singular)
+export * from './delivery';   // Asegúrate de que este también exista
+
+// Repartidores
+export * from './rider';
+
+// Alertas y Notificaciones
+export * from './alerts';
+
+// Tipos globales o utilitarios (si los tienes)
+// export * from './common'; 

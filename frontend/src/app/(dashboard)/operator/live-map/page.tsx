@@ -1,28 +1,36 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useDeliveries } from "@/stores/deliveriesStore"
+// CORRECCIÓN 1: Importar el hook con el nombre correcto y desestructurar lo que necesitas
+import { useDeliveriesStore } from "@/stores/deliveriesStore"
 import DeliveryTracker from "@/components/deliveries/DeliveryTracker"
 
-// Página de tracking de entregas en tiempo real para operators
 export default function OperatorLiveMapPage() {
-  const { deliveries, loadDeliveries } = useDeliveries()
+  // CORRECCIÓN 1: Usar el hook correcto
+  const { deliveries, fetchDeliveries } = useDeliveriesStore()
+  
   const [filter, setFilter] = useState<"all" | "active" | "completed">("active")
   const [loading, setLoading] = useState(true)
 
   // Cargar entregas al montar el componente
   useEffect(() => {
     const fetchData = async () => {
-      await loadDeliveries()
+      // CORRECCIÓN: Usar la función correcta del store (fetchDeliveries en vez de loadDeliveries)
+      await fetchDeliveries()
       setLoading(false)
     }
     fetchData()
   }, [])
 
   // Filtrar entregas según estado
+  // Nota: Ajusta los valores de status según tu enum real (ej: 'EN_CAMINO', 'ENTREGADO', etc.)
   const filteredDeliveries = deliveries.filter((delivery) => {
-    if (filter === "active") return delivery.status === "in_progress" || delivery.status === "pending"
-    if (filter === "completed") return delivery.status === "delivered"
+    if (filter === "active") {
+      return delivery.status === "EN_CAMINO" || delivery.status === "ASIGNADO" || delivery.status === "PENDIENTE"
+    }
+    if (filter === "completed") {
+      return delivery.status === "ENTREGADO"
+    }
     return true
   })
 
@@ -74,16 +82,24 @@ export default function OperatorLiveMapPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">Orden #{delivery.orderId}</p>
-                    <p className="text-sm text-gray-600">{delivery.customerName}</p>
-                    <p className="text-xs text-gray-500">{delivery.address}</p>
+                    
+                    {/* CORRECCIÓN 2: Acceder a las propiedades anidadas correctamente */}
+                    <p className="text-sm text-gray-600">
+                      {delivery.order?.customerName || 'Cliente'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {delivery.deliveryLocation?.address || 'Sin dirección'}
+                    </p>
                   </div>
+                  
+                  {/* Ajuste de etiquetas según tus estados reales */}
                   <span className={`px-2 py-1 text-xs rounded-full ${
-                    delivery.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                    delivery.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                    delivery.status === 'ENTREGADO' ? 'bg-green-100 text-green-800' :
+                    delivery.status === 'EN_CAMINO' ? 'bg-blue-100 text-blue-800' :
                     'bg-yellow-100 text-yellow-800'
                   }`}>
-                    {delivery.status === 'in_progress' ? 'En Camino' : 
-                     delivery.status === 'delivered' ? 'Entregado' : 'Pendiente'}
+                    {delivery.status === 'EN_CAMINO' ? 'En Camino' : 
+                     delivery.status === 'ENTREGADO' ? 'Entregado' : 'Pendiente'}
                   </span>
                 </div>
               </div>

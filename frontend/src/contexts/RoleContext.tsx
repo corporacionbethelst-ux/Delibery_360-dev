@@ -1,58 +1,53 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useAuthStore } from '@/stores/authStore';
-import { useRole } from '@/hooks/useRole';
-import { UserRole, Permission } from '@/types';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useRole, Role } from '@/hooks/useRole';
 
+// 1. Actualiza la interfaz para que coincida con el hook
 interface RoleContextType {
-  currentRole: UserRole | null;
-  hasPermission: (permission: Permission) => boolean;
-  hasRole: (role: UserRole) => boolean;
+  currentRole: Role | null;
+  // hasPermission ahora recibe dos strings, no un objeto
+  hasPermission: (module: string, action: string) => boolean;
+  hasRole: (role: Role) => boolean;
   canAccessPage: (page: string) => boolean;
   isLoading: boolean;
+  roleName: string;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuthStore();
-  const { currentRole, hasPermission, hasRole, isLoading } = useRole();
+  // 2. Desestructura correctamente lo que devuelve el hook
+  const { 
+    currentRole, 
+    hasPermission, 
+    hasRole, 
+    isLoading, 
+    roleName 
+  } = useRole();
 
-  // Define page access rules based on roles
   const canAccessPage = (page: string): boolean => {
     if (!currentRole) return false;
 
-    const rolePageAccess: Record<UserRole, string[]> = {
-      superadmin: ['*'], // Admin can access all pages
+    const rolePageAccess: Record<Role, string[]> = {
+      superadmin: ['*'],
       gerente: [
-        '/manager',
-        '/manager/financial',
-        '/manager/riders',
-        '/manager/reports',
-        '/manager/settings',
-        '/orders',
+        '/manager', '/manager/financial', '/manager/riders', 
+        '/manager/reports', '/manager/settings', '/orders',
       ],
       operador: [
-        '/operator',
-        '/operator/orders',
-        '/operator/deliveries',
-        '/operator/shifts',
-        '/operator/alerts',
-        '/operator/live-map',
+        '/operator', '/operator/orders', '/operator/deliveries', 
+        '/operator/shifts', '/operator/alerts', '/operator/live-map',
       ],
       repartidor: [
-        '/rider',
-        '/rider/my-orders',
-        '/rider/productivity',
-        '/rider/earnings',
-        '/rider/profile',
-        '/rider/start-delivery',
+        '/rider', '/rider/my-orders', '/rider/productivity', 
+        '/rider/earnings', '/rider/profile', '/rider/start-delivery', 
         '/rider/finish-delivery',
       ],
     };
 
-    const allowedPages = rolePageAccess[currentRole];
+    // 3. Cast seguro para evitar errores de índice
+    const allowedPages = rolePageAccess[currentRole as Role];
     
     if (!allowedPages) return false;
     if (allowedPages.includes('*')) return true;
@@ -66,6 +61,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     hasRole,
     canAccessPage,
     isLoading,
+    roleName,
   };
 
   return (

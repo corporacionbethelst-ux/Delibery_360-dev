@@ -1,30 +1,33 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useOrders } from "@/stores/ordersStore"
+import { useOrdersStore } from "@/stores/ordersStore" // 1. Nombre correcto del archivo y hook
 import { useAuth } from "@/contexts/AuthContext"
+import type { OrderStatus } from "@/types/order"
 
-// Página de órdenes para operators con gestión y asignación
 export default function OperatorOrdersPage() {
-  const { orders, loadOrders, updateOrderStatus } = useOrders()
+  // 2. Usar el hook correcto y extraer las funciones correctas
+  const { orders, fetchOrders, updateOrderStatus } = useOrdersStore()
   const { user } = useAuth()
-  const [filter, setFilter] = useState<"all" | "pending" | "assigned" | "in_progress">("pending")
+  
+  // 3. Ajustar los estados a los valores reales de tu Enum OrderStatus
+  const [filter, setFilter] = useState<"all" | "PENDIENTE" | "ASIGNADO" | "EN_CAMINO">("PENDIENTE")
   const [loading, setLoading] = useState(true)
 
-  // Cargar órdenes al montar el componente
+  // Cargar órdenes al montar
   useEffect(() => {
     const fetchData = async () => {
-      await loadOrders()
+      await fetchOrders() // Usa la función del store
       setLoading(false)
     }
     fetchData()
   }, [])
 
-  // Filtrar órdenes según estado
+  // 4. Filtrar usando los estados correctos (Mayúsculas según tu tipo)
   const filteredOrders = orders.filter((order) => {
-    if (filter === "pending") return order.status === "pending"
-    if (filter === "assigned") return order.status === "assigned"
-    if (filter === "in_progress") return order.status === "in_progress"
+    if (filter === "PENDIENTE") return order.status === "PENDIENTE"
+    if (filter === "ASIGNADO") return order.status === "ASIGNADO" // O 'CONFIRMADO' según tu DB
+    if (filter === "EN_CAMINO") return order.status === "EN_CAMINO"
     return true
   })
 
@@ -38,7 +41,7 @@ export default function OperatorOrdersPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header de la página */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Gestión de Órdenes</h1>
         <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
@@ -46,7 +49,7 @@ export default function OperatorOrdersPage() {
         </button>
       </div>
 
-      {/* Filtros de estado */}
+      {/* Filtros */}
       <div className="flex space-x-2">
         <button
           onClick={() => setFilter("all")}
@@ -55,26 +58,26 @@ export default function OperatorOrdersPage() {
           Todas
         </button>
         <button
-          onClick={() => setFilter("pending")}
-          className={`px-3 py-1 rounded-md text-sm ${filter === "pending" ? "bg-yellow-600 text-white" : "bg-gray-200"}`}
+          onClick={() => setFilter("PENDIENTE")}
+          className={`px-3 py-1 rounded-md text-sm ${filter === "PENDIENTE" ? "bg-yellow-600 text-white" : "bg-gray-200"}`}
         >
           Pendientes
         </button>
         <button
-          onClick={() => setFilter("assigned")}
-          className={`px-3 py-1 rounded-md text-sm ${filter === "assigned" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+          onClick={() => setFilter("ASIGNADO")}
+          className={`px-3 py-1 rounded-md text-sm ${filter === "ASIGNADO" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
         >
           Asignadas
         </button>
         <button
-          onClick={() => setFilter("in_progress")}
-          className={`px-3 py-1 rounded-md text-sm ${filter === "in_progress" ? "bg-green-600 text-white" : "bg-gray-200"}`}
+          onClick={() => setFilter("EN_CAMINO")}
+          className={`px-3 py-1 rounded-md text-sm ${filter === "EN_CAMINO" ? "bg-green-600 text-white" : "bg-gray-200"}`}
         >
-          En Progreso
+          En Camino
         </button>
       </div>
 
-      {/* Tabla de órdenes */}
+      {/* Tabla */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -90,25 +93,35 @@ export default function OperatorOrdersPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredOrders.map((order) => (
               <tr key={order.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">#{order.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">{order.customerName}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">{order.deliveryAddress}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">#{order.orderNumber || order.id.substring(0,8)}</td>
+                
+                {/* 5. Acceder a propiedades anidadas correctamente según tu modelo Order */}
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  {order.customerName || "Cliente Invitado"}
+                </td>
+                
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  {order.deliveryAddress?.street || "Sin dirección"}
+                </td>
+                
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 text-xs rounded-full ${
-                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    order.status === 'assigned' ? 'bg-blue-100 text-blue-800' :
-                    order.status === 'in_progress' ? 'bg-green-100 text-green-800' :
+                    order.status === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-800' :
+                    order.status === 'ASIGNADO' ? 'bg-blue-100 text-blue-800' :
+                    order.status === 'EN_CAMINO' ? 'bg-green-100 text-green-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {order.status}
                   </span>
                 </td>
+                
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {order.riderId ? `Rider #${order.riderId}` : 'Sin asignar'}
+                  {order.assignedRiderId ? `Rider #${order.assignedRiderId}` : 'Sin asignar'}
                 </td>
+                
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                   <button className="text-blue-600 hover:text-blue-900 mr-3">Ver</button>
-                  {order.status === 'pending' && (
+                  {order.status === 'PENDIENTE' && (
                     <button className="text-green-600 hover:text-green-900">Asignar</button>
                   )}
                 </td>
@@ -116,6 +129,12 @@ export default function OperatorOrdersPage() {
             ))}
           </tbody>
         </table>
+        
+        {filteredOrders.length === 0 && (
+          <div className="p-8 text-center text-gray-500">
+            No hay órdenes que mostrar con este filtro.
+          </div>
+        )}
       </div>
     </div>
   )

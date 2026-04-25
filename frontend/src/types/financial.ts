@@ -220,7 +220,7 @@ export interface DailyConsolidated {
   completionRate: number;
 }
 
-export interface FinancialReport {
+export interface FinancialReportDetailed {
   period: {
     from: Date;
     to: Date;
@@ -321,3 +321,55 @@ export interface FinancialStats {
   pendingPayments: number;
   pendingReceivables: number;
 }
+
+
+// ... (todo tu código existente en financial.ts) ...
+
+// --- AGREGAR ESTO AL FINAL DEL ARCHIVO ---
+
+/**
+ * Interfaces adicionales requeridas por financial_utils.ts
+ */
+
+export interface DeliveryPayment {
+  id: string;
+  deliveryId: string;
+  amount: number;
+  tip?: number;
+  bonus?: number;
+  commissionRate?: number;
+  date: string; // ISO String
+  status: 'PAGADO' | 'PENDIENTE' | 'FALLIDO'; // Alineado con PaymentStatus
+}
+
+export interface RiderEarnings {
+  date: string; // YYYY-MM-DD
+  totalDeliveries: number;
+  grossEarnings: number;
+  tips: number;
+  bonuses: number;
+  platformCommission: number;
+  netEarnings: number;
+  averagePerDelivery: number;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  type: TransactionType;
+  amount: number;
+  currency: 'BRL' | 'USD' | 'EUR';
+  status: PaymentStatus; // Usando el existente
+  paymentMethod?: PaymentMethod;
+  description?: string;
+  metadata?: Record<string, any>;
+  riderId?: string;
+  orderId?: string;
+  deliveryId?: string;
+  createdAt: string; // ISO String
+  completedAt?: string;
+  dueDate?: string;
+}
+
+// Asegúrate de que FinancialReport tenga la estructura que espera generateFinancialReport
+// La interfaz FinancialReport que ya tienes es compatible, pero verifyemos los campos clave:
+// period, generatedAt, summary, transactions.

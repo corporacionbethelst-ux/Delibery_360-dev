@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, Download, Database, FileSpreadsheet, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { Upload, Download, Database, FileSpreadsheet, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react'
 
 // Componente para importar/exportar datos con sistemas ERP externos
 export default function ERPImportExport() {

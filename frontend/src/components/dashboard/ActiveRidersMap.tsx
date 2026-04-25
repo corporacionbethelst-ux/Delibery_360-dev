@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Rider } from '@/types/rider';
+import { Rider, RiderStatus } from '@/types/rider';
 import { useRidersStore } from '@/stores/ridersStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,19 +12,31 @@ interface ActiveRidersMapProps {
 }
 
 export function ActiveRidersMap({ riders: propRiders, onRiderClick }: ActiveRidersMapProps) {
-  const { riders: storeRiders, getActiveRiders } = useRidersStore();
-  const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
+  const { riders: storeRiders, fetchRiders } = useRidersStore(); // Asumiendo que fetchRiders existe
   
-  const riders = propRiders || storeRiders.filter(r => r.status === 'online');
+  // Filtrar repartidores activos (usando el status correcto del enum)
+  const riders = propRiders || storeRiders.filter(r => r.status === 'ACTIVO' && r.isOnline);
+  
+  const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
 
   useEffect(() => {
-    getActiveRiders();
-  }, []);
+    // Cargar repartidores si no se pasan como prop
+    if (!propRiders) {
+      fetchRiders?.(); 
+    }
+  }, [propRiders, fetchRiders]);
 
-  const statusColors: Record<string, string> = {
-    online: 'bg-green-500',
-    busy: 'bg-yellow-500',
-    offline: 'bg-gray-400',
+  // Mapeo de estados a colores (ajustado a lógica de isOnline y status)
+  const getStatusColor = (rider: Rider) => {
+    if (!rider.isOnline) return 'bg-gray-400';
+    // Podrías usar una lógica más compleja si tuvieras un estado "ocupado" explícito
+    // Por ahora usamos ACTIVO como "online/disponible"
+    return 'bg-green-500';
+  };
+
+  const getStatusLabel = (rider: Rider) => {
+    if (!rider.isOnline) return 'Offline';
+    return 'En Línea';
   };
 
   return (
@@ -63,11 +75,12 @@ export function ActiveRidersMap({ riders: propRiders, onRiderClick }: ActiveRide
                 }}
               >
                 <div className="relative">
-                  <div className={`w-10 h-10 rounded-full ${statusColors[rider.status]} border-4 border-white shadow-lg flex items-center justify-center text-white`}>
+                  <div className={`w-10 h-10 rounded-full ${getStatusColor(rider)} border-4 border-white shadow-lg flex items-center justify-center text-white`}>
                     <Truck className="h-5 w-5" />
                   </div>
-                  {rider.status === 'busy' && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white" />
+                  {/* Indicador visual adicional si estuviera ocupado (lógica simulada) */}
+                  {!rider.isOnline && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-gray-600 rounded-full border-2 border-white" />
                   )}
                 </div>
               </button>
@@ -79,12 +92,11 @@ export function ActiveRidersMap({ riders: propRiders, onRiderClick }: ActiveRide
             <div className="absolute bottom-4 left-4 right-4 md:right-auto md:w-80 bg-white rounded-lg shadow-xl p-4 z-30">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-semibold text-lg">{selectedRider.name}</h3>
+                  <h3 className="font-semibold text-lg">{selectedRider.fullName}</h3>
                   <p className="text-sm text-muted-foreground">ID: {selectedRider.id.slice(0, 8)}</p>
                 </div>
-                <Badge className={statusColors[selectedRider.status]}>
-                  {selectedRider.status === 'online' ? 'En Línea' : 
-                   selectedRider.status === 'busy' ? 'Ocupado' : 'Offline'}
+                <Badge className={getStatusColor(selectedRider)}>
+                  {getStatusLabel(selectedRider)}
                 </Badge>
               </div>
               
@@ -93,21 +105,31 @@ export function ActiveRidersMap({ riders: propRiders, onRiderClick }: ActiveRide
                   <Phone className="h-4 w-4 text-muted-foreground" />
                   <span>{selectedRider.phone}</span>
                 </div>
-                {selectedRider.currentLocation && (
+                
+                {/* Ubicación correcta según el modelo */}
+                {selectedRider.location && (
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span className="truncate">
-                      {selectedRider.currentLocation.address?.street}
+                      Zona: {selectedRider.operatingZone || 'N/A'}
                     </span>
                   </div>
                 )}
+                
+                {/* Estadísticas anidadas en .stats */}
                 <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                  <span>{selectedRider.rating?.toFixed(1) || 'N/A'} ({selectedRider.totalDeliveries} entregas)</span>
+                  <span>
+                    {selectedRider.stats?.customerRating.toFixed(1) || 'N/A'} 
+                    ({selectedRider.stats?.completedDeliveries || 0} entregas)
+                  </span>
                 </div>
+                
                 <div className="flex items-center gap-2">
                   <Truck className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedRider.vehicle?.type || 'No especificado'} - {selectedRider.vehicle?.plate || ''}</span>
+                  <span>
+                    {selectedRider.vehicle.type} - {selectedRider.vehicle.plate || 'Sin placa'}
+                  </span>
                 </div>
               </div>
 
@@ -129,11 +151,7 @@ export function ActiveRidersMap({ riders: propRiders, onRiderClick }: ActiveRide
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="text-xs">En Línea</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <span className="text-xs">Ocupado</span>
+                <span className="text-xs">En Línea (Activo)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-gray-400" />

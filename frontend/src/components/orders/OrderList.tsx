@@ -27,26 +27,33 @@ export default function OrderList({
   compact = false 
 }: OrderListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   
-  const { fetchOrders } = useOrdersStore();
+  const { fetchOrders, orders: storeOrders } = useOrdersStore();
   
   // Si no se proporcionan órdenes, usar las del store
-  const { orders: storeOrders } = useOrdersStore();
   const orderList = orders || storeOrders;
 
   // Filtrar órdenes
   const filteredOrders = orderList.filter(order => {
-    const matchesSearch = 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.restaurant.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = searchTerm.toLowerCase();
     
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || order.priority === priorityFilter;
+    // Búsqueda por campos disponibles en la interfaz Order
+    const matchesSearch = 
+      order.id.toLowerCase().includes(searchLower) ||
+      (order.orderNumber && order.orderNumber.toLowerCase().includes(searchLower)) ||
+      (order.customerName && order.customerName.toLowerCase().includes(searchLower)) ||
+      (order.pickupAddress?.street && order.pickupAddress.street.toLowerCase().includes(searchLower));
+    
+    // Comparación normalizada a mayúsculas
+    const orderStatus = order.status?.toUpperCase();
+    const orderPriority = order.priority?.toUpperCase();
+
+    const matchesStatus = statusFilter === 'ALL' || orderStatus === statusFilter;
+    const matchesPriority = priorityFilter === 'ALL' || orderPriority === priorityFilter;
     
     return matchesSearch && matchesStatus && matchesPriority;
   });
@@ -61,15 +68,16 @@ export default function OrderList({
 
   const clearFilters = () => {
     setSearchTerm('');
-    setStatusFilter('all');
-    setPriorityFilter('all');
+    setStatusFilter('ALL');
+    setPriorityFilter('ALL');
   };
 
-  const hasActiveFilters = searchTerm || statusFilter !== 'all' || priorityFilter !== 'all';
+  const hasActiveFilters = searchTerm || statusFilter !== 'ALL' || priorityFilter !== 'ALL';
 
   // Contar estados para resumen
   const statusCounts = orderList.reduce((acc, order) => {
-    acc[order.status] = (acc[order.status] || 0) + 1;
+    const status = order.status || 'UNKNOWN';
+    acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -83,7 +91,7 @@ export default function OrderList({
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Buscar por ID, cliente o restaurante..."
+                placeholder="Buscar por ID, cliente o dirección..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -96,16 +104,16 @@ export default function OrderList({
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="pending">Pendiente</SelectItem>
-                <SelectItem value="confirmed">Confirmado</SelectItem>
-                <SelectItem value="preparing">En Preparación</SelectItem>
-                <SelectItem value="ready">Listo</SelectItem>
-                <SelectItem value="assigned">Asignado</SelectItem>
-                <SelectItem value="picking_up">Retirando</SelectItem>
-                <SelectItem value="in_transit">En Tránsito</SelectItem>
-                <SelectItem value="delivered">Entregado</SelectItem>
-                <SelectItem value="cancelled">Cancelado</SelectItem>
+                <SelectItem value="ALL">Todos los estados</SelectItem>
+                <SelectItem value="PENDIENTE">Pendiente</SelectItem>
+                <SelectItem value="CONFIRMADO">Confirmado</SelectItem>
+                <SelectItem value="EN_PREPARACION">En Preparación</SelectItem>
+                <SelectItem value="LISTO">Listo</SelectItem>
+                <SelectItem value="ASIGNADO">Asignado</SelectItem>
+                <SelectItem value="RECOGIENDO">Retirando</SelectItem>
+                <SelectItem value="EN_CAMINO">En Tránsito</SelectItem>
+                <SelectItem value="ENTREGADO">Entregado</SelectItem>
+                <SelectItem value="CANCELADO">Cancelado</SelectItem>
               </SelectContent>
             </Select>
             
@@ -115,11 +123,11 @@ export default function OrderList({
                 <SelectValue placeholder="Prioridad" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="urgent">🔥 Urgente</SelectItem>
-                <SelectItem value="high">⚡ Alta</SelectItem>
-                <SelectItem value="normal">📋 Normal</SelectItem>
-                <SelectItem value="low">🐌 Baja</SelectItem>
+                <SelectItem value="ALL">Todas</SelectItem>
+                <SelectItem value="URGENTE">🔥 Urgente</SelectItem>
+                <SelectItem value="ALTA">⚡ Alta</SelectItem>
+                <SelectItem value="NORMAL">📋 Normal</SelectItem>
+                <SelectItem value="BAJA">🐌 Baja</SelectItem>
               </SelectContent>
             </Select>
             
@@ -138,24 +146,28 @@ export default function OrderList({
               <ListFilter className="w-3 h-3" />
               {filteredOrders.length} de {orderList.length} órdenes
             </Badge>
-            {Object.entries(statusCounts).map(([status, count]) => (
-              <Badge 
-                key={status} 
-                variant="outline"
-                className={`cursor-pointer hover:bg-gray-100 ${statusFilter === status ? 'bg-gray-100' : ''}`}
-                onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
-              >
-                {status === 'pending' && '🟡'}
-                {status === 'confirmed' && '🔵'}
-                {status === 'preparing' && '🟣'}
-                {status === 'ready' && '🔷'}
-                {status === 'assigned' && '🔶'}
-                {status === 'in_transit' && '🚚'}
-                {status === 'delivered' && '✅'}
-                {status === 'cancelled' && '❌'}
-                {count}
-              </Badge>
-            ))}
+            {Object.entries(statusCounts).map(([status, count]) => {
+              // Mapeo simple de emoji según estado (puedes mejorarlo)
+              let emoji = '⚪';
+              if (status.includes('PENDIENTE')) emoji = '🟡';
+              if (status.includes('CONFIRMADO') || status.includes('ASIGNADO')) emoji = '🔵';
+              if (status.includes('PREPARACION')) emoji = '🟣';
+              if (status.includes('LISTO')) emoji = '🔷';
+              if (status.includes('CAMINO') || status.includes('RECOGIENDO')) emoji = '🚚';
+              if (status.includes('ENTREGADO')) emoji = '✅';
+              if (status.includes('CANCELADO')) emoji = '❌';
+
+              return (
+                <Badge 
+                  key={status} 
+                  variant="outline"
+                  className={`cursor-pointer hover:bg-gray-100 ${statusFilter === status ? 'bg-gray-100' : ''}`}
+                  onClick={() => setStatusFilter(statusFilter === status ? 'ALL' : status)}
+                >
+                  {emoji} {count}
+                </Badge>
+              );
+            })}
           </div>
         </div>
       )}
@@ -201,8 +213,8 @@ export default function OrderList({
             setSelectedOrder(null);
           }}
           onAssign={(riderId) => {
-            // Aquí iría la lógica para asignar el repartidor
             console.log(`Asignando rider ${riderId} a la orden ${selectedOrder.id}`);
+            // Aquí deberías llamar a la acción del store o API
             setShowAssignModal(false);
             setSelectedOrder(null);
           }}

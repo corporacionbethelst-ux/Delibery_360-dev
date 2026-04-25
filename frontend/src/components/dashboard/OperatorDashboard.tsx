@@ -22,12 +22,15 @@ import {
   MapPin,
 } from "lucide-react";
 
+// Tipos opcionales para mayor seguridad
+type DeliveryStatus = "delivered" | "in_transit" | "pending" | "unknown";
+
 // Datos simulados de entregas para el dashboard
 const mockDeliveries = [
-  { id: "DEL-001", customer: "Juan Pérez", status: "in_transit", time: "15 min" },
-  { id: "DEL-002", customer: "María González", status: "pending", time: "30 min" },
-  { id: "DEL-003", customer: "Pedro Martínez", status: "delivered", time: "Completado" },
-  { id: "DEL-004", customer: "Ana López", status: "in_transit", time: "10 min" },
+  { id: "DEL-001", customer: "Juan Pérez", status: "in_transit" as DeliveryStatus, time: "15 min" },
+  { id: "DEL-002", customer: "María González", status: "pending" as DeliveryStatus, time: "30 min" },
+  { id: "DEL-003", customer: "Pedro Martínez", status: "delivered" as DeliveryStatus, time: "Completado" },
+  { id: "DEL-004", customer: "Ana López", status: "in_transit" as DeliveryStatus, time: "10 min" },
 ];
 
 /**
@@ -59,8 +62,8 @@ export default function OperatorDashboard() {
     }
   };
 
-  // Obtener color del badge según estado
-  const getStatusBadgeVariant = (status) => {
+  // CORREGIDO: Se agrega el tipo explícito 'string' (o DeliveryStatus) al parámetro status
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "delivered":
         return "default";
@@ -73,8 +76,8 @@ export default function OperatorDashboard() {
     }
   };
 
-  // Obtener texto del estado en español
-  const getStatusText = (status) => {
+  // CORREGIDO: Se agrega el tipo explícito
+  const getStatusText = (status: string) => {
     switch (status) {
       case "delivered":
         return "Entregado";
@@ -87,8 +90,8 @@ export default function OperatorDashboard() {
     }
   };
 
-  // Obtener ícono según estado
-  const getStatusIcon = (status) => {
+  // CORREGIDO: Se agrega el tipo explícito y se define el retorno como JSX
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case "delivered":
         return <CheckCircle className="h-3 w-3 mr-1" />;

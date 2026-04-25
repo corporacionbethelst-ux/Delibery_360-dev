@@ -38,6 +38,7 @@ export interface ProofOfDelivery {
   timestamp: Date;
 }
 
+// Renombrado a DeliveryEvent para consistencia (antes podría haberse llamado TrackingEvent)
 export interface DeliveryEvent {
   id: string;
   deliveryId: string;
@@ -82,7 +83,7 @@ export interface Delivery {
   // Prueba de entrega
   proofOfDelivery?: ProofOfDelivery;
   
-  // Eventos de tracking
+  // Eventos de tracking (usando DeliveryEvent)
   events: DeliveryEvent[];
   
   // Información adicional
@@ -147,6 +148,7 @@ export interface DeliveryFilters {
   dateFrom?: Date;
   dateTo?: Date;
   search?: string;
+  // Se eliminaron zone y priority porque no estaban definidos originalmente
 }
 
 export interface DeliveryStats {

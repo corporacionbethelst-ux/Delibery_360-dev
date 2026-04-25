@@ -16,27 +16,34 @@ export function ShiftControl({ riders, onCheckIn, onCheckOut }: ShiftControlProp
   const offShift = riders.filter(r => !r.currentShift?.isActive);
 
   const getShiftIcon = (shiftType?: string) => {
-    switch (shiftType) {
-      case 'morning': return <Sun className="h-4 w-4" />;
-      case 'afternoon': return <Coffee className="h-4 w-4" />;
-      case 'night': return <Moon className="h-4 w-4" />;
+    // Normalizamos a mayúsculas para comparar con el enum
+    const type = shiftType?.toUpperCase();
+    switch (type) {
+      case 'MORNING': return <Sun className="h-4 w-4" />;
+      case 'AFTERNOON': return <Coffee className="h-4 w-4" />;
+      case 'NIGHT': return <Moon className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
     }
   };
 
   const getShiftLabel = (shiftType?: string) => {
-    switch (shiftType) {
-      case 'morning': return 'Mañana';
-      case 'afternoon': return 'Tarde';
-      case 'night': return 'Noche';
+    const type = shiftType?.toUpperCase();
+    switch (type) {
+      case 'MORNING': return 'Mañana';
+      case 'AFTERNOON': return 'Tarde';
+      case 'NIGHT': return 'Noche';
       default: return 'General';
     }
   };
 
-  const calculateDuration = (startTime: string) => {
+  const calculateDuration = (startTime: string | Date) => {
+    if (!startTime) return '0h 0m';
     const start = new Date(startTime);
     const now = new Date();
     const diff = Math.floor((now.getTime() - start.getTime()) / 1000 / 60); // minutos
+    
+    if (diff < 0) return '0h 0m';
+    
     const hours = Math.floor(diff / 60);
     const minutes = diff % 60;
     return `${hours}h ${minutes}m`;
@@ -79,10 +86,12 @@ export function ShiftControl({ riders, onCheckIn, onCheckOut }: ShiftControlProp
                   >
                     <div className="flex items-center gap-3 flex-1">
                       <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center text-white font-semibold">
-                        {rider.user.name.charAt(0)}
+                        {/* Corregido: Usar fullName en lugar de user.name */}
+                        {rider.fullName ? rider.fullName.charAt(0) : 'R'}
                       </div>
                       <div>
-                        <p className="font-semibold">{rider.user.name}</p>
+                        {/* Corregido: Usar fullName */}
+                        <p className="font-semibold">{rider.fullName}</p>
                         <div className="flex items-center gap-2 text-xs text-gray-600">
                           <span className="flex items-center gap-1">
                             {getShiftIcon(rider.currentShift?.type)}
@@ -91,9 +100,7 @@ export function ShiftControl({ riders, onCheckIn, onCheckOut }: ShiftControlProp
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {rider.currentShift?.startTime 
-                              ? calculateDuration(rider.currentShift.startTime) 
-                              : '0h 0m'} en turno
+                            {calculateDuration(rider.currentShift?.startTime || '')} en turno
                           </span>
                         </div>
                       </div>
@@ -128,10 +135,12 @@ export function ShiftControl({ riders, onCheckIn, onCheckOut }: ShiftControlProp
                   >
                     <div className="flex items-center gap-3 flex-1">
                       <div className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center text-white font-semibold">
-                        {rider.user.name.charAt(0)}
+                        {/* Corregido: Usar fullName */}
+                        {rider.fullName ? rider.fullName.charAt(0) : 'R'}
                       </div>
                       <div>
-                        <p className="font-semibold">{rider.user.name}</p>
+                        {/* Corregido: Usar fullName */}
+                        <p className="font-semibold">{rider.fullName}</p>
                         <p className="text-xs text-gray-500">
                           {rider.vehicle?.type || 'Sin vehículo asignado'}
                         </p>

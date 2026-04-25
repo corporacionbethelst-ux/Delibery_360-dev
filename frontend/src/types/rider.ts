@@ -1,7 +1,7 @@
 // Tipos TypeScript para Riders - Delivery360
 
 export type RiderStatus = 'PENDIENTE' | 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
-export type RiderVehicleType = 'MOTO' | 'BICICLETA' | 'AUTO' | 'PIE';
+export type RiderVehicleType = 'MOTO' | 'BICICLETA' | 'AUTO' | 'PIE' | 'NO_ESPECIFICADO';
 export type RiderLevel = number; // 1-10
 
 export interface RiderLocation {
@@ -147,3 +147,99 @@ export interface RiderDocument {
   status: 'PENDIENTE' | 'VERIFICADO' | 'RECHAZADO';
   rejectionReason?: string;
 }
+
+// ... (otras interfaces existentes como Rider, RiderVehicle, etc.)
+
+/**
+ * Tipos de turno disponibles
+ */
+export type ShiftType = 'MORNING' | 'AFTERNOON' | 'NIGHT' | 'GENERAL';
+
+/**
+ * Estado del turno
+ */
+export type ShiftStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+
+/**
+ * Interfaz para la gestión de turnos de repartidores
+ */
+export interface Shift {
+  id: string;
+  riderId: string;
+  
+  // Tipo y estado
+  type: ShiftType;
+  status: ShiftStatus;
+  
+  // Tiempos
+  startTime: Date;
+  endTime?: Date;       // Null si el turno está activo o no ha terminado
+  scheduledStart: Date; // Hora programada de inicio
+  scheduledEnd: Date;   // Hora programada de fin
+  
+  // Estado actual
+  isActive: boolean;    // True si el turno está en curso ahora mismo
+  
+  // Ubicación de inicio/fin (opcional)
+  startLocation?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+  endLocation?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+  
+  // Métricas del turno
+  totalDeliveries?: number;
+  totalEarnings?: number;
+  totalHours?: number;  // Horas reales trabajadas
+  
+  // Notas o incidencias
+  notes?: string;
+  incidentReport?: string;
+  
+  // Auditoría
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Input para crear un nuevo turno
+ */
+export interface ShiftCreateInput {
+  riderId: string;
+  type: ShiftType;
+  scheduledStart: Date;
+  scheduledEnd: Date;
+  notes?: string;
+}
+
+/**
+ * Input para actualizar un turno (ej. marcar inicio/fin)
+ */
+export interface ShiftUpdateInput {
+  status?: ShiftStatus;
+  isActive?: boolean;
+  endTime?: Date;
+  startLocation?: Shift['startLocation'];
+  endLocation?: Shift['endLocation'];
+  notes?: string;
+  incidentReport?: string;
+}
+
+/**
+ * Filtros para búsqueda de turnos
+ */
+export interface ShiftFilters {
+  riderId?: string;
+  type?: ShiftType[];
+  status?: ShiftStatus[];
+  isActive?: boolean;
+  dateFrom?: Date;
+  dateTo?: Date;
+}
+
+// ... (resto del archivo)

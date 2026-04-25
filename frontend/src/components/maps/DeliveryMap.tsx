@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Delivery } from '@/types/delivery';
+import type { Delivery, DeliveryStatus } from '@/types/delivery';
 import { useDeliveriesStore } from '@/stores/deliveriesStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,14 @@ interface DeliveryMapProps {
   onDeliveryClick?: (delivery: Delivery) => void;
 }
 
+// Mapeo de estados (ajustar si tus valores en DB son diferentes, ej: 'PENDIENTE')
 const statusColors: Record<string, string> = {
+  PENDIENTE: 'bg-yellow-500',
+  ASIGNADO: 'bg-blue-500',
+  EN_CAMINO: 'bg-purple-500',
+  ENTREGADO: 'bg-green-500',
+  FALLIDO: 'bg-red-500',
+  // Fallback para valores en minúscula si existieran
   pending: 'bg-yellow-500',
   assigned: 'bg-blue-500',
   'in-transit': 'bg-purple-500',
@@ -22,6 +29,11 @@ const statusColors: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
+  PENDIENTE: 'Pendiente',
+  ASIGNADO: 'Asignada',
+  EN_CAMINO: 'En Camino',
+  ENTREGADO: 'Entregada',
+  FALLIDO: 'Fallida',
   pending: 'Pendiente',
   assigned: 'Asignada',
   'in-transit': 'En Camino',
@@ -30,7 +42,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export function DeliveryMap({ deliveries: propDeliveries, onDeliveryClick }: DeliveryMapProps) {
-  const { deliveries: storeDeliveries, getDeliveries } = useDeliveriesStore();
+  const { deliveries: storeDeliveries, fetchDeliveries } = useDeliveriesStore();
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,17 +50,29 @@ export function DeliveryMap({ deliveries: propDeliveries, onDeliveryClick }: Del
   const deliveries = propDeliveries || storeDeliveries;
 
   useEffect(() => {
-    getDeliveries({});
+    fetchDeliveries();
   }, []);
 
   const filteredDeliveries = deliveries.filter(delivery => {
-    if (filterStatus !== 'all' && delivery.status !== filterStatus) return false;
+    // Normalizar estado para comparación si es necesario
+    const status = delivery.status.toUpperCase();
+    
+    if (filterStatus !== 'all') {
+      // Comparamos con los valores posibles del filtro
+      const filterUpper = filterStatus.toUpperCase().replace('-', '_');
+      if (status !== filterUpper && status !== filterStatus) return false;
+    }
+
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
+      const customerName = delivery.order?.customerName?.toLowerCase() || '';
+      const address = delivery.deliveryLocation?.address?.toLowerCase() || '';
+      const id = delivery.id.toLowerCase();
+      
       return (
-        delivery.customer.name.toLowerCase().includes(search) ||
-        delivery.address.street.toLowerCase().includes(search) ||
-        delivery.id.toLowerCase().includes(search)
+        customerName.includes(search) ||
+        address.includes(search) ||
+        id.includes(search)
       );
     }
     return true;
@@ -83,11 +107,11 @@ export function DeliveryMap({ deliveries: propDeliveries, onDeliveryClick }: Del
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pending">Pendientes</SelectItem>
-                <SelectItem value="assigned">Asignadas</SelectItem>
-                <SelectItem value="in-transit">En Camino</SelectItem>
-                <SelectItem value="delivered">Entregadas</SelectItem>
-                <SelectItem value="failed">Fallidas</SelectItem>
+                <SelectItem value="PENDIENTE">Pendientes</SelectItem>
+                <SelectItem value="ASIGNADO">Asignadas</SelectItem>
+                <SelectItem value="EN_CAMINO">En Camino</SelectItem>
+                <SelectItem value="ENTREGADO">Entregadas</SelectItem>
+                <SelectItem value="FALLIDO">Fallidas</SelectItem>
               </SelectContent>
             </Select>
 
@@ -113,24 +137,24 @@ export function DeliveryMap({ deliveries: propDeliveries, onDeliveryClick }: Del
                 }`}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <Badge className={statusColors[delivery.status]}>
-                    {statusLabels[delivery.status]}
+                  <Badge className={statusColors[delivery.status] || 'bg-gray-500'}>
+                    {statusLabels[delivery.status] || delivery.status}
                   </Badge>
                   <span className="text-xs font-mono text-muted-foreground">
                     {delivery.id.slice(0, 8)}
                   </span>
                 </div>
                 <div className="font-medium text-sm mb-1 truncate">
-                  {delivery.customer.name}
+                  {delivery.order?.customerName || 'Sin cliente'}
                 </div>
                 <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
-                  {delivery.address.street}
+                  {delivery.deliveryLocation?.address || 'Sin dirección'}
                 </div>
-                {delivery.assignedRider && (
+                {delivery.rider && (
                   <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     <Truck className="h-3 w-3" />
-                    {delivery.assignedRider.name}
+                    {delivery.rider.fullName}
                   </div>
                 )}
               </button>
@@ -171,16 +195,16 @@ export function DeliveryMap({ deliveries: propDeliveries, onDeliveryClick }: Del
                 }}
               >
                 <div className="relative">
-                  <div className={`w-8 h-8 rounded-full ${statusColors[delivery.status]} border-4 border-white shadow-lg flex items-center justify-center text-white`}>
-                    {delivery.status === 'delivered' ? (
+                  <div className={`w-8 h-8 rounded-full ${statusColors[delivery.status] || 'bg-gray-500'} border-4 border-white shadow-lg flex items-center justify-center text-white`}>
+                    {delivery.status === 'ENTREGADO' ? (
                       <CheckCircle className="h-4 w-4" />
-                    ) : delivery.status === 'in-transit' ? (
+                    ) : delivery.status === 'EN_CAMINO' ? (
                       <Truck className="h-4 w-4" />
                     ) : (
                       <Package className="h-4 w-4" />
                     )}
                   </div>
-                  {delivery.priority === 'high' && (
+                  {delivery.priority === 'URGENTE' && (
                     <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
                       <Clock className="h-3 w-3 text-white" />
                     </div>
@@ -200,16 +224,16 @@ export function DeliveryMap({ deliveries: propDeliveries, onDeliveryClick }: Del
                     {selectedDelivery.id.slice(0, 12)}
                   </p>
                 </div>
-                <Badge className={statusColors[selectedDelivery.status]}>
-                  {statusLabels[selectedDelivery.status]}
+                <Badge className={statusColors[selectedDelivery.status] || 'bg-gray-500'}>
+                  {statusLabels[selectedDelivery.status] || selectedDelivery.status}
                 </Badge>
               </div>
 
               <div className="space-y-3 text-sm">
                 <div>
                   <div className="font-medium mb-1">Cliente</div>
-                  <div>{selectedDelivery.customer.name}</div>
-                  <div className="text-muted-foreground">{selectedDelivery.customer.phone}</div>
+                  <div>{selectedDelivery.order?.customerName || 'N/A'}</div>
+                  <div className="text-muted-foreground">{selectedDelivery.order?.customerPhone || 'N/A'}</div>
                 </div>
 
                 <div>
@@ -217,42 +241,43 @@ export function DeliveryMap({ deliveries: propDeliveries, onDeliveryClick }: Del
                     <MapPin className="h-4 w-4" />
                     Dirección
                   </div>
-                  <div>{selectedDelivery.address.street}</div>
+                  <div>{selectedDelivery.deliveryLocation?.address || 'N/A'}</div>
                   <div className="text-muted-foreground">
-                    {selectedDelivery.address.city}, {selectedDelivery.address.state}
+                    {selectedDelivery.deliveryLocation?.city}, {selectedDelivery.deliveryLocation?.state}
                   </div>
-                  {selectedDelivery.address.notes && (
+                  {selectedDelivery.customerInstructions && (
                     <div className="text-xs text-muted-foreground mt-1 italic">
-                      Nota: {selectedDelivery.address.notes}
+                      Nota: {selectedDelivery.customerInstructions}
                     </div>
                   )}
                 </div>
 
-                {selectedDelivery.assignedRider && (
+                {selectedDelivery.rider && (
                   <div>
                     <div className="font-medium mb-1 flex items-center gap-2">
                       <Truck className="h-4 w-4" />
                       Repartidor
                     </div>
-                    <div>{selectedDelivery.assignedRider.name}</div>
-                    <div className="text-muted-foreground">{selectedDelivery.assignedRider.phone}</div>
+                    <div>{selectedDelivery.rider.fullName}</div>
+                    <div className="text-muted-foreground">{selectedDelivery.rider.phone}</div>
                   </div>
                 )}
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-2 bg-muted rounded">
-                    <div className="text-xs text-muted-foreground">Ventana de tiempo</div>
+                    <div className="text-xs text-muted-foreground">Estimado</div>
                     <div className="font-medium text-xs">
-                      {new Date(selectedDelivery.timeWindow.start).toLocaleTimeString()} - 
-                      {new Date(selectedDelivery.timeWindow.end).toLocaleTimeString()}
+                      {selectedDelivery.estimatedDeliveryTime 
+                        ? new Date(selectedDelivery.estimatedDeliveryTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                        : 'N/A'}
                     </div>
                   </div>
                   <div className="p-2 bg-muted rounded">
                     <div className="text-xs text-muted-foreground">Prioridad</div>
                     <div className={`font-medium text-xs capitalize ${
-                      selectedDelivery.priority === 'high' ? 'text-red-500' : ''
+                      selectedDelivery.priority === 'URGENTE' ? 'text-red-500' : ''
                     }`}>
-                      {selectedDelivery.priority === 'high' ? 'Alta' : 'Normal'}
+                      {selectedDelivery.priority === 'URGENTE' ? 'Alta' : 'Normal'}
                     </div>
                   </div>
                 </div>
@@ -273,9 +298,9 @@ export function DeliveryMap({ deliveries: propDeliveries, onDeliveryClick }: Del
           <div className="absolute top-4 right-4 bg-white rounded-lg shadow-md p-3 z-20">
             <h4 className="text-xs font-semibold mb-2">Estado</h4>
             <div className="space-y-1">
-              {Object.entries(statusLabels).map(([key, label]) => (
+              {Object.entries(statusLabels).slice(0, 5).map(([key, label]) => (
                 <div key={key} className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${statusColors[key]}`} />
+                  <div className={`w-3 h-3 rounded-full ${statusColors[key] || 'bg-gray-400'}`} />
                   <span className="text-xs">{label}</span>
                 </div>
               ))}

@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import type { Delivery } from '@/types/deliveries';
+import type { Delivery } from '@/types/delivery';
 
 interface StartDeliveryButtonProps {
   delivery: Delivery;
@@ -29,7 +29,7 @@ export function StartDeliveryButton({ delivery, onStart }: StartDeliveryButtonPr
         <Button 
           size="sm" 
           className="gap-2 bg-green-600 hover:bg-green-700"
-          disabled={delivery.status !== 'assigned'}
+          disabled={delivery.status !== 'ASIGNADO'} // Ajustado al enum en mayúsculas si es necesario
         >
           <Play className="h-4 w-4" />
           Iniciar Entrega
@@ -49,9 +49,10 @@ export function StartDeliveryButton({ delivery, onStart }: StartDeliveryButtonPr
           <div className="bg-blue-50 p-3 rounded-lg">
             <h4 className="font-semibold text-sm mb-2">Detalles de la entrega:</h4>
             <ul className="text-sm space-y-1">
-              <li><strong>Cliente:</strong> {delivery.customer.name}</li>
-              <li><strong>Dirección:</strong> {delivery.address.street}, {delivery.address.city}</li>
-              <li><strong>Teléfono:</strong> {delivery.customer.phone}</li>
+              {/* CORRECCIÓN: Usar order?.customerName y deliveryLocation?.address */}
+              <li><strong>Cliente:</strong> {delivery.order?.customerName || 'N/A'}</li>
+              <li><strong>Dirección:</strong> {delivery.deliveryLocation?.address || 'Sin dirección'}</li>
+              <li><strong>Teléfono:</strong> {delivery.order?.customerPhone || 'N/A'}</li>
             </ul>
           </div>
           <p className="text-xs text-gray-500">

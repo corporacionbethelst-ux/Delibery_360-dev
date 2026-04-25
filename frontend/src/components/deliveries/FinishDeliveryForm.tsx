@@ -34,6 +34,14 @@ export function FinishDeliveryForm({ delivery, onFinish }: FinishDeliveryFormPro
     'Otro',
   ];
 
+  // Extraer datos de forma segura para evitar errores si order es undefined
+  const customerName = delivery.order?.customerName || 'Cliente no especificado';
+  const customerPhone = delivery.order?.customerPhone || 'N/A';
+  // Usar la dirección de entrega completa del objeto deliveryLocation
+  const deliveryAddress = delivery.deliveryLocation 
+    ? `${delivery.deliveryLocation.address}, ${delivery.deliveryLocation.city}` 
+    : 'Dirección no disponible';
+
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
@@ -46,9 +54,10 @@ export function FinishDeliveryForm({ delivery, onFinish }: FinishDeliveryFormPro
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-blue-50 p-4 rounded-lg">
             <h4 className="font-semibold mb-2">Detalles de la entrega</h4>
-            <p className="text-sm text-gray-600">Cliente: {delivery.customer.name}</p>
-            <p className="text-sm text-gray-600">Dirección: {delivery.address.street}, {delivery.address.city}</p>
-            <p className="text-sm text-gray-600">Teléfono: {delivery.customer.phone}</p>
+            {/* CORREGIDO: Acceso a través de delivery.order y delivery.deliveryLocation */}
+            <p className="text-sm text-gray-600">Cliente: {customerName}</p>
+            <p className="text-sm text-gray-600">Dirección: {deliveryAddress}</p>
+            <p className="text-sm text-gray-600">Teléfono: {customerPhone}</p>
           </div>
 
           <div className="space-y-3">

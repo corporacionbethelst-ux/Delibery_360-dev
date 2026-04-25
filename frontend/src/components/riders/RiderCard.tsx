@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Phone, Mail, Star, Bike } from 'lucide-react';
+import { MapPin, Phone, Mail, Star } from 'lucide-react';
 import type { Rider } from '@/types/rider';
 
 interface RiderCardProps {
@@ -14,22 +14,34 @@ interface RiderCardProps {
 
 export default function RiderCard({ rider, onViewDetails, onEdit }: RiderCardProps) {
   const getStatusColor = (status: string) => {
-    switch(status) {
+    const s = status.toUpperCase();
+    switch(s) {
       case 'ACTIVO': return 'bg-green-100 text-green-800';
       case 'SUSPENDIDO': return 'bg-red-100 text-red-800';
       case 'PENDIENTE': return 'bg-yellow-100 text-yellow-800';
+      case 'INACTIVO': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getVehicleIcon = (type: string) => {
-    switch(type) {
-      case 'BICICLETA': return '🚴';
-      case 'MOTO': return '🏍️';
-      case 'AUTO': return '🚗';
+    const t = type?.toUpperCase();
+    switch(t) {
+      case 'BICICLETA': 
+      case 'BICYCLE': return '🚴';
+      case 'MOTO': 
+      case 'MOTORCYCLE': return '🏍️';
+      case 'AUTO': 
+      case 'CAR': return '🚗';
+      case 'PIE': 
+      case 'FOOT': return '🚶';
       default: return '📦';
     }
   };
+
+  // Extraer tipo de vehículo de forma segura
+  const vehicleType = rider.vehicle?.type || 'NO_ESPECIFICADO';
+  const vehicleLabel = vehicleType === 'NO_ESPECIFICADO' ? 'No especificado' : vehicleType;
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
@@ -37,10 +49,10 @@ export default function RiderCard({ rider, onViewDetails, onEdit }: RiderCardPro
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-              {rider.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              {rider.fullName ? rider.fullName.split(' ').map(n => n[0]).join('').slice(0, 2) : 'RD'}
             </div>
             <div>
-              <h3 className="font-semibold text-lg">{rider.fullName}</h3>
+              <h3 className="font-semibold text-lg">{rider.fullName || 'Sin nombre'}</h3>
               <Badge className={getStatusColor(rider.status)}>{rider.status}</Badge>
             </div>
           </div>
@@ -57,11 +69,11 @@ export default function RiderCard({ rider, onViewDetails, onEdit }: RiderCardPro
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-2 text-gray-600">
             <Phone className="w-4 h-4" />
-            <span>{rider.phone}</span>
+            <span>{rider.phone || 'N/A'}</span>
           </div>
           <div className="flex items-center gap-2 text-gray-600">
             <Mail className="w-4 h-4" />
-            <span className="truncate">{rider.email}</span>
+            <span className="truncate">{rider.email || 'N/A'}</span>
           </div>
         </div>
         
@@ -74,13 +86,13 @@ export default function RiderCard({ rider, onViewDetails, onEdit }: RiderCardPro
         
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="flex items-center gap-2">
-            <span className="text-xl">{getVehicleIcon(rider.vehicleType || '')}</span>
-            <span className="text-sm text-gray-600">{rider.vehicleType || 'No especificado'}</span>
+            <span className="text-xl">{getVehicleIcon(vehicleType)}</span>
+            <span className="text-sm text-gray-600">{vehicleLabel}</span>
           </div>
-          {rider.rating && (
+          {rider.stats?.customerRating && (
             <div className="flex items-center gap-1 text-yellow-500">
               <Star className="w-4 h-4 fill-current" />
-              <span className="font-medium">{rider.rating.toFixed(1)}</span>
+              <span className="font-medium">{rider.stats.customerRating.toFixed(1)}</span>
             </div>
           )}
         </div>

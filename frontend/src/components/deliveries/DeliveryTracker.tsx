@@ -31,8 +31,21 @@ import {
   Eye,
 } from "lucide-react";
 
+// Definición del tipo de datos para las entregas
+interface DeliveryData {
+  id: string;
+  customer: string;
+  address: string;
+  phone: string;
+  status: string;
+  rider: string | null;
+  estimatedTime: string;
+  distance: number;
+  orderValue: number;
+}
+
 // Datos simulados de entregas para tracking
-const mockDeliveries = [
+const mockDeliveries: DeliveryData[] = [
   {
     id: "DEL-001",
     customer: "Juan Pérez",
@@ -78,9 +91,9 @@ export default function DeliveryTracker() {
   // Estado para el término de búsqueda
   const [searchTerm, setSearchTerm] = useState("");
   // Estado para las entregas filtradas
-  const [filteredDeliveries, setFilteredDeliveries] = useState(mockDeliveries);
-  // Estado para la entrega seleccionada
-  const [selectedDelivery, setSelectedDelivery] = useState(null);
+  const [filteredDeliveries, setFilteredDeliveries] = useState<DeliveryData[]>(mockDeliveries);
+  // Estado para la entrega seleccionada (Corregido: ahora tiene tipo)
+  const [selectedDelivery, setSelectedDelivery] = useState<DeliveryData | null>(null);
 
   // Filtrar entregas según estado y búsqueda
   useEffect(() => {
@@ -112,7 +125,7 @@ export default function DeliveryTracker() {
   };
 
   // Obtener color del badge según estado
-  const getStatusBadgeVariant = (status) => {
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "delivered":
         return "default";
@@ -126,7 +139,7 @@ export default function DeliveryTracker() {
   };
 
   // Obtener texto del estado en español
-  const getStatusText = (status) => {
+  const getStatusText = (status: string) => {
     switch (status) {
       case "delivered":
         return "Entregado";
@@ -140,7 +153,7 @@ export default function DeliveryTracker() {
   };
 
   // Obtener ícono según estado
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case "delivered":
         return <CheckCircle className="h-3 w-3 mr-1" />;

@@ -18,7 +18,7 @@ import {
   AlertCircle,
   Calendar
 } from "lucide-react"
-import { api } from "@/lib/api"
+import api from "@/lib/api"
 
 // Definir tipo para las entregas
 interface Delivery {

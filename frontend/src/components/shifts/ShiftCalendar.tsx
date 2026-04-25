@@ -5,9 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Shift, Rider } from '@/types/rider';
 
+// Extendemos el tipo para incluir el rider completo si la API lo devuelve anidado
+interface ShiftWithRider extends Shift {
+  rider: Rider;
+}
+
 interface ShiftCalendarProps {
-  shifts: (Shift & { rider: Rider })[];
-  onShiftClick?: (shift: Shift & { rider: Rider }) => void;
+  shifts: ShiftWithRider[];
+  onShiftClick?: (shift: ShiftWithRider) => void;
 }
 
 export function ShiftCalendar({ shifts, onShiftClick }: ShiftCalendarProps) {
@@ -17,7 +22,8 @@ export function ShiftCalendar({ shifts, onShiftClick }: ShiftCalendarProps) {
   const getDaysInWeek = (date: Date) => {
     const startOfWeek = new Date(date);
     const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Ajustar para lunes
+    // Ajustar para que la semana empiece en lunes (1) en lugar de domingo (0)
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); 
     startOfWeek.setDate(diff);
     startOfWeek.setHours(0, 0, 0, 0);
 
@@ -45,25 +51,37 @@ export function ShiftCalendar({ shifts, onShiftClick }: ShiftCalendarProps) {
 
   const getShiftsForDay = (date: Date) => {
     return shifts.filter(shift => {
+      if (!shift.startTime) return false;
       const shiftDate = new Date(shift.startTime);
       return shiftDate.toDateString() === date.toDateString();
     });
   };
 
   const getShiftTypeColor = (type?: string) => {
-    switch (type) {
-      case 'morning': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'afternoon': return 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'night': return 'bg-blue-100 text-blue-800 border-blue-300';
+    // Normalizamos a minúsculas para la comparación si vienen en mayúsculas de la BD
+    const t = type?.toLowerCase();
+    switch (t) {
+      case 'morning': 
+      case 'mañana': 
+      case 'manana': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'afternoon': 
+      case 'tarde': return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'night': 
+      case 'noche': return 'bg-blue-100 text-blue-800 border-blue-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
   const getShiftTypeLabel = (type?: string) => {
-    switch (type) {
-      case 'morning': return 'Mañana';
-      case 'afternoon': return 'Tarde';
-      case 'night': return 'Noche';
+    const t = type?.toLowerCase();
+    switch (t) {
+      case 'morning': 
+      case 'mañana': 
+      case 'manana': return 'Mañana';
+      case 'afternoon': 
+      case 'tarde': return 'Tarde';
+      case 'night': 
+      case 'noche': return 'Noche';
       default: return 'General';
     }
   };
@@ -84,6 +102,16 @@ export function ShiftCalendar({ shifts, onShiftClick }: ShiftCalendarProps) {
   const totalShifts = shifts.length;
   const activeShifts = shifts.filter(s => s.isActive).length;
 
+  // Formatear título de la semana/mes
+  const formatDateTitle = () => {
+    if (view === 'week' && weekDays.length > 0) {
+      const start = weekDays[0];
+      const end = weekDays[6];
+      return `${start.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    }
+    return currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -102,10 +130,8 @@ export function ShiftCalendar({ shifts, onShiftClick }: ShiftCalendarProps) {
             <Button variant="outline" size="icon" onClick={() => navigateWeek(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="font-semibold min-w-[200px] text-center">
-              {view === 'week' 
-                ? `Semana del ${weekDays[0].toLocaleDateString()}`
-                : currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+            <span className="font-semibold min-w-[200px] text-center capitalize">
+              {formatDateTitle()}
             </span>
             <Button variant="outline" size="icon" onClick={() => navigateWeek(1)}>
               <ChevronRight className="h-4 w-4" />
@@ -159,13 +185,16 @@ export function ShiftCalendar({ shifts, onShiftClick }: ShiftCalendarProps) {
                         onClick={() => onShiftClick?.(shift)}
                         className={`w-full text-left p-2 rounded border text-xs transition-all hover:shadow-md ${getShiftTypeColor(shift.type)}`}
                       >
-                        <div className="font-semibold truncate">{shift.rider.user.name}</div>
+                        {/* CORRECCIÓN PRINCIPAL: Usar shift.rider.fullName en lugar de shift.rider.user.name */}
+                        <div className="font-semibold truncate" title={shift.rider.fullName}>
+                          {shift.rider.fullName}
+                        </div>
                         <div className="flex items-center gap-1 mt-1">
                           <Clock className="h-3 w-3" />
                           <span>{getShiftTypeLabel(shift.type)}</span>
                         </div>
                         {shift.isActive && (
-                          <Badge className="mt-1 text-[10px] bg-green-600">Activo</Badge>
+                          <Badge className="mt-1 text-[10px] bg-green-600 text-white">Activo</Badge>
                         )}
                       </button>
                     ))}

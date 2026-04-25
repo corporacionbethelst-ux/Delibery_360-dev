@@ -1,5 +1,5 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 interface StatsCardProps {
   title: string;
@@ -9,7 +9,7 @@ interface StatsCardProps {
     value: number;
     label: string;
   };
-  description?: string;
+  description?: string; 
 }
 
 export function StatsCard({ title, value, icon, trend, description }: StatsCardProps) {

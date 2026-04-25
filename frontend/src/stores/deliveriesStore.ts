@@ -1,6 +1,7 @@
 // Deliveries Store - Zustand para gestión de entregas
 import { create } from 'zustand';
-import type { Delivery, DeliveryStatus, DeliveryFilters, ProofOfDelivery, TrackingEvent } from '@/types/delivery';
+// Corregido: Importar DeliveryEvent en lugar de TrackingEvent
+import type { Delivery, DeliveryStatus, DeliveryFilters, ProofOfDelivery, DeliveryEvent } from '@/types/delivery';
 import api from '@/lib/api';
 
 interface DeliveriesState {
@@ -26,7 +27,8 @@ interface DeliveriesState {
   cancelDelivery: (deliveryId: string, reason: string) => Promise<Delivery>;
   
   // Acciones - Tracking
-  addTrackingEvent: (deliveryId: string, event: Omit<TrackingEvent, 'id' | 'timestamp'>) => void;
+  // Corregido: Usar DeliveryEvent
+  addTrackingEvent: (deliveryId: string, event: Omit<DeliveryEvent, 'id' | 'timestamp'>) => void;
   updateDeliveryLocation: (deliveryId: string, latitude: number, longitude: number) => void;
   
   // Acciones - Filtros
@@ -63,20 +65,19 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       if (allFilters.status) params.append('status', allFilters.status.join(','));
       if (allFilters.riderId) params.append('riderId', allFilters.riderId);
       if (allFilters.orderId) params.append('orderId', allFilters.orderId);
-      if (allFilters.zone) params.append('zone', allFilters.zone);
-      if (allFilters.priority) params.append('priority', allFilters.priority);
+      // Eliminado: allFilters.zone y allFilters.priority no existen en DeliveryFilters
       if (allFilters.dateFrom) params.append('dateFrom', allFilters.dateFrom.toISOString());
       if (allFilters.dateTo) params.append('dateTo', allFilters.dateTo.toISOString());
       if (allFilters.search) params.append('search', allFilters.search);
       
       const response = await api.get(`/deliveries?${params.toString()}`);
       set({ 
-        deliveries: response.data.items, 
-        total: response.data.total,
+        deliveries: response.data.items || response.data, 
+        total: response.data.total || response.data.length,
         isLoading: false 
       });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message || 'Error al obtener entregas', isLoading: false });
       throw error;
     }
   },
@@ -87,7 +88,7 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       const response = await api.get(`/deliveries/${id}`);
       set({ selectedDelivery: response.data, isLoading: false });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message || 'Error al obtener detalle de entrega', isLoading: false });
       throw error;
     }
   },
@@ -102,7 +103,7 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
         isLoading: false 
       });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message || 'Error al obtener entregas activas', isLoading: false });
       throw error;
     }
   },
@@ -117,7 +118,7 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
         isLoading: false 
       });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message || 'Error al obtener entregas pendientes', isLoading: false });
       throw error;
     }
   },
@@ -135,7 +136,7 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message || 'Error al asignar entrega', isLoading: false });
       throw error;
     }
   },
@@ -152,7 +153,7 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message || 'Error al desasignar entrega', isLoading: false });
       throw error;
     }
   },
@@ -169,7 +170,7 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message || 'Error al iniciar entrega', isLoading: false });
       throw error;
     }
   },
@@ -186,7 +187,7 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message || 'Error al finalizar entrega', isLoading: false });
       throw error;
     }
   },
@@ -203,27 +204,28 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
       }));
       return updatedDelivery;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message || 'Error al cancelar entrega', isLoading: false });
       throw error;
     }
   },
   
   // TRACKING
-  addTrackingEvent: (deliveryId: string, event: Omit<TrackingEvent, 'id' | 'timestamp'>) => {
-    const trackingEvent: TrackingEvent = {
+  addTrackingEvent: (deliveryId: string, event: Omit<DeliveryEvent, 'id' | 'timestamp'>) => {
+    const trackingEvent: DeliveryEvent = {
       ...event,
       id: crypto.randomUUID(),
       timestamp: new Date(),
     };
     
     set((state) => ({
+      // Corregido: Usar 'events' en lugar de 'tracking'
       deliveries: state.deliveries.map(d => 
         d.id === deliveryId 
-          ? { ...d, tracking: [...d.tracking, trackingEvent] }
+          ? { ...d, events: [...(d.events || []), trackingEvent] }
           : d
       ),
       selectedDelivery: state.selectedDelivery?.id === deliveryId
-        ? { ...state.selectedDelivery, tracking: [...state.selectedDelivery.tracking, trackingEvent] }
+        ? { ...state.selectedDelivery, events: [...(state.selectedDelivery.events || []), trackingEvent] }
         : state.selectedDelivery
     }));
   },
@@ -234,21 +236,22 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
         d.id === deliveryId 
           ? { 
               ...d, 
-              currentLocation: { 
-                latitude, 
-                longitude, 
-                lastUpdate: new Date() 
-              } 
+              // Actualiza la ubicación de entrega o añade un campo currentLocation si lo defines en el tipo
+              deliveryLocation: {
+                ...d.deliveryLocation,
+                latitude,
+                longitude
+              }
             } 
           : d
       ),
       selectedDelivery: state.selectedDelivery?.id === deliveryId
         ? {
             ...state.selectedDelivery,
-            currentLocation: {
+            deliveryLocation: {
+              ...state.selectedDelivery.deliveryLocation,
               latitude,
-              longitude,
-              lastUpdate: new Date()
+              longitude
             }
           }
         : state.selectedDelivery
@@ -283,21 +286,35 @@ export const useDeliveriesStore = create<DeliveriesState>((set, get) => ({
     const { deliveries } = get();
     const now = new Date();
     return deliveries.filter(d => {
-      if (!d.slaDeadline) return false;
-      const timeRemaining = d.slaDeadline.getTime() - now.getTime();
-      return timeRemaining < 30 * 60 * 1000 && d.status === 'EN_CAMINO'; // Menos de 30 min
+      // Corregido: Usar estimatedDeliveryTime en lugar de slaDeadline
+      if (!d.estimatedDeliveryTime) return false;
+      const timeRemaining = d.estimatedDeliveryTime.getTime() - now.getTime();
+      return timeRemaining < 30 * 60 * 1000 && d.status === 'EN_CAMINO';
     });
   },
   
   searchDeliveries: (query: string) => {
     const { deliveries } = get();
     const lowerQuery = query.toLowerCase();
-    return deliveries.filter(d => 
-      d.id.toLowerCase().includes(lowerQuery) ||
-      d.customerName.toLowerCase().includes(lowerQuery) ||
-      d.address.street.toLowerCase().includes(lowerQuery) ||
-      (d.riderName && d.riderName.toLowerCase().includes(lowerQuery))
-    );
+    
+    return deliveries.filter(d => {
+      // 1. Nombre del cliente: Depende de cómo venga en tu objeto Order. 
+      // Si Order tiene customerName directo, úsalo. Si viene anidado en order, usa d.order?.customerName.
+      const customerName = d.order?.customerName || ''; 
+      
+      // 2. Dirección: Correcto según tu modelo DeliveryLocation
+      const address = d.deliveryLocation?.address || '';
+      
+      // 3. Nombre del repartidor: CORREGIDO a 'fullName' según tu interfaz Rider
+      const riderName = d.rider?.fullName || ''; 
+
+      return (
+        d.id.toLowerCase().includes(lowerQuery) ||
+        customerName.toLowerCase().includes(lowerQuery) ||
+        address.toLowerCase().includes(lowerQuery) ||
+        (riderName && riderName.toLowerCase().includes(lowerQuery))
+      );
+    });
   },
 }));
 

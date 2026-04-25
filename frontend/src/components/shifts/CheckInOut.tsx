@@ -1,32 +1,48 @@
-import React from 'react';
-import { Clock, LogIn, LogOut, AlertCircle } from 'lucide-react';
+'use client';
+
+import React, { useState } from 'react';
+import { Clock, LogIn, LogOut, AlertCircle, Sun, Moon, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Rider } from '@/types/rider';
 
+// Extendemos el tipo Rider solo para este componente para incluir el turno activo
+interface RiderWithShift extends Rider {
+  currentShift?: {
+    isActive: boolean;
+    startTime?: string; // ISO Date string
+    type?: 'MORNING' | 'AFTERNOON' | 'NIGHT' | string;
+  };
+}
+
 interface CheckInOutProps {
-  rider: Rider & { currentShift?: { isActive: boolean; startTime?: string; type?: string } };
+  rider: RiderWithShift;
   onCheckIn: (riderId: string, shiftType: string) => void;
   onCheckOut: (riderId: string) => void;
 }
 
 export function CheckInOut({ rider, onCheckIn, onCheckOut }: CheckInOutProps) {
-  const [selectedShift, setSelectedShift] = React.useState<string>('morning');
-  const [isProcessing, setIsProcessing] = React.useState(false);
-  const isActive = rider.currentShift?.isActive;
+  const [selectedShift, setSelectedShift] = useState<string>('MORNING');
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Accedemos de forma segura a currentShift
+  const currentShift = rider.currentShift;
+  const isActive = currentShift?.isActive ?? false;
 
   const shiftTypes = [
-    { value: 'morning', label: 'Mañana', icon: Sun },
-    { value: 'afternoon', label: 'Tarde', icon: Coffee },
-    { value: 'night', label: 'Noche', icon: Moon },
+    { value: 'MORNING', label: 'Mañana', icon: Sun },
+    { value: 'AFTERNOON', label: 'Tarde', icon: Coffee },
+    { value: 'NIGHT', label: 'Noche', icon: Moon },
   ];
 
   const handleCheckIn = async () => {
     setIsProcessing(true);
     try {
       await onCheckIn(rider.id, selectedShift);
+    } catch (error) {
+      console.error('Error al iniciar turno:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -36,20 +52,29 @@ export function CheckInOut({ rider, onCheckIn, onCheckOut }: CheckInOutProps) {
     setIsProcessing(true);
     try {
       await onCheckOut(rider.id);
+    } catch (error) {
+      console.error('Error al finalizar turno:', error);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const getShiftDuration = () => {
-    if (!rider.currentShift?.startTime) return null;
-    const start = new Date(rider.currentShift.startTime);
+    if (!currentShift?.startTime) return null;
+    const start = new Date(currentShift.startTime);
     const now = new Date();
-    const diff = Math.floor((now.getTime() - start.getTime()) / 1000 / 60);
-    const hours = Math.floor(diff / 60);
-    const minutes = diff % 60;
+    const diffMs = now.getTime() - start.getTime();
+    
+    if (diffMs < 0) return '0h 0m'; // Protección contra fechas futuras
+    
+    const diffMinutes = Math.floor(diffMs / 1000 / 60);
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
     return `${hours}h ${minutes}m`;
   };
+
+  // Inicial para el avatar
+  const initial = rider.fullName ? rider.fullName.charAt(0).toUpperCase() : 'R';
 
   return (
     <Card className="w-full max-w-md">
@@ -59,7 +84,7 @@ export function CheckInOut({ rider, onCheckIn, onCheckOut }: CheckInOutProps) {
             <Clock className="h-6 w-6" />
             Control de Acceso
           </div>
-          <Badge variant={isActive ? "default" : "outline"} className={isActive ? "bg-green-600" : ""}>
+          <Badge variant={isActive ? "default" : "outline"} className={isActive ? "bg-green-600 hover:bg-green-700" : ""}>
             {isActive ? 'En Turno' : 'Fuera de Turno'}
           </Badge>
         </CardTitle>
@@ -68,12 +93,14 @@ export function CheckInOut({ rider, onCheckIn, onCheckOut }: CheckInOutProps) {
         {/* Información del repartidor */}
         <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
           <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-lg">
-            {rider.user.name.charAt(0)}
+            {initial}
           </div>
           <div>
-            <p className="font-semibold">{rider.user.name}</p>
-            <p className="text-sm text-gray-600">{rider.vehicle?.type || 'Sin vehículo'}</p>
-            <p className="text-xs text-gray-500">{rider.phone}</p>
+            <p className="font-semibold">{rider.fullName}</p>
+            <p className="text-sm text-gray-600">
+              {rider.vehicle?.type || 'Sin vehículo'}
+            </p>
+            <p className="text-xs text-gray-500">{rider.phone || 'Sin teléfono'}</p>
           </div>
         </div>
 
@@ -83,7 +110,11 @@ export function CheckInOut({ rider, onCheckIn, onCheckOut }: CheckInOutProps) {
             <Alert className="bg-green-50 border-green-200">
               <LogIn className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Turno activo desde {new Date(rider.currentShift!.startTime!).toLocaleTimeString()}
+                Turno activo desde{' '}
+                {currentShift?.startTime 
+                  ? new Date(currentShift.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                  : 'hora desconocida'}
+                
                 {getShiftDuration() && (
                   <span className="block mt-1 text-sm">
                     Duración: <strong>{getShiftDuration()}</strong>
@@ -111,11 +142,12 @@ export function CheckInOut({ rider, onCheckIn, onCheckOut }: CheckInOutProps) {
                 {shiftTypes.map(({ value, label, icon: Icon }) => (
                   <button
                     key={value}
+                    type="button"
                     onClick={() => setSelectedShift(value)}
                     className={`p-3 border rounded-lg flex flex-col items-center gap-2 transition-all ${
                       selectedShift === value
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <Icon className="h-5 w-5" />
@@ -144,32 +176,6 @@ export function CheckInOut({ rider, onCheckIn, onCheckOut }: CheckInOutProps) {
         )}
       </CardContent>
     </Card>
-  );
-}
-
-// Iconos auxiliares
-function Sun({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  );
-}
-
-function Moon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-    </svg>
-  );
-}
-
-function Coffee({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 1v3M10 1v3M14 1v3" />
-    </svg>
   );
 }
 

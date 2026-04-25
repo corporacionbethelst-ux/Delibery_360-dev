@@ -5,6 +5,7 @@ import { User } from './user';
 export type OrderStatus = 
   | 'PENDIENTE'
   | 'ASIGNADO'
+  | 'CONFIRMADO'
   | 'EN_PREPARACION'
   | 'LISTO_PARA_RECOGER'
   | 'EN_CAMINO'
@@ -74,9 +75,10 @@ export interface Order {
   pickedUpAt?: Date;
   deliveredAt?: Date;
   cancelledAt?: Date;
+  scheduledAt?: string | Date; // Fecha y hora programada para la entrega
   
   // Información adicional
-  paymentMethod: 'EFECTIVO' | 'TARJETA' | 'PIX' | 'ONLINE';
+  paymentMethod: 'EFECTIVO' | 'TARJETA' | 'PIX' | 'ONLINE' | 'DEBIT_CARD';
   paymentStatus: 'PENDIENTE' | 'PAGADO' | 'REEMBOLSADO';
   observations?: string;
   internalNotes?: string;
