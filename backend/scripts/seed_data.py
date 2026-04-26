@@ -18,8 +18,6 @@ from app.models.user import User
 from app.models.rider import Rider, RiderStatus, VehicleType
 from app.models.order import Order, OrderStatus
 from app.models.delivery import Delivery, DeliveryStatus
-from app.models.customer import Customer
-from app.models.address import Address
 
 # Configuración de la base de datos
 DATABASE_URL = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
@@ -102,7 +100,7 @@ async def seed_users(db_session: AsyncSession, count: int = 15) -> List[User]:
     print(f"   ✅ {len(users)} usuarios creados exitosamente")
     return users
 
-async def seed_customers(db_session: AsyncSession, count: int = 20) -> List[Customer]:
+async def seed_customers(db_session: AsyncSession, count: int = 20):
     """Crea clientes de prueba"""
     print(f"🌱 Sembrando {count} clientes...")
     
@@ -114,15 +112,20 @@ async def seed_customers(db_session: AsyncSession, count: int = 20) -> List[Cust
         email = f"cliente{i+1}@example.com"
         
         # Verificar duplicados
-        result = await db_session.execute(select(Customer).where(Customer.email == email))
+        result = await db_session.execute(select(User).where(User.email == email))
         if result.scalar_one_or_none():
             continue
         
-        customer = Customer(
+        customer = User(
             id=uuid.uuid4(),
-            name=name,
             email=email,
-            phone=f"+55{random.randint(10000000000, 99999999999)}"
+            hashed_password=get_password_hash("Password123!"),
+            full_name=name,
+            role="gerente",
+            is_active=True,
+            phone=f"+55{random.randint(10000000000, 99999999999)}",
+            lgpd_consent=True,
+            lgpd_consent_date=datetime.now(timezone.utc)
         )
         customers.append(customer)
         db_session.add(customer)
@@ -131,40 +134,16 @@ async def seed_customers(db_session: AsyncSession, count: int = 20) -> List[Cust
     print(f"   ✅ {len(customers)} clientes creados")
     return customers
 
-async def seed_addresses(db_session: AsyncSession, customers: List[Customer], count: int = 30) -> List[Address]:
-    """Crea direcciones de prueba"""
-    print(f"🌱 Sembrando {count} direcciones...")
+async def seed_addresses(db_session: AsyncSession, customers, count: int = 30):
+    """Crea direcciones de prueba - SIMPLIFICADO SIN TABLA ADDRESS"""
+    print(f"🌱 Sembrando direcciones (simplificado)...")
     
-    addresses = []
-    streets = ["Av. Principal", "Calle 1", "Calle 2", "Rua das Flores", "Av. Brasil"]
-    cities = ["São Paulo", "Rio de Janeiro", "Brasília", "Salvador", "Fortaleza"]
-    
-    for i in range(count):
-        customer = random.choice(customers)
-        street = random.choice(streets)
-        city = random.choice(cities)
-        
-        address = Address(
-            id=uuid.uuid4(),
-            customer_id=customer.id,
-            street=f"{street} #{i+1}",
-            number=str(random.randint(1, 999)),
-            complement=f"Apto {random.randint(1, 100)}" if random.random() > 0.5 else None,
-            neighborhood=f"Barrio {random.randint(1, 10)}",
-            city=city,
-            state=random.choice(["SP", "RJ", "DF", "BA", "CE"]),
-            zip_code=f"{random.randint(10000, 99999)}-{random.randint(000, 999)}",
-            latitude=-23.5505 + random.uniform(-0.1, 0.1),
-            longitude=-46.6333 + random.uniform(-0.1, 0.1)
-        )
-        addresses.append(address)
-        db_session.add(address)
-    
-    await db_session.commit()
-    print(f"   ✅ {len(addresses)} direcciones creadas")
-    return addresses
+    # Esta función ya no es necesaria si no existe la tabla Address
+    # Se puede eliminar o dejar como no-op
+    print(f"   ⚠️ Tabla Address no disponible, omitiendo creación de direcciones")
+    return []
 
-async def seed_riders(db_session: AsyncSession, count: int = 10) -> List[Rider]:
+async def seed_riders(db_session: AsyncSession, count: int = 10):
     """Crea repartidores de prueba"""
     print(f"🌱 Sembrando {count} repartidores...")
     
@@ -229,7 +208,7 @@ async def seed_riders(db_session: AsyncSession, count: int = 10) -> List[Rider]:
     print(f"   ✅ {len(riders)} repartidores creados")
     return riders
 
-async def seed_orders(db_session: AsyncSession, riders: List[Rider], count: int = 25) -> List[Order]:
+async def seed_orders(db_session: AsyncSession, riders, count: int = 25):
     """Crea órdenes de prueba con estados correctos"""
     print(f"🌱 Sembrando {count} órdenes...")
     
@@ -278,7 +257,7 @@ async def seed_orders(db_session: AsyncSession, riders: List[Rider], count: int 
     print(f"   ✅ {len(orders)} órdenes creadas")
     return orders
 
-async def seed_deliveries(db_session: AsyncSession, orders: List[Order], riders: List[Rider]) -> List[Delivery]:
+async def seed_deliveries(db_session: AsyncSession, orders, riders):
     """Crea entregas para órdenes asignadas"""
     print(f"🌱 Sembrando entregas...")
     
