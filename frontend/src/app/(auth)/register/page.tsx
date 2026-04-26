@@ -15,9 +15,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Bike, Car, CheckCircle } from 'lucide-react';
 
 const vehicleOptions = [
-  { value: 'bicycle', label: 'Bicicleta', icon: Bike },
-  { value: 'motorcycle', label: 'Motocicleta', icon: Bike },
-  { value: 'car', label: 'Automóvil', icon: Car },
+  { value: 'BICICLETA', label: '🚴 Bicicleta', icon: Bike },
+  { value: 'MOTO', label: '🏍️ Motocicleta', icon: Bike },
+  { value: 'AUTO', label: '🚗 Automóvil', icon: Car },
 ];
 
 const registerSchema = z.object({
@@ -25,7 +25,9 @@ const registerSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
   phone: z.string().min(8, 'Teléfono inválido'),
-  vehicle_type: z.enum(['bicycle', 'motorcycle', 'car']),
+  vehicle_type: z.enum(['BICICLETA', 'MOTO', 'AUTO'], {
+    required_error: 'Selecciona un tipo de vehículo',
+  }),
   license_plate: z.string().optional(),
   document_id: z.string().min(5, 'Documento de identidad requerido'),
 });
@@ -48,8 +50,13 @@ export default function RegisterRiderPage() {
     setIsLoading(true);
     setError(null);
     try {
+      // Transformar datos al formato esperado por el backend
+      const payload = {
+        ...data,
+        vehicle_type: data.vehicle_type.toLowerCase(), // Convertir a minúsculas si el backend lo requiere
+      };
       // Llamada real a la API del backend
-      await api.post('/register',data);
+      await api.post('/register', payload);
       setSuccess(true);
       setTimeout(() => router.push('/rider'), 2000);
     } catch (err: any) {

@@ -3,19 +3,19 @@
  * Exporta todos los tipos utilizados en el frontend
  */
 
-// Enums unificados para estados
+// Enums unificados para estados (VALORES EN MAYÚSCULAS PARA CONSISTENCIA)
 export enum OrderStatus {
-  PENDIENTE = 'pendiente',
-  ASIGNADO = 'asignado',
-  EN_PREPARACION = 'en_preparacion',
-  LISTO_PARA_RECOLECCION = 'listo_para_recoleccion',
-  EN_RECOLECCION = 'en_recoleccion',
-  RECOLECTADO = 'recolectado',
-  EN_RUTA = 'en_ruta',
-  EN_ENTREGA = 'en_entrega',
-  ENTREGADO = 'entregado',
-  CANCELADO = 'cancelado',
-  FALLIDO = 'fallido',
+  PENDIENTE = 'PENDIENTE',
+  ASIGNADO = 'ASIGNADO',
+  EN_PREPARACION = 'EN_PREPARACION',
+  LISTO_PARA_RECOLECCION = 'LISTO_PARA_RECOLECCION',
+  EN_RECOLECCION = 'EN_RECOLECCION',
+  RECOLECTADO = 'RECOLECTADO',
+  EN_RUTA = 'EN_RUTA',
+  EN_ENTREGA = 'EN_ENTREGA',
+  ENTREGADO = 'ENTREGADO',
+  CANCELADO = 'CANCELADO',
+  FALLIDO = 'FALLIDO',
 }
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
@@ -53,9 +53,9 @@ export type Permission = {
   action: string;
 };
 
-export type RiderStatus = 'pendiente' | 'activo' | 'inactivo' | 'suspendido';
+export type RiderStatus = 'PENDIENTE' | 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
 
-export type VehicleType = 'moto' | 'bicicleta' | 'auto' | 'pie';
+export type VehicleType = 'MOTO' | 'BICICLETA' | 'AUTO' | 'PIE';
 
 export interface User {
   id: string;
@@ -70,9 +70,9 @@ export interface Rider {
   id: string;
   user_id: string;
   phone: string;
-  vehicle_type: 'bicicleta' | 'motocicleta' | 'auto' | 'furgoneta';
+  vehicle_type: 'BICICLETA' | 'MOTOCICLETA' | 'AUTO' | 'FURGONETA';
   license_plate?: string;
-  status: 'disponible' | 'ocupado' | 'offline' | 'en_turno';
+  status: 'DISPONIBLE' | 'OCUPADO' | 'OFFLINE' | 'EN_TURNO';
   current_lat?: number;
   current_lng?: number;
   rating?: number;
@@ -92,7 +92,7 @@ export interface Customer {
 export interface Order {
   id: string;
   customer_id: string;
-  status: 'pendiente' | 'confirmada' | 'en_preparacion' | 'lista_para_retiro' | 'en_transito' | 'entregada' | 'cancelada';
+  status: 'PENDIENTE' | 'CONFIRMADO' | 'EN_PREPARACION' | 'LISTO_PARA_RETIRO' | 'EN_TRANSITO' | 'ENTREGADO' | 'CANCELADO';
   pickup_address: string;
   pickup_lat?: number;
   pickup_lng?: number;
@@ -121,7 +121,7 @@ export interface Delivery {
   id: string;
   order_id: string;
   rider_id: string;
-  status: 'asignada' | 'recogida' | 'en_camino' | 'entregada' | 'fallida';
+  status: 'ASIGNADO' | 'RECOGIDO' | 'EN_CAMINO' | 'ENTREGADO' | 'FALLIDO';
   picked_up_at?: string;
   delivered_at?: string;
   proof_of_delivery?: string; // URL de foto o firma
@@ -135,7 +135,7 @@ export interface Shift {
   rider_id: string;
   start_time: string;
   end_time?: string;
-  status: 'activo' | 'finalizado' | 'pausado';
+  status: 'ACTIVO' | 'FINALIZADO' | 'PAUSADO';
   total_earnings?: number;
   total_deliveries?: number;
   created_at?: string;
@@ -144,7 +144,7 @@ export interface Shift {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'info' | 'warning' | 'error' | 'success';
+  type: 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS';
   title: string;
   message: string;
   read: boolean;
@@ -209,7 +209,7 @@ export interface RiderLocationUpdate {
 
 export interface AlertMessage {
   id: string;
-  type: 'info' | 'warning' | 'error' | 'success';
+  type: 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS';
   message: string;
   timestamp: string;
 }
