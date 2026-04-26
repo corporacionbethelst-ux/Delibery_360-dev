@@ -7,41 +7,6 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.core.database import Base
 
 
-# ── Delivery ──────────────────────────────────────────────────────────────────
-class Delivery(Base):
-    __tablename__ = "deliveries"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    order_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("orders.id"), unique=True)
-    rider_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("riders.id"))
-
-    # Prueba de entrega
-    photo_url: Mapped[str | None] = mapped_column(String(500))
-    signature_url: Mapped[str | None] = mapped_column(String(500))
-    otp_code: Mapped[str | None] = mapped_column(String(10))
-    otp_verified: Mapped[bool] = mapped_column(Boolean, default=False)
-
-    # Geolocalización de entrega
-    delivery_lat: Mapped[float | None] = mapped_column(Float)
-    delivery_lng: Mapped[float | None] = mapped_column(Float)
-
-    # Métricas de tiempo
-    pickup_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    duration_minutes: Mapped[float | None] = mapped_column(Float)
-    distance_km: Mapped[float | None] = mapped_column(Float)
-
-    # Calidad
-    on_time: Mapped[bool | None] = mapped_column(Boolean)
-    customer_rating: Mapped[int | None] = mapped_column(Integer)
-    notes: Mapped[str | None] = mapped_column(Text)
-
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-    order = relationship("Order", back_populates="delivery")
-    rider = relationship("Rider", back_populates="deliveries")
-
-
 # ── Shift ─────────────────────────────────────────────────────────────────────
 class ShiftStatus(str, PyEnum):
     ACTIVO = "activo"
