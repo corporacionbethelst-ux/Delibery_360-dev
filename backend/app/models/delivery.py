@@ -13,15 +13,14 @@ from app.core.database import Base
 
 class DeliveryStatus(str, enum.Enum):
     """Delivery execution status."""
-    PENDIENTE = "pendiente"  # Esperando inicio
-    INICIADA = "iniciada"  # Repartidor inició entrega
-    EN_PICKUP = "en_pickup"  # En punto de recogida
-    EN_ROUTE = "en_route"  # En camino al cliente
-    EN_DESTINO = "en_destino"  # Llegó al destino
-    COMPLETADA = "completada"  # Entrega exitosa
-    FALLIDA = "fallida"  # Entrega falló
+    PENDIENTE = "pendiente"
+    INICIADA = "iniciada"
+    EN_PICKUP = "en_pickup"
+    EN_ROUTE = "en_route"
+    EN_DESTINO = "en_destino"
+    COMPLETADA = "completada"
+    FALLIDA = "fallida"
 
-    # Aliases para compatibilidad con nomenclatura legacy
     PENDING = "pendiente"
     IN_PROGRESS = "iniciada"
     COMPLETED = "completada"
@@ -32,7 +31,7 @@ class ProofType(str, enum.Enum):
     """Types of proof of delivery."""
     FOTO = "foto"
     FIRMA = "firma"
-    OTP = "otp"  # One-time password
+    OTP = "otp"
     NINGUNO = "ninguno"
 
 
@@ -51,11 +50,11 @@ class Delivery(Base):
     status: Any = Column(SQLEnum(DeliveryStatus), default=DeliveryStatus.PENDIENTE)
     
     # Timing
-    started_at = Column(DateTime)  # Cuando el repartidor inicia
-    arrived_pickup_at = Column(DateTime)  # Llegada al restaurante
-    left_pickup_at = Column(DateTime)  # Salida del restaurante
-    arrived_delivery_at = Column(DateTime)  # Llegada al cliente
-    completed_at = Column(DateTime)  # Entrega completada
+    started_at = Column(DateTime)
+    arrived_pickup_at = Column(DateTime)
+    left_pickup_at = Column(DateTime)
+    arrived_delivery_at = Column(DateTime)
+    completed_at = Column(DateTime)
     
     # Geolocation Tracking
     current_latitude = Column(Float)
@@ -63,35 +62,35 @@ class Delivery(Base):
     last_location_update = Column(DateTime)
     
     # Route Information
-    route_data = Column(JSON)  # Ruta completa (lista de coordenadas)
-    distance_total = Column(Float)  # km totales
-    distance_pickup = Column(Float)  # km hasta restaurante
-    distance_delivery = Column(Float)  # km hasta cliente
+    route_data = Column(JSON)
+    distance_total = Column(Float)
+    distance_pickup = Column(Float)
+    distance_delivery = Column(Float)
     
     # Proof of Delivery
     proof_type: Any = Column(SQLEnum(ProofType))
-    proof_photo_url = Column(String(500))  # URL de la foto
-    proof_signature = Column(Text)  # Firma digital (base64)
-    proof_otp = Column(String(10))  # OTP para verificación
-    proof_notes = Column(Text)  # Notas del repartidor
-    customer_name_received = Column(String(255))  # Nombre quien recibió
+    proof_photo_url = Column(String(500))
+    proof_signature = Column(Text)
+    proof_otp = Column(String(10))
+    proof_notes = Column(Text)
+    customer_name_received = Column(String(255))
     
     # Issues & Exceptions
     has_issues = Column(Boolean, default=False)
-    issue_type = Column(String(50))  # cliente_ausente, direccion_incorrecta, producto_danado
+    issue_type = Column(String(50))
     issue_description = Column(Text)
     issue_resolved = Column(Boolean, default=False)
     
     # Performance Metrics
-    time_to_pickup = Column(Integer)  # segundos
-    time_at_pickup = Column(Integer)  # segundos en restaurante
-    time_to_delivery = Column(Integer)  # segundos
-    total_time = Column(Integer)  # segundos totales
+    time_to_pickup = Column(Integer)
+    time_at_pickup = Column(Integer)
+    time_to_delivery = Column(Integer)
+    total_time = Column(Integer)
     
     # SLA Compliance
     sla_expected_minutes = Column(Integer)
     sla_actual_minutes = Column(Integer)
-    sla_compliant = Column(Boolean)  # True si cumplió SLA
+    sla_compliant = Column(Boolean)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -100,10 +99,13 @@ class Delivery(Base):
     # Relationships
     order = relationship("Order", back_populates="delivery")
     rider = relationship("Rider", back_populates="deliveries")
+    
+    # Relación corregida con Route
     route = relationship(
         "Route",
         back_populates="delivery",
         uselist=False,
+        primaryjoin="Delivery.id == foreign(Route.delivery_id)",
         foreign_keys="[Route.delivery_id]"
     )
     

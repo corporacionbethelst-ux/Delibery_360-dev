@@ -29,9 +29,9 @@ class Route(Base):
     # Route Information
     status = Column(SQLEnum(RouteStatus), default=RouteStatus.PLANIFICADA)
     
-    # Coordinates (JSON array of {lat, lng, timestamp})
-    planned_route = Column(JSON)  # Ruta planificada óptima
-    actual_route = Column(JSON)  # Ruta real recorrida
+    # Coordinates
+    planned_route = Column(JSON)
+    actual_route = Column(JSON)
     
     # Waypoints
     pickup_latitude = Column(Float)
@@ -52,11 +52,11 @@ class Route(Base):
     deviation_reason = Column(String(255))
     
     # Traffic & Conditions
-    traffic_level = Column(String(20))  # bajo, medio, alto
+    traffic_level = Column(String(20))
     weather_condition = Column(String(50))
     
     # Optimization Score
-    efficiency_score = Column(Float, default=0.0)  # 0-100
+    efficiency_score = Column(Float, default=0.0)
     
     # Timestamps
     started_at = Column(DateTime)
@@ -65,7 +65,17 @@ class Route(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    delivery = relationship("Delivery", back_populates="route")
+    # Relación corregida con Delivery
+    delivery = relationship(
+        "Delivery",
+        back_populates="route",
+        primaryjoin="Route.delivery_id == Delivery.id",
+        foreign_keys="[Route.delivery_id]"
+    )
+    
+    # Relaciones one-to-many definidas estáticamente
+    points = relationship("RoutePoint", back_populates="route", cascade="all, delete-orphan")
+    deviations = relationship("RouteDeviation", back_populates="route", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Route(id={self.id}, delivery={self.delivery_id}, status={self.status})>"
@@ -82,23 +92,23 @@ class RoutePoint(Base):
     # GPS Coordinates
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
-    altitude = Column(Float)  # meters
+    altitude = Column(Float)
     
     # Accuracy & Speed
-    accuracy = Column(Float)  # meters
-    speed = Column(Float)  # km/h
-    heading = Column(Float)  # degrees 0-360
+    accuracy = Column(Float)
+    speed = Column(Float)
+    heading = Column(Float)
     
     # Timestamp
     timestamp = Column(DateTime, nullable=False, index=True)
     
     # Additional Info
-    battery_level = Column(Integer)  # percentage
+    battery_level = Column(Integer)
     is_charging = Column(Boolean, default=False)
-    network_type = Column(String(20))  # wifi, 4g, 5g, etc.
+    network_type = Column(String(20))
     
     # Metadata
-    source = Column(String(50), default="gps")  # gps, network, passive
+    source = Column(String(50), default="gps")
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -106,10 +116,6 @@ class RoutePoint(Base):
     
     def __repr__(self):
         return f"<RoutePoint(route={self.route_id}, lat={self.latitude}, lng={self.longitude})>"
-
-
-# Add relationship to Route class
-Route.points = relationship("RoutePoint", back_populates="route", cascade="all, delete-orphan")
 
 
 class RouteDeviation(Base):
@@ -121,8 +127,8 @@ class RouteDeviation(Base):
     route_id = Column(UUID(as_uuid=True), ForeignKey("routes.id"), index=True)
     
     # Deviation Details
-    deviation_type = Column(String(50))  # desvio_rota, parada_nao_programada, excesso_velocidade
-    severity = Column(String(20))  # baixa, media, alta, critica
+    deviation_type = Column(String(50))
+    severity = Column(String(20))
     
     # Location
     latitude = Column(Float)
@@ -133,19 +139,19 @@ class RouteDeviation(Base):
     resolved_at = Column(DateTime)
     
     # Analysis
-    expected_location = Column(JSON)  # {lat, lng}
-    actual_location = Column(JSON)  # {lat, lng}
+    expected_location = Column(JSON)
+    actual_location = Column(JSON)
     distance_from_route_km = Column(Float)
     time_lost_minutes = Column(Integer, default=0)
     
     # Resolution
-    status = Column(String(20), default="aberto")  # aberto, em_analise, resolvido, falso_positivo
+    status = Column(String(20), default="aberto")
     resolution_notes = Column(Text)
     resolved_by = Column(Integer, ForeignKey("users.id"))
     
     # Alerts
     alert_sent = Column(Boolean, default=False)
-    alert_channels = Column(JSON)  # ["push", "sms", "email"]
+    alert_channels = Column(JSON)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -156,7 +162,3 @@ class RouteDeviation(Base):
     
     def __repr__(self):
         return f"<RouteDeviation(route={self.route_id}, type={self.deviation_type}, severity={self.severity})>"
-
-
-# Add relationship to Route class
-Route.deviations = relationship("RouteDeviation", back_populates="route", cascade="all, delete-orphan")

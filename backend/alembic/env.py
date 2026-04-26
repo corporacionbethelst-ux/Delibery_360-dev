@@ -8,11 +8,22 @@ from alembic import context
 # ---- importar todos los modelos para que Alembic los detecte ----
 from app.core.config import settings
 from app.core.database import Base
+
+# Importación segura usando el __init__.py actualizado
 from app.models import (  # noqa: F401
-    user, rider, order, delivery, shift,
-    financial, productivity, route,
-    audit_log, notification, integration
+    user, rider, order, delivery, route
 )
+
+# Importar opcionalmente si existen
+try:
+    from app.models import shift
+except ImportError:
+    shift = None
+
+try:
+    from app.models import financial, productivity, audit_log, notification, integration
+except ImportError:
+    financial = productivity = audit_log = notification = integration = None
 
 config = context.config
 # Usar DATABASE_URL_SYNC para Alembic (conexión síncrona)
@@ -23,7 +34,6 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
-
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
@@ -36,12 +46,10 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-
 def do_run_migrations(connection: Connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()
-
 
 async def run_async_migrations() -> None:
     connectable = async_engine_from_config(
@@ -53,12 +61,9 @@ async def run_async_migrations() -> None:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()
 
-
 def run_migrations_online() -> None:
-    # Verificar si estamos en modo offline o si la URL es síncrona
     url = config.get_main_option("sqlalchemy.url")
     if url and not url.startswith("postgresql+async"):
-        # Modo síncrono para migraciones
         connectable = create_engine(
             url,
             poolclass=pool.NullPool,
@@ -66,9 +71,7 @@ def run_migrations_online() -> None:
         with connectable.connect() as connection:
             do_run_migrations(connection)
     else:
-        # Modo asíncrono
         asyncio.run(run_async_migrations())
-
 
 if context.is_offline_mode():
     run_migrations_offline()
