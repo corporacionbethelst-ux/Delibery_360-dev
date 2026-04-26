@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Agregado useEffect por seguridad
 import { useAuthStore } from '@/stores/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,23 +6,54 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { User, Mail, Phone, MapPin, Camera, Edit2, Save } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { User as UserType } from '@/types/user'; // Importar tipo si es necesario
 
 export default function RiderProfilePage() {
   const { user, updateUser } = useAuthStore();
   const [editing, setEditing] = useState(false);
+  
+  // Estado inicial seguro
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    vehicle: user?.vehicle?.type || '',
-    licensePlate: user?.vehicle?.plate || '',
+    name: '',
+    email: '',
+    phone: '',
+    vehicle: '',
+    licensePlate: '',
   });
 
+  // Cargar datos cuando el usuario esté disponible
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        // Intenta acceder a 'name', si no existe usa 'fullName' o un string vacío
+        name: (user as any).name || (user as any).fullName || '',
+        // Email suele ser directo, pero verificamos
+        email: (user as any).email || '',
+        // Teléfono puede ser 'phone' o 'phoneNumber'
+        phone: (user as any).phone || (user as any).phoneNumber || '',
+        // El vehículo puede no existir o tener otra estructura
+        vehicle: (user as any).vehicle?.type || (user as any).vehicleType || '',
+        licensePlate: (user as any).vehicle?.plate || (user as any).licensePlate || '',
+      });
+    }
+  }, [user]);
+
   const handleSave = async () => {
-    await updateUser(formData);
-    setEditing(false);
-    alert('Perfil actualizado correctamente');
+    try {
+      // Asegúrate de que el objeto enviado coincida con lo que espera tu API/Store
+      await updateUser(formData);
+      setEditing(false);
+      alert('Perfil actualizado correctamente');
+    } catch (error) {
+      console.error('Error al actualizar perfil:', error);
+      alert('Error al guardar los cambios');
+    }
   };
+
+  // Si no hay usuario cargado aún, mostrar carga
+  if (!user && !formData.name) {
+    return <div className="p-8 text-center">Cargando perfil...</div>;
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -142,10 +173,10 @@ export default function RiderProfilePage() {
               className="w-full border rounded-md px-3 py-2 bg-white disabled:bg-gray-100"
             >
               <option value="">Seleccionar tipo</option>
-              <option value="bicycle">Bicicleta</option>
-              <option value="motorcycle">Motocicleta</option>
-              <option value="car">Automóvil</option>
-              <option value="scooter">Scooter Eléctrico</option>
+              <option value="BICICLETA">Bicicleta</option>
+              <option value="MOTO">Motocicleta</option>
+              <option value="AUTO">Automóvil</option>
+              <option value="SCOOTER">Scooter Eléctrico</option>
             </select>
           </div>
 
