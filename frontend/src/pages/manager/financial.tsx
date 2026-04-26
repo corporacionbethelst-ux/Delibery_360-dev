@@ -1,28 +1,43 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import { useFinancialStore } from '@/stores/financialStore';
-import { StatsCard } from '@/components/dashboard/StatsCards';
 import { formatCurrency } from '@/lib/financial-utils';
 import { DollarSign, TrendingUp, CreditCard, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+// Importamos el componente compartido correcto
+import { StatsCard } from '@/components/dashboard/StatsCards'; 
+import type { Transaction } from '@/types/financial';
 
 export default function ManagerFinancialPage() {
-  const { getDailySummary, getTransactions, transactions, loading } = useFinancialStore();
-  const [period, setPeriod] = useState('today');
-  const [summary, setSummary] = useState<any>(null);
+  const { getFinancialReport, getTransactions, report, transactions, loading } = useFinancialStore();
+  const [period, setPeriod] = useState('month');
 
   useEffect(() => {
-    // Simular carga de datos
     const loadData = async () => {
-      const data = await getDailySummary(period);
-      setSummary(data);
-      await getTransactions({ period });
+      const now = new Date();
+      let start = new Date();
+      
+      if (period === 'today') start.setHours(0,0,0,0);
+      if (period === 'week') start.setDate(now.getDate() - 7);
+      if (period === 'month') start.setDate(1);
+
+      await getFinancialReport({ dateFrom: start, dateTo: now });
+      await getTransactions({ dateFrom: start, dateTo: now });
     };
     loadData();
-  }, [period]);
+  }, [period, getFinancialReport, getTransactions]);
 
   if (loading) return <div className="p-8 text-center">Cargando datos financieros...</div>;
+
+  // Valores seguros con fallback a 0
+  const totalRevenue = report?.totalRevenue || 0;
+  const riderPayments = report?.totalRiderPayments || 0;
+  const netProfit = report?.netProfit || 0;
+  const pendingPayouts = 0; 
 
   return (
     <div className="p-6 space-y-6">
@@ -40,32 +55,31 @@ export default function ManagerFinancialPage() {
         </Select>
       </div>
 
-      {/* KPIs Financieros */}
+      {/* KPIs Financieros usando StatsCard compartido */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard 
           title="Ingresos Totales" 
-          value={summary?.totalRevenue ? formatCurrency(summary.totalRevenue) : '$0'} 
-          icon={DollarSign} 
-          trend={12.5} 
+          value={formatCurrency(totalRevenue)} 
+          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+          trend={{ value: 12.5, label: 'vs mes anterior' }}
         />
         <StatsCard 
           title="Pagos a Repartidores" 
-          value={summary?.riderPayments ? formatCurrency(summary.riderPayments) : '$0'} 
-          icon={CreditCard} 
-          trend={-5.2} 
-          trendDown 
+          value={formatCurrency(riderPayments)} 
+          icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
+          trend={{ value: -5.2, label: 'vs mes anterior' }}
         />
         <StatsCard 
-          title="Comisiones Netas" 
-          value={summary?.netCommission ? formatCurrency(summary.netCommission) : '$0'} 
-          icon={TrendingUp} 
-          trend={8.4} 
+          title="Beneficio Neto" 
+          value={formatCurrency(netProfit)} 
+          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+          trend={{ value: 8.4, label: 'vs mes anterior' }}
         />
         <StatsCard 
           title="Pendiente de Pago" 
-          value={summary?.pendingPayouts ? formatCurrency(summary.pendingPayouts) : '$0'} 
-          icon={AlertCircle} 
-          variant="warning"
+          value={formatCurrency(pendingPayouts)} 
+          icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
+          description="Requiere atención"
         />
       </div>
 
@@ -91,26 +105,22 @@ export default function ManagerFinancialPage() {
                 {transactions.length === 0 ? (
                   <tr><td colSpan={6} className="px-6 py-4 text-center">No hay transacciones</td></tr>
                 ) : (
-                  transactions.map((tx) => (
+                  transactions.map((tx: Transaction) => (
                     <tr key={tx.id} className="bg-white border-b hover:bg-gray-50">
                       <td className="px-6 py-4 font-medium">{tx.id.slice(0, 8)}</td>
                       <td className="px-6 py-4">{new Date(tx.createdAt).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          tx.type === 'payment' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {tx.type === 'payment' ? 'Pago' : 'Reembolso'}
-                        </span>
+                        <Badge variant="outline">
+                          {tx.type.replace('_', ' ')}
+                        </Badge>
                       </td>
                       <td className="px-6 py-4 font-medium">
                         {formatCurrency(tx.amount)}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          tx.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {tx.status === 'completed' ? 'Completado' : 'Pendiente'}
-                        </span>
+                        <Badge variant={tx.status === 'PAGADO' ? 'default' : 'secondary'}>
+                          {tx.status}
+                        </Badge>
                       </td>
                       <td className="px-6 py-4">
                         <Button variant="outline" size="sm">Ver Detalle</Button>

@@ -236,7 +236,7 @@ export interface FinancialReportDetailed {
   // Desglose por período
   dailyConsolidated: DailyConsolidated[];
   
-  // Top performers
+  // Top performers 
   topRiders: Array<{
     riderId: string;
     riderName: string;

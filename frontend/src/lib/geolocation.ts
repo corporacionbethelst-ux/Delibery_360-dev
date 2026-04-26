@@ -72,7 +72,7 @@ export function getCurrentPosition(): Promise<Location> {
  */
 export function watchPosition(
   callback: (location: Location) => void,
-  errorCallback?: (error: Error) => void
+  errorCallback?: (error: GeolocationPositionError) => void // Cambiado de Error a GeolocationPositionError
 ): number {
   if (!navigator.geolocation) {
     throw new Error('Geolocation is not supported by this browser');
@@ -90,7 +90,7 @@ export function watchPosition(
         speed: position.coords.speed,
       });
     },
-    errorCallback,
+    errorCallback, // Ahora los tipos coinciden
     {
       enableHighAccuracy: true,
       timeout: 10000,

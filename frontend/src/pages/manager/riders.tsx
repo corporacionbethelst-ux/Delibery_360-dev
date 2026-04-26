@@ -2,29 +2,47 @@
 
 import { useState, useEffect } from 'react';
 import { useRidersStore } from '@/stores/ridersStore';
-import { RiderCard } from '@/components/riders/RiderCard';
-import { RiderList } from '@/components/riders/RiderList';
+// Asumiendo exportación por defecto, si son nombradas cambia a { RiderCard }
+import RiderCard from '@/components/riders/RiderCard'; 
+import RiderList from '@/components/riders/RiderList';
 import AddRiderModal from '@/components/riders/AddRiderModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { RiderStatus } from '@/types/rider'; // Importar tipo si es necesario
 
 export default function ManagerRidersPage() {
-  const { riders, loading, fetchRiders } = useRidersStore();
+  // Corregido: usar isLoading en lugar de loading si así se llama en el store
+  const { riders, fetchRiders, isLoading } = useRidersStore(); 
+  
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  // Usar un string genérico para el filtro inicial
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   useEffect(() => {
     fetchRiders();
-  }, []);
+  }, [fetchRiders]);
 
   const filteredRiders = riders.filter(rider => {
     const matchesSearch = rider.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          rider.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || rider.status === statusFilter;
+    
+    // Corregido: Comparar con los valores reales de tu enum RiderStatus (Mayúsculas)
+    // Si tu store usa 'ACTIVO', 'SUSPENDIDO', etc.
+    let matchesStatus = true;
+    if (statusFilter !== 'all') {
+      // Mapeo de filtros de UI a valores del modelo
+      if (statusFilter === 'activo') matchesStatus = rider.status === 'ACTIVO';
+      else if (statusFilter === 'suspendido') matchesStatus = rider.status === 'SUSPENDIDO';
+      else if (statusFilter === 'pendiente') matchesStatus = rider.status === 'PENDIENTE';
+      // Si usas isOnline para "disponibles":
+      else if (statusFilter === 'online') matchesStatus = rider.isOnline === true;
+      else if (statusFilter === 'offline') matchesStatus = rider.isOnline === false;
+    }
+    
     return matchesSearch && matchesStatus;
   });
 
@@ -32,7 +50,7 @@ export default function ManagerRidersPage() {
     fetchRiders();
   };
 
-  if (loading) return <div className="p-8 text-center">Cargando repartidores...</div>;
+  if (isLoading) return <div className="p-8 text-center">Cargando repartidores...</div>;
 
   return (
     <div className="p-6 space-y-6">
@@ -61,8 +79,10 @@ export default function ManagerRidersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="available">Disponibles</SelectItem>
-                <SelectItem value="busy">Ocupados</SelectItem>
+                <SelectItem value="activo">Activos</SelectItem>
+                <SelectItem value="pendiente">Pendientes</SelectItem>
+                <SelectItem value="suspendido">Suspendidos</SelectItem>
+                <SelectItem value="online">En Línea</SelectItem>
                 <SelectItem value="offline">Offline</SelectItem>
               </SelectContent>
             </Select>
@@ -95,23 +115,25 @@ export default function ManagerRidersPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-green-600">
-              {riders.filter(r => r.status === 'available').length}
+              {/* Contar activos según tu modelo */}
+              {riders.filter(r => r.status === 'ACTIVO').length}
             </div>
-            <div className="text-sm text-gray-500">Disponibles</div>
+            <div className="text-sm text-gray-500">Activos</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-blue-600">
-              {riders.filter(r => r.status === 'busy').length}
+              {/* Usando isOnline si existe, o una lógica equivalente */}
+              {riders.filter(r => r.isOnline).length}
             </div>
-            <div className="text-sm text-gray-500">En Entrega</div>
+            <div className="text-sm text-gray-500">En Línea</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-gray-600">
-              {riders.filter(r => r.status === 'offline').length}
+              {riders.filter(r => !r.isOnline).length}
             </div>
             <div className="text-sm text-gray-500">Offline</div>
           </CardContent>

@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+"use client";
+
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Download, Calendar, TrendingUp, Users, Package } from 'lucide-react';
-import { StatsCard } from '@/components/dashboard/StatsCard';
+import { StatsCard } from '@/components/dashboard/StatsCards';
 
 export default function ManagerReportsPage() {
   const [reportType, setReportType] = useState('orders');
@@ -93,26 +95,26 @@ export default function ManagerReportsPage() {
         <StatsCard 
           title="Total Pedidos" 
           value="1,234" 
-          icon={Package} 
-          trend={15.3} 
+          icon={<Package className="h-4 w-4 text-muted-foreground" />} 
+          trend={{ value: 15.3, label: 'vs mes anterior' }} 
         />
         <StatsCard 
           title="Tasa de Entrega" 
           value="96.8%" 
-          icon={TrendingUp} 
-          trend={2.1} 
+          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />} 
+          trend={{ value: 2.1, label: 'vs mes anterior' }} 
         />
         <StatsCard 
           title="Repartidores Activos" 
           value="45" 
-          icon={Users} 
-          trend={8.7} 
+          icon={<Users className="h-4 w-4 text-muted-foreground" />} 
+          trend={{ value: 8.7, label: 'vs mes anterior' }} 
         />
         <StatsCard 
           title="Ingresos Totales" 
           value="$12,450" 
-          icon={BarChart} 
-          trend={12.5} 
+          icon={<BarChart className="h-4 w-4 text-muted-foreground" />} 
+          trend={{ value: 12.5, label: 'vs mes anterior' }} 
         />
       </div>
 

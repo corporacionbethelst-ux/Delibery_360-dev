@@ -7,7 +7,7 @@ import { MapPin, Phone, Mail, Star } from 'lucide-react';
 import type { Rider } from '@/types/rider';
 
 interface RiderCardProps {
-  rider: Rider;
+  rider: Rider; 
   onViewDetails?: (id: string) => void;
   onEdit?: (id: string) => void;
 }
