@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Any, List
+from typing import Any
 from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Boolean, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -19,7 +19,6 @@ class RiderStatus(str, enum.Enum):
     VACACIONES = "vacaciones"
     SUSPENDIDO = "suspendido"
 
-    # Aliases
     ACTIVE = "activo"
     INACTIVE = "inactivo"
     BUSY = "ocupado"
@@ -35,7 +34,6 @@ class VehicleType(str, enum.Enum):
     AUTO = "auto"
     FURGONETA = "furgoneta"
 
-    # Aliases
     MOTORCYCLE = "moto"
     BICYCLE = "bicicleta"
     SCOOTER = "patineta"
@@ -55,7 +53,7 @@ class Rider(Base):
     last_name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     phone = Column(String(20), unique=True, nullable=False)
-    document_type = Column(String(20))  # cedula, passport, etc.
+    document_type = Column(String(20))
     document_number = Column(String(50), unique=True)
     
     # Vehicle Information
@@ -76,7 +74,7 @@ class Rider(Base):
     average_rating = Column(Float, default=0.0)
     total_earnings = Column(Float, default=0.0)
     
-    # Documents (URLs to stored files)
+    # Documents
     license_url = Column(String(500))
     insurance_url = Column(String(500))
     background_check_url = Column(String(500))
@@ -86,15 +84,12 @@ class Rider(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
-    # Relación con Orders (a través del campo assigned_rider_id en Order)
+    # Relationships (Solo las que tienen FK directa o están bien definidas)
     orders = relationship("Order", back_populates="rider")
-    
-    # Relación con Deliveries (clave foránea en Delivery.rider_id)
     deliveries = relationship("Delivery", back_populates="rider")
     
-    # NOTA: Se eliminó la relación 'routes' porque no existe una FK directa entre riders y routes.
-    # Para obtener las rutas de un rider, usa: rider.deliveries -> delivery.route
+    # NOTA: Se eliminaron relaciones inversas manuales a Shift, Financial, etc.
+    # Ahora son unidireccionales desde esos modelos hacia Rider.
     
     def __repr__(self):
         return f"<Rider(id={self.id}, name={self.first_name} {self.last_name}, status={self.status})>"

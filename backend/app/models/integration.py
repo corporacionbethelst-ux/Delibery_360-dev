@@ -1,28 +1,29 @@
-"""Integration models for TPV/ERP and external systems."""
+"""Integration model for external system connections."""
 
+import uuid
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, Text, Boolean, JSON, ForeignKey
+from typing import Any, Optional
+from sqlalchemy import Column, String, Boolean, DateTime, Enum as SQLEnum, Integer, Text, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 import enum
 
 from app.core.database import Base
 
 
 class IntegrationType(str, enum.Enum):
-    """Types of integrations."""
-    TPV = "tpv"  # Terminal Punto de Venta
-    ERP = "erp"  # Enterprise Resource Planning
-    PAGOS = "pagos"  # Gateway de pagos
-    MAPAS = "mapas"  # Google Maps, Mapbox
-    NOTIFICACION = "notificacion"  # Firebase, Twilio
-    OTRO = "otro"
+    ERP = "erp"
+    POS = "pos"
+    PAYMENT = "payment"
+    MAPS = "maps"
+    SMS = "sms"
+    EMAIL = "email"
 
 
 class IntegrationStatus(str, enum.Enum):
-    """Integration connection status."""
-    ACTIVA = "activa"
-    INACTIVA = "inactiva"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
     ERROR = "error"
-    MANTENIMIENTO = "mantenimiento"
 
 
 class Integration(Base):
@@ -30,33 +31,33 @@ class Integration(Base):
     
     __tablename__ = "integrations"
     
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    integration_type = Column(SQLEnum(IntegrationType), nullable=False)
+    # CORRECCIÓN: ID como UUID
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Connection Details
-    provider = Column(String(50))  # Nombre del proveedor (SAP, Oracle, Stripe, etc.)
+    name = Column(String(100), nullable=False)
+    integration_type: Any = Column(SQLEnum(IntegrationType), nullable=False)
+    provider = Column(String(50))
+    
+    # Connection
     api_url = Column(String(500))
     api_version = Column(String(20))
-    
-    # Authentication
-    auth_type = Column(String(20))  # api_key, oauth2, basic, jwt
-    credentials = Column(JSON)  # Encrypted: tokens, keys, secrets
+    auth_type = Column(String(20))
+    credentials = Column(Text)  # JSON string or encrypted
     token_expires_at = Column(DateTime)
     
     # Status
-    status = Column(SQLEnum(IntegrationStatus), default=IntegrationStatus.INACTIVA)
+    status: Any = Column(SQLEnum(IntegrationStatus), default=IntegrationStatus.INACTIVE)
     last_sync_at = Column(DateTime)
     last_error_at = Column(DateTime)
     last_error_message = Column(Text)
     consecutive_failures = Column(Integer, default=0)
     
-    # Configuration
-    config = Column(JSON)  # Configuración específica de la integración
-    webhook_url = Column(String(500))  # Para recibir webhooks del sistema externo
+    # Config
+    config = Column(Text)  # JSON string
+    webhook_url = Column(String(500))
     webhook_secret = Column(String(255))
     
-    # Sync Settings
+    # Sync
     sync_enabled = Column(Boolean, default=False)
     sync_frequency_minutes = Column(Integer, default=60)
     sync_last_run = Column(DateTime)
@@ -65,75 +66,12 @@ class Integration(Base):
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by = Column(Integer, ForeignKey("users.id"))
+    
+    # CORRECCIÓN: created_by como UUID para coincidir con User.id
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
+    
+    # Relationships
+    creator = relationship("User")
     
     def __repr__(self):
         return f"<Integration(id={self.id}, name={self.name}, type={self.integration_type})>"
-
-
-class IntegrationLog(Base):
-    """Log of integration operations."""
-    
-    __tablename__ = "integration_logs"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    integration_id = Column(Integer, ForeignKey("integrations.id"), index=True)
-    
-    # Operation Details
-    operation_type = Column(String(50))  # sync, webhook, api_call, export, import
-    direction = Column(String(10))  # inbound, outbound
-    
-    # Request/Response
-    endpoint = Column(String(500))
-    request_payload = Column(JSON)
-    response_payload = Column(JSON)
-    status_code = Column(Integer)
-    
-    # Result
-    success = Column(Boolean, default=True)
-    error_message = Column(Text)
-    records_processed = Column(Integer, default=0)
-    
-    # Performance
-    duration_ms = Column(Integer)
-    
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    
-    def __repr__(self):
-        return f"<IntegrationLog(id={self.id}, integration={self.integration_id}, operation={self.operation_type})>"
-
-
-class WebhookEvent(Base):
-    """Received webhook events from external systems."""
-    
-    __tablename__ = "webhook_events"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    integration_id = Column(Integer, ForeignKey("integrations.id"), index=True)
-    
-    # Event Details
-    event_type = Column(String(100), nullable=False)
-    event_id = Column(String(100), unique=True)  # ID único del evento externo
-    source_system = Column(String(50))
-    
-    # Payload
-    payload = Column(JSON, nullable=False)
-    signature = Column(String(255))  # Para verificación
-    
-    # Processing
-    processed = Column(Boolean, default=False)
-    processed_at = Column(DateTime)
-    processing_result = Column(String(50))  # success, failed, ignored
-    error_message = Column(Text)
-    retry_count = Column(Integer, default=0)
-    
-    # Related Entity (after processing)
-    related_type = Column(String(50))  # order, delivery, payment
-    related_id = Column(Integer)
-    
-    # Timestamps
-    received_at = Column(DateTime, default=datetime.utcnow, index=True)
-    
-    def __repr__(self):
-        return f"<WebhookEvent(id={self.id}, type={self.event_type}, processed={self.processed})>"

@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Any
 from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
@@ -65,7 +66,6 @@ class Route(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    # Relación corregida con Delivery
     delivery = relationship(
         "Delivery",
         back_populates="route",
@@ -73,7 +73,6 @@ class Route(Base):
         foreign_keys="[Route.delivery_id]"
     )
     
-    # Relaciones one-to-many definidas estáticamente
     points = relationship("RoutePoint", back_populates="route", cascade="all, delete-orphan")
     deviations = relationship("RouteDeviation", back_populates="route", cascade="all, delete-orphan")
     
@@ -89,29 +88,23 @@ class RoutePoint(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     route_id = Column(UUID(as_uuid=True), ForeignKey("routes.id"), index=True)
     
-    # GPS Coordinates
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
     altitude = Column(Float)
     
-    # Accuracy & Speed
     accuracy = Column(Float)
     speed = Column(Float)
     heading = Column(Float)
     
-    # Timestamp
     timestamp = Column(DateTime, nullable=False, index=True)
     
-    # Additional Info
     battery_level = Column(Integer)
     is_charging = Column(Boolean, default=False)
     network_type = Column(String(20))
     
-    # Metadata
     source = Column(String(50), default="gps")
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
     route = relationship("Route", back_populates="points")
     
     def __repr__(self):
@@ -126,38 +119,32 @@ class RouteDeviation(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     route_id = Column(UUID(as_uuid=True), ForeignKey("routes.id"), index=True)
     
-    # Deviation Details
     deviation_type = Column(String(50))
     severity = Column(String(20))
     
-    # Location
     latitude = Column(Float)
     longitude = Column(Float)
     
-    # Timing
     detected_at = Column(DateTime, nullable=False)
     resolved_at = Column(DateTime)
     
-    # Analysis
     expected_location = Column(JSON)
     actual_location = Column(JSON)
     distance_from_route_km = Column(Float)
     time_lost_minutes = Column(Integer, default=0)
     
-    # Resolution
     status = Column(String(20), default="aberto")
     resolution_notes = Column(Text)
-    resolved_by = Column(Integer, ForeignKey("users.id"))
     
-    # Alerts
+    # CORRECCIÓN AQUÍ: Cambiar Integer a UUID
+    resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    
     alert_sent = Column(Boolean, default=False)
     alert_channels = Column(JSON)
     
-    # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
     route = relationship("Route", back_populates="deviations")
     
     def __repr__(self):

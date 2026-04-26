@@ -1,15 +1,14 @@
 """AuditLog model for tracking system actions and compliance."""
-
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON, Index, Float
+from typing import Any
+import uuid
+from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON, Index, Float, Integer
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 import enum
-
 from app.core.database import Base
 
-
 class ActionType(str, enum.Enum):
-    """Types of auditable actions."""
     LOGIN = "login"
     LOGOUT = "logout"
     CREATE = "create"
@@ -25,90 +24,65 @@ class ActionType(str, enum.Enum):
     CONFIG_CHANGE = "config_change"
     ACCESS_DENIED = "access_denied"
 
-
 class AuditLog(Base):
-    """Audit log for tracking all system actions (LGPD compliance)."""
-    
     __tablename__ = "audit_logs"
     
-    id = Column(Integer, primary_key=True, index=True)
+    # CORRECCIÓN: Usar UUID para el ID
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Actor Information
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    user_email = Column(String(255))  # Denormalized for performance
+    # CORRECCIÓN: Usar UUID para la foreign key
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
+    user_email = Column(String(255))
     user_role = Column(String(50))
     
-    # Action Details
-    action_type = Column(SQLEnum(ActionType), nullable=False, index=True)
-    resource_type = Column(String(50), index=True)  # user, order, delivery, rider, etc.
-    resource_id = Column(Integer, index=True)
+    action_type: Any = Column(SQLEnum(ActionType), nullable=False, index=True)
+    resource_type = Column(String(50), index=True)
+    resource_id = Column(UUID(as_uuid=True), index=True) # También debería ser UUID si referencia a otras tablas UUID
     
-    # Action Context
     description = Column(Text)
-    old_values = Column(JSON)  # Datos antes del cambio
-    new_values = Column(JSON)  # Datos después del cambio
-    changes_summary = Column(String(500))  # Resumen legible
+    old_values = Column(JSON)
+    new_values = Column(JSON)
+    changes_summary = Column(String(500))
     
-    # Request Information
-    ip_address = Column(String(45))  # IPv6 compatible
+    ip_address = Column(String(45))
     user_agent = Column(String(500))
-    request_method = Column(String(10))  # GET, POST, PUT, DELETE
+    request_method = Column(String(10))
     request_path = Column(String(255))
     
-    # Location (if applicable)
     latitude = Column(Float)
     longitude = Column(Float)
     
-    # Outcome
-    status_code = Column(Integer)  # HTTP status code
+    status_code = Column(Integer)
     success = Column(Boolean, default=True)
     error_message = Column(Text)
     
-    # LGPD Compliance
     contains_personal_data = Column(Boolean, default=False)
-    data_subject_id = Column(Integer)  # ID del titular de datos (si aplica)
-    retention_until = Column(DateTime)  # Fecha de eliminación programada
+    data_subject_id = Column(UUID(as_uuid=True)) # Si referencia a users, debe ser UUID
+    retention_until = Column(DateTime)
     
-    # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     
-    # Relationships
-    user = relationship("User", back_populates="audit_logs")
-    
+    user = relationship("User")
+    actions = relationship("AuditAction", back_populates="audit_log", cascade="all, delete-orphan")
+
     __table_args__ = (
         Index('idx_audit_resource', 'resource_type', 'resource_id'),
         Index('idx_audit_user_date', 'user_id', 'created_at'),
     )
-    
-    def __repr__(self):
-        return f"<AuditLog(id={self.id}, action={self.action_type}, user={self.user_email})>"
-
 
 class AuditAction(Base):
-    """Detailed action metadata for audit logs."""
-    
     __tablename__ = "audit_actions"
     
-    id = Column(Integer, primary_key=True, index=True)
-    audit_log_id = Column(Integer, ForeignKey("audit_logs.id"), index=True)
+    # CORRECCIÓN: Usar UUID
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Action Details
+    # CORRECCIÓN: Usar UUID para la foreign key
+    audit_log_id = Column(UUID(as_uuid=True), ForeignKey("audit_logs.id"), index=True)
+    
     field_name = Column(String(100))
-    old_value = Column(Text)  # JSON string
-    new_value = Column(Text)  # JSON string
-    
-    # Change Type
-    change_type = Column(String(20))  # create, update, delete
-    
-    # Timestamp
+    old_value = Column(Text)
+    new_value = Column(Text)
+    change_type = Column(String(20))
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
     audit_log = relationship("AuditLog", back_populates="actions")
-    
-    def __repr__(self):
-        return f"<AuditAction(audit={self.audit_log_id}, field={self.field_name})>"
-
-
-# Add relationship to AuditLog class
-AuditLog.actions = relationship("AuditAction", back_populates="audit_log", cascade="all, delete-orphan")

@@ -1,7 +1,10 @@
 """Notification model for system alerts and communications."""
 
+import uuid
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON
+from typing import Any
+from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON
+from sqlalchemy.dialects.postgresql import UUID
 import enum
 
 from app.core.database import Base
@@ -13,18 +16,9 @@ class NotificationType(str, enum.Enum):
     ASIGNACION_PEDIDO = "asignacion_pedido"
     ESTADO_ENTREGA = "estado_entrega"
     RECORDATORIO = "recordatorio"
-    LOGRO = "logro"  # Badge/ranking
+    LOGRO = "logro"
     SISTEMA = "sistema"
     URGENTE = "urgente"
-
-
-class NotificationChannel(str, enum.Enum):
-    """Notification delivery channels."""
-    PUSH = "push"
-    EMAIL = "email"
-    SMS = "sms"
-    IN_APP = "in_app"
-    WEBHOOK = "webhook"
 
 
 class NotificationPriority(str, enum.Enum):
@@ -40,48 +34,49 @@ class Notification(Base):
     
     __tablename__ = "notifications"
     
-    id = Column(Integer, primary_key=True, index=True)
+    # CORRECCIÓN: ID como UUID
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Recipient
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    rider_id = Column(Integer, ForeignKey("riders.id"), index=True)
+    # Recipient - CORRECCIÓN: Claves foráneas como UUID
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
+    rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id"), index=True)
     
     # Content
-    notification_type = Column(SQLEnum(NotificationType), nullable=False)
-    priority = Column(SQLEnum(NotificationPriority), default=NotificationPriority.NORMAL)
+    notification_type: Any = Column(SQLEnum(NotificationType), nullable=False)
+    priority: Any = Column(SQLEnum(NotificationPriority), default=NotificationPriority.NORMAL)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
-    data = Column(JSON)  # Datos adicionales para la acción
+    data = Column(JSON)
     
     # Delivery Channels
-    channels = Column(String(100))  # Comma-separated: push,email,sms
-    sent_channels = Column(String(100))  # Canales donde se envió exitosamente
+    channels = Column(String(100))
+    sent_channels = Column(String(100))
     
     # Status
     is_read = Column(Boolean, default=False)
     read_at = Column(DateTime)
     is_sent = Column(Boolean, default=False)
     sent_at = Column(DateTime)
-    failed_channels = Column(String(100))  # Canales que fallaron
+    failed_channels = Column(String(100))
     error_message = Column(Text)
     
     # Action
-    action_url = Column(String(500))  # URL para redirigir al hacer clic
-    action_type = Column(String(50))  # navigate, modal, external
+    action_url = Column(String(500))
+    action_type = Column(String(50))
     
-    # Related Entity
-    related_type = Column(String(50))  # order, delivery, shift, etc.
-    related_id = Column(Integer)
+    # Related Entity - CORRECCIÓN: related_id puede ser string o UUID dependiendo del uso, lo dejamos genérico o UUID si es FK
+    related_type = Column(String(50))
+    related_id = Column(UUID(as_uuid=True), nullable=True)  # Asumiendo que referencia a entidades UUID
     
     # Scheduling
-    scheduled_for = Column(DateTime)  # Para notificaciones programadas
-    expires_at = Column(DateTime)  # Expiración de la notificación
+    scheduled_for = Column(DateTime)
+    expires_at = Column(DateTime)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     
     def __repr__(self):
-        return f"<Notification(id={self.id}, type={self.notification_type}, priority={self.priority})>"
+        return f"<Notification(id={self.id}, type={self.notification_type})>"
 
 
 class Alert(Base):
@@ -89,29 +84,32 @@ class Alert(Base):
     
     __tablename__ = "alerts"
     
-    id = Column(Integer, primary_key=True, index=True)
+    # CORRECCIÓN: ID como UUID
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Alert Information
-    alert_type = Column(String(50), nullable=False)  # sla_breach, rider_inactive, route_deviation
-    severity = Column(String(20), default="medium")  # low, medium, high, critical
+    alert_type = Column(String(50), nullable=False)
+    severity = Column(String(20), default="medium")
     title = Column(String(255), nullable=False)
     description = Column(Text)
     
-    # Related Entities
-    order_id = Column(Integer, ForeignKey("orders.id"))
-    delivery_id = Column(Integer, ForeignKey("deliveries.id"))
-    rider_id = Column(Integer, ForeignKey("riders.id"))
+    # Related Entities - CORRECCIÓN: Claves foráneas como UUID
+    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id"))
+    delivery_id = Column(UUID(as_uuid=True), ForeignKey("deliveries.id"))
+    rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id"))
     
     # Status
-    status = Column(String(20), default="active")  # active, acknowledged, resolved, false_positive
-    acknowledged_by = Column(Integer, ForeignKey("users.id"))
+    status = Column(String(20), default="active")
+    
+    # Acknowledgement/Resolution - CORRECCIÓN: Users son UUID
+    acknowledged_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     acknowledged_at = Column(DateTime)
-    resolved_by = Column(Integer, ForeignKey("users.id"))
+    resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     resolved_at = Column(DateTime)
     resolution_notes = Column(Text)
     
     # Auto-resolution
-    auto_resolve_at = Column(DateTime)  # Para alertas temporales
+    auto_resolve_at = Column(DateTime)
     auto_resolved = Column(Boolean, default=False)
     
     # Timestamps
@@ -119,4 +117,4 @@ class Alert(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f"<Alert(id={self.id}, type={self.alert_type}, severity={self.severity})>"
+        return f"<Alert(id={self.id}, type={self.alert_type})>"
