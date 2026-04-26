@@ -104,7 +104,7 @@ class Delivery(Base):
         "Route",
         back_populates="delivery",
         uselist=False,
-        primaryjoin="Route.delivery_id == Delivery.id"
+        foreign_keys="[Route.delivery_id]"
     )
     
     def __repr__(self):
