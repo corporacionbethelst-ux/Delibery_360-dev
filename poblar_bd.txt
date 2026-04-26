@@ -1,0 +1,325 @@
+# Guía Completa para Poblar la Base de Datos - Delivery360
+
+Este documento explica cómo ejecutar los scripts de seed (poblado de datos) en dos entornos diferentes:
+1. Entorno Local con Python Virtual (venv/poetry)
+2. Entorno con Docker Desktop
+
+## 📋 Prerrequisitos Comunes
+
+Antes de ejecutar cualquier comando, asegúrate de:
+- Tener el repositorio clonado en `/workspace`
+- Tener instalados Docker y Docker Desktop (para la opción Docker)
+- Tener Python 3.9+ instalado (para la opción local)
+- Tener las migraciones de base de datos aplicadas
+
+---
+
+## 🐍 Opción 1: Entorno Local (Python Virtual)
+
+### Paso 1: Navegar al directorio del backend
+```bash
+cd /workspace/backend
+```
+
+### Paso 2: Activar el entorno virtual
+
+#### Si usas `venv`:
+```bash
+source venv/bin/activate
+```
+> Nota: En Windows usa: `venv\Scripts\activate`
+
+#### Si usas `poetry`:
+```bash
+poetry shell
+```
+
+### Paso 3: Instalar dependencias (si es necesario)
+```bash
+# Para venv
+pip install -r requirements.txt
+
+# Para poetry
+poetry install
+```
+
+### Paso 4: Aplicar migraciones de base de datos
+```bash
+alembic upgrade head
+```
+
+### Paso 5: Ejecutar el script de seed
+```bash
+python scripts/seed_data.py
+```
+
+### ✅ Resultado esperado
+Deberías ver mensajes como:
+```
+✅ Usuario Superadmin creado: admin.superadmin@delivery360.com
+✅ Usuario Gerente creado: gerente@delivery360.com
+✅ Usuario Operador creado: operador@delivery360.com
+✅ Repartidor creado: repartidor1@delivery360.com
+...
+🎉 ¡Base de datos poblada exitosamente!
+```
+
+### 🔑 Credenciales generadas
+| Rol | Email | Contraseña |
+|-----|-------|------------|
+| Superadmin | admin.superadmin@delivery360.com | Admin123! |
+| Gerente | gerente@delivery360.com | Admin123! |
+| Operador | operador@delivery360.com | Admin123! |
+| Repartidor | repartidor1@delivery360.com | Admin123! |
+| Cliente | cliente1@ejemplo.com | Cliente123! |
+
+### 🧹 Limpiar datos (opcional)
+Si quieres volver a ejecutar el seed desde cero, el script automáticamente limpia los datos anteriores. 
+Si necesitas limpiar manualmente:
+```bash
+# Conecta a tu base de datos y ejecuta:
+TRUNCATE TABLE orders CASCADE;
+TRUNCATE TABLE deliveries CASCADE;
+TRUNCATE TABLE users CASCADE;
+-- etc.
+```
+
+---
+
+## 🐳 Opción 2: Entorno con Docker Desktop
+
+### Preparación del entorno Docker
+
+Asegúrate de tener Docker Desktop corriendo y los contenedores levantados.
+
+### Paso 1: Navegar al directorio del proyecto
+```bash
+cd /workspace
+```
+
+### Paso 2: Levantar los contenedores (si no están activos)
+```bash
+docker-compose up -d
+```
+
+### Paso 3: Aplicar migraciones dentro del contenedor
+```bash
+docker-compose exec backend alembic upgrade head
+```
+
+### Paso 4: Ejecutar el script de seed dentro del contenedor
+
+#### Método A: Ejecución directa
+```bash
+docker-compose exec backend python scripts/seed_data.py
+```
+
+#### Método B: Entrando al contenedor interactivo
+```bash
+# Entrar al contenedor
+docker-compose exec backend bash
+
+# Dentro del contenedor, ejecutar el seed
+python scripts/seed_data.py
+
+# Salir del contenedor
+exit
+```
+
+### ✅ Resultado esperado
+Mismos mensajes que en la opción local, pero verás el prefijo del contenedor:
+```
+backend_1  | ✅ Usuario Superadmin creado: admin.superadmin@delivery360.com
+backend_1  | ✅ Usuario Gerente creado: gerente@delivery360.com
+...
+backend_1  | 🎉 ¡Base de datos poblada exitosamente!
+```
+
+### 🔑 Credenciales generadas
+Las mismas que en la opción local.
+
+### 🛠️ Comandos útiles de Docker
+
+#### Ver logs del backend en tiempo real
+```bash
+docker-compose logs -f backend
+```
+
+#### Reiniciar el contenedor del backend
+```bash
+docker-compose restart backend
+```
+
+#### Detener todos los contenedores
+```bash
+docker-compose down
+```
+
+#### Detener contenedores y eliminar volúmenes (¡CUIDADO! borra la BD)
+```bash
+docker-compose down -v
+```
+
+#### Ejecutar seed forzando recreación de contenedor
+```bash
+docker-compose up -d --force-recreate backend
+docker-compose exec backend python scripts/seed_data.py
+```
+
+---
+
+## 🔄 Flujo de Trabajo Recomendado
+
+### Para Desarrollo Diario:
+1. Inicia Docker: `docker-compose up -d`
+2. Aplica migraciones (solo la primera vez o cuando haya cambios): `docker-compose exec backend alembic upgrade head`
+3. Poblar BD con datos de prueba: `docker-compose exec backend python scripts/seed_data.py`
+4. Trabaja normalmente en tu aplicación
+5. Al finalizar: `docker-compose down` (opcional)
+
+### Para Resetear Completamente el Entorno:
+```bash
+# Detener y eliminar todo (incluyendo volúmenes/BD)
+docker-compose down -v
+
+# Levantar de nuevo
+docker-compose up -d
+
+# Esperar a que la BD esté lista (10-15 segundos)
+sleep 15
+
+# Aplicar migraciones
+docker-compose exec backend alembic upgrade head
+
+# Poblar con datos de prueba
+docker-compose exec backend python scripts/seed_data.py
+```
+
+---
+
+## ⚠️ Consideraciones Importantes
+
+### 1. **Idempotencia del Script**
+El script `seed_data.py` está diseñado para ser idempotente:
+- Verifica si los usuarios ya existen antes de crearlos
+- Limpia datos anteriores si es necesario
+- Puedes ejecutarlo múltiples veces sin problemas
+
+### 2. **Base de Datos**
+- **Local**: Usa la conexión definida en `.env` (generalmente PostgreSQL local)
+- **Docker**: Usa el servicio de PostgreSQL definido en `docker-compose.yml`
+
+### 3. **Variables de Entorno**
+Asegúrate de que el archivo `.env` en `/workspace/backend` tenga configurado correctamente:
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/delivery360
+# O para Docker:
+DATABASE_URL=postgresql://user:password@db:5432/delivery360
+```
+
+### 4. **Producción**
+⚠️ **NUNCA** ejecutes scripts de seed en producción. Estos scripts son exclusivamente para:
+- Desarrollo local
+- Entornos de testing
+- Demostraciones
+
+Para producción, usa migraciones de datos controladas y backups oficiales.
+
+---
+
+## 🐛 Solución de Problemas Comunes
+
+### Error: "Connection refused" o "No se puede conectar a la BD"
+**Solución:**
+```bash
+# Verifica que el contenedor de BD esté corriendo
+docker-compose ps
+
+# Revisa los logs de la BD
+docker-compose logs db
+
+# Reinicia el servicio de BD
+docker-compose restart db
+```
+
+### Error: "ModuleNotFoundError" en Python
+**Solución:**
+```bash
+# Instala las dependencias
+docker-compose exec backend pip install -r requirements.txt
+# O
+docker-compose exec backend poetry install
+```
+
+### Error: "Tabla no existe" o "Relation does not exist"
+**Solución:**
+```bash
+# Aplica las migraciones
+docker-compose exec backend alembic upgrade head
+```
+
+### Error: Permisos en Linux/Mac
+**Solución:**
+```bash
+# Da permisos de ejecución al script
+chmod +x scripts/seed_data.py
+```
+
+### El script se ejecuta pero no crea datos
+**Posibles causas:**
+1. Los datos ya existen (el script los detecta y no los duplica)
+2. Error silencioso en el código
+3. Conexión a la BD incorrecta
+
+**Solución:**
+```bash
+# Ejecuta con verbose para ver más detalles
+docker-compose exec backend python -u scripts/seed_data.py
+```
+
+---
+
+## 📊 Datos Generados por el Seed
+
+El script `seed_data.py` crea:
+
+### Usuarios
+- 1 Superadmin
+- 1 Gerente
+- 1 Operador
+- 5 Repartidores (con diferentes estados y tipos de vehículo)
+
+### Clientes y Direcciones
+- 10 Clientes de ejemplo
+- 2-3 Direcciones por cliente
+
+### Órdenes
+- 15-20 Órdenes en diferentes estados:
+  - PENDIENTE
+  - ASIGNADO
+  - EN_RECOLECCION
+  - RECOLECTADO
+  - EN_RUTA
+  - ENTREGADO
+
+### Entregas
+- Entregas asociadas a las órdenes con estados:
+  - PENDIENTE
+  - INICIADA
+  - EN_ROUTE
+  - COMPLETADA
+
+---
+
+## 📝 Notas Finales
+
+- Este archivo debe mantenerse actualizado con cualquier cambio en el script de seed
+- Para más información sobre la estructura de datos, revisa `/workspace/backend/scripts/seed_data.py`
+- Los enums del sistema están todos en MAYÚSCULAS para consistencia
+- Los valores almacenados en BD están en minúsculas (estándar de la industria)
+
+---
+
+**Última actualización:** $(date +%Y-%m-%d)
+**Autor:** Sistema de Documentación Delivery360
+**Versión del Script:** 1.0
