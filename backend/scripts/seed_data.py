@@ -42,6 +42,7 @@ async def seed_users(db_session, count: int = 10):
     users = []
     
     # Definimos los roles críticos explícitamente en MINÚSCULAS para coincidir con el ENUM de la DB
+    # Los valores del ENUM en PostgreSQL son: 'superadmin', 'gerente', 'operador', 'repartidor'
     critical_roles_data = [
         ("admin.superadmin@delivery360.com", "Administrador Superadmin", "superadmin"),
         ("gerente@delivery360.com", "Administrador Gerente", "gerente"),
@@ -62,7 +63,7 @@ async def seed_users(db_session, count: int = 10):
                 email=email,
                 hashed_password=get_password_hash("Admin123!"),
                 full_name=full_name,
-                role=role_str,  # Enviamos el string directamente en minúsculas
+                role=role_str,  # Enviamos el string directamente en minúsculas para coincidir con el ENUM de la DB
                 is_active=True,
                 phone=generate_phone(),
                 lgpd_consent=True
@@ -74,7 +75,7 @@ async def seed_users(db_session, count: int = 10):
             users.append(existing)
 
     # 2. Usuarios aleatorios restantes
-    roles_pool = ["operador", "gerente"] # Solo minúsculas
+    roles_pool = ["operador", "gerente"] # Solo minúsculas para coincidir con el ENUM de la DB
     
     for _ in range(count - len(critical_roles_data)):
         first = random.choice(FIRST_NAMES)
@@ -93,7 +94,7 @@ async def seed_users(db_session, count: int = 10):
             email=email,
             hashed_password=get_password_hash("User123!"),
             full_name=f"{first} {last}",
-            role=random.choice(roles_pool), # String en minúscula
+            role=random.choice(roles_pool), # String en minúscula para coincidir con el ENUM de la DB
             is_active=True,
             phone=generate_phone(),
             lgpd_consent=True
