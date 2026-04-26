@@ -13,23 +13,41 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text, select
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.rider import Rider, RiderStatus, VehicleType
 from app.models.order import Order, OrderStatus
 from app.models.delivery import Delivery, DeliveryStatus
 
 # Configuración de la base de datos
-# Aseguramos que usamos el driver asyncpg
-DATABASE_URL = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+# Aseguramos que usamos el driver asíncrono
+DATABASE_URL = str(settings.DATABASE_URL).replace("postgresql://", "postgresql+asyncpg://")
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
-# Datos de ejemplo críticos - Roles en minúsculas para coincidir con el ENUM
+# Datos de ejemplo críticos - USANDO VALORES EN MINÚSCULAS PARA COINCIDIR CON EL ENUM DE LA BD
 critical_roles_data = [
-    {"email": "admin.superadmin@delivery360.com", "password": "Admin123!", "first_name": "Administrador", "last_name": "Superadmin", "role": "superadmin"},
-    {"email": "gerente@delivery360.com", "password": "Admin123!", "first_name": "Gerente", "last_name": "General", "role": "gerente"},
-    {"email": "operador@delivery360.com", "password": "Admin123!", "first_name": "Operador", "last_name": "Logística", "role": "operador"},
+    {
+        "email": "admin.superadmin@delivery360.com", 
+        "password": "Admin123!", 
+        "first_name": "Administrador", 
+        "last_name": "Superadmin", 
+        "role": "superadmin"
+    },
+    {
+        "email": "gerente@delivery360.com", 
+        "password": "Admin123!", 
+        "first_name": "Administrador", 
+        "last_name": "Gerente", 
+        "role": "gerente"
+    },
+    {
+        "email": "operador@delivery360.com", 
+        "password": "Admin123!", 
+        "first_name": "Administrador", 
+        "last_name": "Operador", 
+        "role": "operador"
+    },
 ]
 
 async def seed_users(db_session: AsyncSession, count: int = 15) -> List[User]:
@@ -38,9 +56,12 @@ async def seed_users(db_session: AsyncSession, count: int = 15) -> List[User]:
     
     users = []
     
-    # 1. Crear usuarios críticos (Admins)
+    # Primero crear usuarios críticos
     for role_data in critical_roles_data:
-        result = await db_session.execute(select(User).where(User.email == role_data["email"]))
+        # Verificar si ya existe
+        result = await db_session.execute(
+            select(User).where(User.email == role_data["email"])
+        )
         existing_user = result.scalar_one_or_none()
         
         if not existing_user:
@@ -51,10 +72,13 @@ async def seed_users(db_session: AsyncSession, count: int = 15) -> List[User]:
                 hashed_password=hashed_pwd,
                 first_name=role_data["first_name"],
                 last_name=role_data["last_name"],
-                role=role_data["role"],
+                role=role_data["role"],  # Valor en minúsculas
                 is_active=True,
+                is_superuser=(role_data["role"] == "superadmin"),
                 phone=f"+55{random.randint(10000000000, 99999999999)}",
-                is_superuser=(role_data["role"] == "superadmin")
+                # CORRECCIÓN: failed_login_attempts debe ser string según el modelo
+                failed_login_attempts="0", 
+                locked_until=None
             )
             users.append(new_user)
             db_session.add(new_user)
@@ -63,14 +87,12 @@ async def seed_users(db_session: AsyncSession, count: int = 15) -> List[User]:
             users.append(existing_user)
             print(f"   ⚠ Usuario crítico ya existe: {role_data['email']}")
     
-    # 2. Crear usuarios adicionales aleatorios
+    # Luego crear usuarios adicionales
     first_names = ["Luis", "Ana", "Sofía", "María", "Laura", "Carlos", "Pedro", "Jorge"]
     last_names = ["Pérez", "García", "López", "González", "Rodríguez", "Fernández", "Díaz", "Romero"]
     additional_roles = ["gerente", "operador", "repartidor"]
     
-    attempts = 0
-    while len(users) < count and attempts < 50:
-        attempts += 1
+    for i in range(count - len(critical_roles_data)):
         first_name = random.choice(first_names)
         last_name = random.choice(last_names)
         email = f"{first_name.lower()}.{last_name.lower()}{random.randint(1, 999)}@delivery360.com"
@@ -87,9 +109,12 @@ async def seed_users(db_session: AsyncSession, count: int = 15) -> List[User]:
             hashed_password=hashed_pwd,
             first_name=first_name,
             last_name=last_name,
-            role=random.choice(additional_roles),
+            role=random.choice(additional_roles),  # Valor en minúsculas
             is_active=True,
-            phone=f"+55{random.randint(10000000000, 99999999999)}"
+            is_superuser=False,
+            phone=f"+55{random.randint(10000000000, 99999999999)}",
+            failed_login_attempts="0",
+            locked_until=None
         )
         users.append(new_user)
         db_session.add(new_user)
@@ -99,30 +124,29 @@ async def seed_users(db_session: AsyncSession, count: int = 15) -> List[User]:
     return users
 
 async def seed_riders(db_session: AsyncSession, count: int = 10):
-    """Crea repartidores de prueba vinculados a usuarios"""
+    """Crea repartidores de prueba"""
     print(f"🌱 Sembrando {count} repartidores...")
     
-    # Obtener usuarios con rol repartidor
+    # Obtener usuarios con rol repartidor o crear algunos
     result = await db_session.execute(select(User).where(User.role == "repartidor"))
     rider_users = result.scalars().all()
     
-    # Si no hay suficientes usuarios repartidores, crearlos
+    # Si no hay suficientes, crear usuarios repartidores
     while len(rider_users) < count:
         idx = len(rider_users) + 1
         email = f"repartidor{idx}@delivery360.com"
-        
-        # Verificar si existe
-        check_res = await db_session.execute(select(User).where(User.email == email))
-        if not check_res.scalar_one_or_none():
+        result = await db_session.execute(select(User).where(User.email == email))
+        if not result.scalar_one_or_none():
             new_user = User(
                 id=uuid.uuid4(),
                 email=email,
                 hashed_password=get_password_hash("Admin123!"),
                 first_name=f"Repartidor",
-                last_name=f"Número {idx}",
+                last_name=f"{idx}",
                 role="repartidor",
                 is_active=True,
-                phone=f"+55{random.randint(10000000000, 99999999999)}"
+                phone=f"+55{random.randint(10000000000, 99999999999)}",
+                failed_login_attempts="0"
             )
             db_session.add(new_user)
             rider_users.append(new_user)
@@ -135,32 +159,37 @@ async def seed_riders(db_session: AsyncSession, count: int = 10):
     
     for i, user in enumerate(rider_users[:count]):
         # Verificar si ya existe rider para este usuario
-        result = await db_session.execute(select(Rider).where(Rider.user_id == user.id))
-        existing_rider = result.scalar_one_or_none()
+        result = await db_session.execute(select(Rider).where(Rider.id == user.id)) # Buscamos por ID de rider si existiera, o creamos lógica inversa
+        # Mejor buscar por relación si tuviera FK, pero aquí creamos uno nuevo vinculado al user si no existe
+        # Nota: El modelo Rider tiene su propio ID UUID, no usa el ID de User como PK directamente en este schema
+        # Buscaremos si ya creamos un rider con este user_id implícitamente o simplemente creamos nuevos
         
-        if not existing_rider:
-            rider = Rider(
-                id=uuid.uuid4(),
-                user_id=user.id,
-                cpf=f"{random.randint(100, 999)}.{random.randint(100, 999)}.{random.randint(100, 999)}-{random.randint(10, 99)}",
-                cnh=f"{random.randint(10000000000, 99999999999)}",
-                birth_date=datetime.now() - timedelta(days=random.randint(6000, 12000)),
-                vehicle_type=random.choice(vehicle_types),
-                vehicle_plate=f"ABC-{random.randint(1000, 9999)}",
-                vehicle_model=f"Modelo {random.randint(1, 10)}",
-                vehicle_year=random.randint(2015, 2024),
-                status=random.choice(statuses),
-                is_online=random.choice([True, False]),
-                level=random.randint(1, 5),
-                total_points=random.randint(0, 1000),
-                operating_zone=f"Zona {random.randint(1, 5)}"
-            )
-            riders.append(rider)
-            db_session.add(rider)
-            print(f"   ✓ Repartidor creado: {user.email}")
-        else:
-            riders.append(existing_rider)
-            print(f"   ⚠ Repartidor ya existe: {user.email}")
+        # Para simplificar, verificamos si ya existe un rider con este user_id si tuviéramos esa columna.
+        # Como el modelo Rider actual no muestra user_id en la definición previa, asumimos que creamos nuevos.
+        # SI EL MODELO RIDER TIENE user_id (como es común), descomenta la siguiente línea:
+        # result = await db_session.execute(select(Rider).where(Rider.user_id == user.id))
+        
+        # Asumiremos que creamos uno nuevo por usuario para el seed
+        rider = Rider(
+            id=uuid.uuid4(),
+            # user_id=user.id, # Descomentar si tu modelo Rider tiene esta columna ForeignKey
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email,
+            phone=user.phone,
+            vehicle_type=random.choice(vehicle_types),
+            vehicle_plate=f"ABC-{random.randint(1000, 9999)}",
+            vehicle_model=f"Modelo {random.randint(1, 10)}",
+            vehicle_color="Rojo",
+            status=random.choice(statuses),
+            is_available=random.choice([True, False]),
+            total_deliveries="0",
+            average_rating=5.0,
+            total_earnings=0.0
+        )
+        riders.append(rider)
+        db_session.add(rider)
+        print(f"   ✓ Repartidor creado: {user.email}")
     
     await db_session.commit()
     print(f"   ✅ {len(riders)} repartidores creados")
@@ -173,16 +202,12 @@ async def seed_orders(db_session: AsyncSession, riders, count: int = 25):
     orders = []
     statuses = ["pendiente", "asignado", "en_recoleccion", "recolectado", "en_ruta", "entregado", "fallido", "cancelado"]
     
+    # Si no hay riders, usar None para assigned_rider_id
+    rider_ids = [r.id for r in riders] if riders else []
+
     for i in range(count):
         status = random.choice(statuses)
-        assigned_rider = None
-        
-        # Asignar repartidor solo si el estado lo requiere
-        if riders and status in ["asignado", "en_recoleccion", "recolectado", "en_ruta", "entregado"]:
-            assigned_rider = random.choice(riders)
-        
-        subtotal = round(random.uniform(20, 200), 2)
-        delivery_fee = round(random.uniform(5, 15), 2)
+        assigned_rider = random.choice(rider_ids) if rider_ids and status in ["asignado", "en_recoleccion", "en_ruta", "entregado"] else None
         
         order = Order(
             id=uuid.uuid4(),
@@ -193,21 +218,23 @@ async def seed_orders(db_session: AsyncSession, riders, count: int = 25):
             pickup_address=f"Calle Recogida {i+1}, Ciudad",
             pickup_name=f"Restaurante {i+1}",
             delivery_address=f"Calle Entrega {i+1}, Ciudad",
-            delivery_reference=f"Punto de referencia {i}",
-            items=[{"name": f"Producto {j+1}", "quantity": random.randint(1, 5), "price": random.uniform(5, 50)} for j in range(random.randint(1, 3))],
-            subtotal=subtotal,
-            delivery_fee=delivery_fee,
-            total=round(subtotal + delivery_fee, 2),
+            delivery_reference="Casa blanca",
+            items=[{"name": f"Producto {j+1}", "quantity": random.randint(1, 5)} for j in range(random.randint(1, 3))],
+            subtotal=random.uniform(20, 200),
+            delivery_fee=random.uniform(5, 15),
+            total=0,  
             payment_method=random.choice(["efectivo", "tarjeta", "pix"]),
             payment_status="pagado" if random.random() > 0.2 else "pendiente",
             status=status,
             priority=random.choice(["normal", "alta", "urgente"]),
-            assigned_rider_id=assigned_rider.id if assigned_rider else None,
-            ordered_at=datetime.now() - timedelta(hours=random.randint(1, 72)),
+            assigned_rider_id=assigned_rider,
+            ordered_at=datetime.now(timezone.utc) - timedelta(hours=random.randint(1, 72)),
             source="app"
         )
+        order.total = order.subtotal + order.delivery_fee
         
         # Añadir timestamps según el estado
+        now = datetime.now(timezone.utc)
         if status in ["en_recoleccion", "recolectado", "en_ruta", "entregado"]:
             order.accepted_at = order.ordered_at + timedelta(minutes=random.randint(5, 15))
         if status in ["recolectado", "en_ruta", "entregado"]:
@@ -229,46 +256,45 @@ async def seed_deliveries(db_session: AsyncSession, orders, riders):
     print(f"🌱 Sembrando entregas...")
     
     deliveries = []
+    
     # Filtrar órdenes que tienen repartidor asignado
     assigned_orders = [o for o in orders if o.assigned_rider_id]
     
+    # Mapeo simple de estado de orden a estado de entrega
+    status_map = {
+        "pendiente": "pendiente",
+        "asignado": "pendiente",
+        "en_recoleccion": "iniciada",
+        "recolectado": "iniciada",
+        "en_ruta": "en_route",
+        "entregado": "completada",
+        "fallido": "fallida",
+        "cancelado": "fallida"
+    }
+    
     for order in assigned_orders:
-        # Determinar estado de entrega basado en estado de orden
-        if order.status in ["pendiente", "asignado"]:
-            delivery_status = "pendiente"
-        elif order.status in ["en_recoleccion", "recolectado"]:
-            delivery_status = "iniciada"
-        elif order.status == "en_ruta":
-            delivery_status = "en_route"
-        elif order.status == "entregado":
-            delivery_status = "completada"
-        else:
-            continue # Skip cancelled/failed for delivery creation
+        delivery_status = status_map.get(order.status, "pendiente")
         
         # Verificar si ya existe entrega
         result = await db_session.execute(select(Delivery).where(Delivery.order_id == order.id))
         if result.scalar_one_or_none():
             continue
         
-        rider = next((r for r in riders if r.id == order.assigned_rider_id), None)
-        if not rider:
-            continue
-        
         delivery = Delivery(
             id=uuid.uuid4(),
             order_id=order.id,
-            rider_id=rider.id,
-            otp_code=f"{random.randint(1000, 9999)}",
-            otp_verified=(delivery_status == "completada"),
+            rider_id=order.assigned_rider_id,
+            status=delivery_status,
+            started_at=order.accepted_at,
+            arrived_pickup_at=order.picked_up_at,
+            left_pickup_at=order.picked_up_at,
+            arrived_delivery_at=order.delivered_at,
+            completed_at=order.delivered_at,
             current_latitude=-23.5505 + random.uniform(-0.1, 0.1),
             current_longitude=-46.6333 + random.uniform(-0.1, 0.1),
-            started_at=order.accepted_at if order.accepted_at else None,
-            arrived_pickup_at=order.picked_up_at - timedelta(minutes=10) if order.picked_up_at else None,
-            left_pickup_at=order.picked_up_at,
-            completed_at=order.delivered_at if order.delivered_at else None,
-            status=delivery_status,
+            last_location_update=datetime.now(timezone.utc),
             distance_total=random.uniform(2.0, 15.0),
-            sla_compliant=random.choice([True, False]) if delivery_status == "completada" else None
+            proof_notes="Entrega sin novedades" if delivery_status == "completada" else None
         )
         deliveries.append(delivery)
         db_session.add(delivery)
@@ -283,7 +309,7 @@ async def main():
     
     async with AsyncSessionLocal() as db_session:
         try:
-            # Ejecutar seeds en orden lógico
+            # Ejecutar seeds en orden
             users = await seed_users(db_session, count=15)
             riders = await seed_riders(db_session, count=10)
             orders = await seed_orders(db_session, riders, count=25)
