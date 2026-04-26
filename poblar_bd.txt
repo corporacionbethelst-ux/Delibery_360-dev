@@ -323,3 +323,72 @@ El script `seed_data.py` crea:
 **Última actualización:** $(date +%Y-%m-%d)
 **Autor:** Sistema de Documentación Delivery360
 **Versión del Script:** 1.0
+
+
+
+
+
+
+Ejecuta estos comandos en tu terminal local (PowerShell):
+# 1. Detener todo y eliminar VOLÚMENES (esto es clave)
+docker-compose down -v
+
+# 2. Verificar que no queden volúmenes del proyecto
+docker volume ls | grep delivery360
+# Si aparece alguno, elimínalo manualmente:
+# docker volume rm delivery360-dev_postgres_data (o el nombre que aparezca)
+
+# 3. Limpiar caché de construcción de Docker
+docker builder prune -f
+
+# 4. Reconstruir SIN caché para asegurar que tome los nuevos archivos
+docker-compose build --no-cache backend
+
+# 5. Levantar solo la base de datos primero
+docker-compose up -d db redis
+
+# 6. Esperar 10 segundos a que la DB esté totalmente lista
+Start-Sleep -Seconds 10
+
+# 7. Ejecutar migraciones MANUALMENTE una sola vez (ignorando el auto del compose)
+# Primero detenemos el backend si se inició
+docker-compose stop backend
+
+# Ejecutamos migración limpia
+docker-compose run --rm backend alembic upgrade head
+
+# 8. Ejecutar seed data
+docker-compose run --rm backend python -m scripts.seed_data
+
+# 9. Ahora sí, levantar todo normalmente (ya no migrará porque alembic_version está actualizado)
+docker-compose up
+
+
+
+***En caso de eliminar todo en el compose
+
+
+# Eliminar todos los contenedores (activos y detenidos)
+docker rm -f $(docker ps -aq)
+
+# Eliminar TODAS las imágenes locales
+docker rmi -f $(docker images -q)
+
+# Eliminar TODOS los volúmenes (¡Cuidado! Esto borra todas las bases de datos locales)
+docker volume prune -a -f
+
+# Eliminar todo lo que esté en caché (build cache)
+docker builder prune -a -f
+
+# Limpieza general del sistema (redundante pero seguro después de lo anterior)
+docker system prune -a --volumes -f
+
+
+
+
+Verificar que esté todo limpio
+Ejecuta esto para confirmar que no queda nada:
+
+docker images
+docker ps -a
+docker volume ls

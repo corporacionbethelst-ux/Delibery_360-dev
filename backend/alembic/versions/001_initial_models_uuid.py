@@ -22,7 +22,7 @@ def upgrade() -> None:
     # Crear extensión para UUID si no existe
     op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
     
-    # --- CREACIÓN DE TIPOS ENUM CON VERIFICACIÓN DE EXISTENCIA ---
+    # --- CREACIÓN DE TIPOS ENUM CON VERIFICACIÓN DE EXISTENCIA (VALORES EN MINÚSCULAS) ---
     
     # 1. userrole
     op.execute("""
@@ -32,7 +32,6 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """)
-    user_role = postgresql.ENUM('superadmin', 'gerente', 'operador', 'repartidor', name='userrole', create_type=False)
     
     # 2. vehicletype
     op.execute("""
@@ -42,7 +41,6 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """)
-    vehicle_type = postgresql.ENUM('moto', 'bicicleta', 'auto', 'pie', name='vehicletype', create_type=False)
     
     # 3. riderstatus
     op.execute("""
@@ -52,26 +50,28 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """)
-    rider_status = postgresql.ENUM('pendiente', 'activo', 'inactivo', 'suspendido', name='riderstatus', create_type=False)
     
-    # 4. orderstatus
+    # 4. orderstatus - CORREGIDO PARA COINCIDIR CON EL MODELO
     op.execute("""
         DO $$ BEGIN
             CREATE TYPE orderstatus AS ENUM (
-                'pendiente', 'confirmado', 'en_preparacion', 'listo_para_recoger',
-                'en_camino', 'entregado', 'fallido', 'cancelado'
+                'pendiente', 'asignado', 'en_recoleccion', 'recolectado', 'en_ruta', 'entregado', 'fallido', 'cancelado'
             );
         EXCEPTION
             WHEN duplicate_object THEN null;
         END $$;
     """)
-    order_status = postgresql.ENUM(
-        'pendiente', 'confirmado', 'en_preparacion', 'listo_para_recoger',
-        'en_camino', 'entregado', 'fallido', 'cancelado',
-        name='orderstatus', create_type=False
-    )
     
-    # 5. shiftstatus
+    # 5. deliverystatus - AÑADIDO FALTANTE
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE deliverystatus AS ENUM ('pendiente', 'iniciada', 'en_route', 'completada');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    
+    # 6. shiftstatus
     op.execute("""
         DO $$ BEGIN
             CREATE TYPE shiftstatus AS ENUM ('activo', 'cerrado');
@@ -79,9 +79,8 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """)
-    shift_status = postgresql.ENUM('activo', 'cerrado', name='shiftstatus', create_type=False)
     
-    # 6. notificationtype
+    # 7. notificationtype
     op.execute("""
         DO $$ BEGIN
             CREATE TYPE notificationtype AS ENUM ('push', 'email', 'sms', 'in_app');
@@ -89,7 +88,6 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """)
-    notification_type = postgresql.ENUM('push', 'email', 'sms', 'in_app', name='notificationtype', create_type=False)
     
     # --- CREACIÓN DE TABLAS ---
     
@@ -99,7 +97,7 @@ def upgrade() -> None:
         sa.Column('email', sa.String(length=255), nullable=False),
         sa.Column('hashed_password', sa.String(length=255), nullable=False),
         sa.Column('full_name', sa.String(length=255), nullable=False),
-        sa.Column('role', user_role, nullable=False),
+        sa.Column('role', sa.Enum('superadmin', 'gerente', 'operador', 'repartidor', name='userrole', create_type=False), nullable=False),
         sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
         sa.Column('phone', sa.String(length=30), nullable=True),
         sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.func.now()),
@@ -119,11 +117,11 @@ def upgrade() -> None:
         sa.Column('cpf', sa.String(length=20), nullable=True),
         sa.Column('cnh', sa.String(length=30), nullable=True),
         sa.Column('birth_date', sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column('vehicle_type', vehicle_type, nullable=False, default='moto'),
+        sa.Column('vehicle_type', sa.Enum('moto', 'bicicleta', 'auto', 'pie', name='vehicletype', create_type=False), nullable=False, default='moto'),
         sa.Column('vehicle_plate', sa.String(length=20), nullable=True),
         sa.Column('vehicle_model', sa.String(length=100), nullable=True),
         sa.Column('vehicle_year', sa.Integer(), nullable=True),
-        sa.Column('status', rider_status, nullable=False, default='pendiente'),
+        sa.Column('status', sa.Enum('pendiente', 'activo', 'inactivo', 'suspendido', name='riderstatus', create_type=False), nullable=False, default='pendiente'),
         sa.Column('is_online', sa.Boolean(), nullable=False, default=False),
         sa.Column('last_lat', sa.Float(), nullable=True),
         sa.Column('last_lng', sa.Float(), nullable=True),
@@ -164,7 +162,7 @@ def upgrade() -> None:
         sa.Column('total', sa.Float(), nullable=True, default=0.0),
         sa.Column('payment_method', sa.String(length=50), nullable=True),
         sa.Column('payment_status', sa.String(length=20), nullable=True, default='pendiente'),
-        sa.Column('status', order_status, nullable=True),
+        sa.Column('status', sa.Enum('pendiente', 'asignado', 'en_recoleccion', 'recolectado', 'en_ruta', 'entregado', 'fallido', 'cancelado', name='orderstatus', create_type=False), nullable=True),
         sa.Column('priority', sa.String(length=20), nullable=True, default='normal'),
         sa.Column('assigned_rider_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('ordered_at', sa.TIMESTAMP(), nullable=False, server_default=sa.func.now()),
@@ -207,6 +205,7 @@ def upgrade() -> None:
         sa.Column('on_time', sa.Boolean(), nullable=True),
         sa.Column('customer_rating', sa.Integer(), nullable=True),
         sa.Column('notes', sa.Text(), nullable=True),
+        sa.Column('status', sa.Enum('pendiente', 'iniciada', 'en_route', 'completada', name='deliverystatus', create_type=False), nullable=True, default='pendiente'),
         sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ),
         sa.ForeignKeyConstraint(['rider_id'], ['riders.id'], ),
@@ -222,7 +221,7 @@ def upgrade() -> None:
         sa.Column('checkout_at', sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column('checkin_lat', sa.Float(), nullable=True),
         sa.Column('checkin_lng', sa.Float(), nullable=True),
-        sa.Column('status', shift_status, nullable=False, default='activo'),
+        sa.Column('status', sa.Enum('activo', 'cerrado', name='shiftstatus', create_type=False), nullable=False, default='activo'),
         sa.Column('total_orders', sa.Integer(), nullable=False, default=0),
         sa.Column('total_earnings', sa.Float(), nullable=False, default=0.0),
         sa.Column('duration_hours', sa.Float(), nullable=True),
@@ -335,7 +334,7 @@ def upgrade() -> None:
     op.create_table('notifications',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('type', notification_type, nullable=False, default='in_app'),
+        sa.Column('type', sa.Enum('push', 'email', 'sms', 'in_app', name='notificationtype', create_type=False), nullable=False, default='in_app'),
         sa.Column('title', sa.String(length=200), nullable=False),
         sa.Column('body', sa.Text(), nullable=False),
         sa.Column('data', postgresql.JSONB(astext_type=sa.Text()), nullable=False, default='{}'),
@@ -360,7 +359,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Eliminar tablas en orden inverso (respetando foreign keys)
+    # Eliminar tablas en orden inverso
     op.drop_table('integrations')
     op.drop_table('notifications')
     op.drop_table('audit_logs')
@@ -375,9 +374,9 @@ def downgrade() -> None:
     op.drop_table('riders')
     op.drop_table('users')
     
-    # Eliminar tipos ENUM con verificación de existencia
-    # Usamos DROP TYPE ... IF EXISTS para evitar errores si ya fueron borrados
+    # Eliminar tipos ENUM
     op.execute('DROP TYPE IF EXISTS notificationtype')
+    op.execute('DROP TYPE IF EXISTS deliverystatus')
     op.execute('DROP TYPE IF EXISTS shiftstatus')
     op.execute('DROP TYPE IF EXISTS orderstatus')
     op.execute('DROP TYPE IF EXISTS riderstatus')
