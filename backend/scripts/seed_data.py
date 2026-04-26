@@ -149,8 +149,9 @@ async def seed_orders(db_session, rider_ids: list, count: int = 50):
     # aunque lo ideal es importarlo arriba si no da error.
     from app.models.order import Order, OrderStatus
     
-    statuses = [OrderStatus.PENDIENTE, OrderStatus.CONFIRMADO, OrderStatus.EN_PREPARACION, 
-                OrderStatus.LISTO_PARA_RECOGER, OrderStatus.EN_CAMINO, OrderStatus.ENTREGADO]
+    # Usamos los estados reales definidos en el modelo OrderStatus
+    statuses = [OrderStatus.PENDIENTE, OrderStatus.ASIGNADO, OrderStatus.EN_RECOLECCION, 
+                OrderStatus.RECOLECTADO, OrderStatus.EN_RUTA, OrderStatus.ENTREGADO]
     
     now = datetime.now(timezone.utc)
     
@@ -190,7 +191,7 @@ async def seed_orders(db_session, rider_ids: list, count: int = 50):
                 assigned_rider_id=assigned_rider,
                 ordered_at=order_date,
                 accepted_at=order_date + timedelta(minutes=5) if status != OrderStatus.PENDIENTE else None,
-                picked_up_at=order_date + timedelta(minutes=20) if status in [OrderStatus.EN_CAMINO, OrderStatus.ENTREGADO] else None,
+                picked_up_at=order_date + timedelta(minutes=20) if status in [OrderStatus.EN_RUTA, OrderStatus.ENTREGADO] else None,
                 delivered_at=order_date + timedelta(minutes=45) if status == OrderStatus.ENTREGADO else None,
             )
             db_session.add(order)
@@ -205,6 +206,9 @@ async def seed_deliveries(db_session, order_ids: list, rider_ids: list, count: i
     deliveries = []
     from app.models.delivery import Delivery, DeliveryStatus
     
+    # Usamos los estados reales definidos en el modelo DeliveryStatus
+    statuses = [DeliveryStatus.PENDIENTE, DeliveryStatus.INICIADA, DeliveryStatus.EN_ROUTE, DeliveryStatus.COMPLETADA]
+    
     for i in range(count):
         if not order_ids or not rider_ids:
             break
@@ -212,7 +216,7 @@ async def seed_deliveries(db_session, order_ids: list, rider_ids: list, count: i
         order_id = random.choice(order_ids)
         rider_id = random.choice(rider_ids)
         
-        status = random.choice([DeliveryStatus.PENDIENTE, DeliveryStatus.ASIGNADA, DeliveryStatus.EN_CAMINO, DeliveryStatus.ENTREGADO])
+        status = random.choice(statuses)
         
         # Verificar si ya existe entrega para esta orden (relación 1:1)
         stmt = select(Delivery).where(Delivery.order_id == order_id)
@@ -224,7 +228,7 @@ async def seed_deliveries(db_session, order_ids: list, rider_ids: list, count: i
                 status=status,
                 priority=random.choice(["NORMAL", "ALTA", "URGENTE"]),
                 otp_code=f"{random.randint(1000, 9999)}",
-                otp_verified=(status == DeliveryStatus.ENTREGADO),
+                otp_verified=(status == DeliveryStatus.COMPLETADA),
                 distance_km=random.uniform(2.0, 15.0),
                 duration_minutes=random.uniform(15.0, 60.0),
                 on_time=(random.random() > 0.1),
@@ -232,7 +236,7 @@ async def seed_deliveries(db_session, order_ids: list, rider_ids: list, count: i
             )
             db_session.add(delivery)
             deliveries.append(delivery)
-        
+    
     await db_session.commit()
     print(f"✅ {len(deliveries)} entregas creadas/verificadas.")
     return deliveries

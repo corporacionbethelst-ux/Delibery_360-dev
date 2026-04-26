@@ -17,12 +17,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     router.push("/auth/login")
   }
 
-  // Navegación según rol del usuario
+  // Navegación según rol del usuario (usando valores en MAYÚSCULAS para consistencia con los enums)
   const getMenuItems = () => {
     if (!user) return []
     
     switch (user.role) {
-      case "gerente":
+      case "GERENTE":
         return [
           { name: "Dashboard", href: "/manager" },
           { name: "Repartidores", href: "/manager/riders" },
@@ -31,7 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { name: "Reportes", href: "/manager/reports" },
           { name: "Configuración", href: "/manager/settings" },
         ]
-      case "operador":
+      case "OPERADOR":
         return [
           { name: "Dashboard", href: "/operator" },
           { name: "Mapa en Vivo", href: "/operator/live-map" },
@@ -40,7 +40,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { name: "Turnos", href: "/operator/shifts" },
           { name: "Alertas", href: "/operator/alerts" },
         ]
-      case "repartidor":
+      case "REPARTIDOR":
         return [
           { name: "Dashboard", href: "/rider" },
           { name: "Mis Órdenes", href: "/rider/my-orders" },
