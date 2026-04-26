@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 
-export type Role = 'superadmin' | 'gerente' | 'operador' | 'repartidor';
+export type Role = 'SUPERADMIN' | 'GERENTE' | 'OPERADOR' | 'REPARTIDOR';
 
 // Definición simple de permisos para el hook
 interface PermissionDef {
@@ -17,7 +17,7 @@ interface RoleConfig {
 }
 
 const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
-  superadmin: {
+  SUPERADMIN: {
     name: 'Superadministrador',
     description: 'Acceso completo al sistema',
     permissions: [
@@ -32,7 +32,7 @@ const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
       { module: 'audit', actions: ['read', 'export'] },
     ],
   },
-  gerente: {
+  GERENTE: {
     name: 'Gerente',
     description: 'Gestión general',
     permissions: [
@@ -47,7 +47,7 @@ const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
       { module: 'audit', actions: ['read', 'export'] },
     ],
   },
-  operador: {
+  OPERADOR: {
     name: 'Operador',
     description: 'Gestión operativa diaria',
     permissions: [
@@ -59,7 +59,7 @@ const ROLE_CONFIGURATIONS: Record<Role, RoleConfig> = {
       { module: 'alerts', actions: ['read', 'create', 'update'] },
     ],
   },
-  repartidor: {
+  REPARTIDOR: {
     name: 'Repartidor',
     description: 'App del repartidor',
     permissions: [
@@ -128,10 +128,10 @@ export const useRole = () => {
     
     // Utilidades
     config: roleConfig,
-    isSuperadmin: () => currentRole === 'superadmin',
-    isGerente: () => currentRole === 'gerente',
-    isOperador: () => currentRole === 'operador',
-    isRepartidor: () => currentRole === 'repartidor',
+    isSuperadmin: () => currentRole === 'SUPERADMIN',
+    isGerente: () => currentRole === 'GERENTE',
+    isOperador: () => currentRole === 'OPERADOR',
+    isRepartidor: () => currentRole === 'REPARTIDOR',
   };
 };
 
