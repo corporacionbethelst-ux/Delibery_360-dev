@@ -13,7 +13,7 @@ interface AuthContextType {
     id: string;
     email: string;
     full_name: string;
-    role: 'superadmin' | 'gerente' | 'operador' | 'repartidor';
+    role: 'SUPERADMIN' | 'GERENTE' | 'OPERADOR' | 'REPARTIDOR';
   } | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -30,7 +30,7 @@ interface AuthContextType {
   }) => Promise<void>;
   checkAuth: () => Promise<void>;
   clearError: () => void;
-  hasRole: (roles: Array<'superadmin' | 'gerente' | 'operador' | 'repartidor'>) => boolean;
+  hasRole: (roles: Array<'SUPERADMIN' | 'GERENTE' | 'OPERADOR' | 'REPARTIDOR'>) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // Verificar si el usuario tiene alguno de los roles especificados
-  const hasRole = (roles: Array<'superadmin' | 'gerente' | 'operador' | 'repartidor'>): boolean => {
+  const hasRole = (roles: Array<'SUPERADMIN' | 'GERENTE' | 'OPERADOR' | 'REPARTIDOR'>): boolean => {
     if (!user) return false;
     return roles.includes(user.role);
   };

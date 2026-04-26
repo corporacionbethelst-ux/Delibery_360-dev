@@ -13,7 +13,7 @@ interface User {
   id: string;
   email: string;
   full_name: string;
-  role: 'superadmin' | 'gerente' | 'operador' | 'repartidor';
+  role: 'SUPERADMIN' | 'GERENTE' | 'OPERADOR' | 'REPARTIDOR';
 }
 
 interface LoginRequest {
@@ -142,7 +142,7 @@ export const useAuthStore = create<AuthState>()(
             id: response.data.user_id,
             email: data.email,
             full_name: data.full_name,
-            role: 'repartidor',
+            role: 'REPARTIDOR',
           };
           localStorage.setItem('user', JSON.stringify(user));
           

@@ -46,7 +46,7 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   [OrderStatus.FALLIDO]: 'bg-red-100 text-red-800',
 };
 
-export type UserRole = 'superadmin' | 'gerente' | 'operador' | 'repartidor';
+export type UserRole = 'SUPERADMIN' | 'GERENTE' | 'OPERADOR' | 'REPARTIDOR';
 
 export type Permission = {
   module: string;
@@ -61,7 +61,7 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
-  role: 'superadmin' | 'gerente' | 'operador' | 'repartidor';
+  role: 'SUPERADMIN' | 'GERENTE' | 'OPERADOR' | 'REPARTIDOR';
   created_at?: string;
   updated_at?: string;
 }

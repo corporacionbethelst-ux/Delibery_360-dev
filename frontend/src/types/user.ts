@@ -1,7 +1,7 @@
 // Tipos TypeScript para Users - Delivery360
 
-export type UserRole = 'superadmin' | 'gerente' | 'operador' | 'repartidor';
-export type UserStatus = 'activo' | 'inactivo' | 'suspendido';
+export type UserRole = 'SUPERADMIN' | 'GERENTE' | 'OPERADOR' | 'REPARTIDOR';
+export type UserStatus = 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
 
 export interface User {
   id: string;

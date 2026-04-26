@@ -55,11 +55,11 @@ export default function ManagerDashboard() {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login');
-    } else if (!authLoading && user && user.role !== 'superadmin' && user.role !== 'gerente') {
+    } else if (!authLoading && user && user.role !== 'SUPERADMIN' && user.role !== 'GERENTE') {
       // Redirigir según el rol
-      if (user.role === 'operador') {
+      if (user.role === 'OPERADOR') {
         router.push('/operator');
-      } else if (user.role === 'repartidor') {
+      } else if (user.role === 'REPARTIDOR') {
         router.push('/rider');
       }
     }
@@ -68,7 +68,7 @@ export default function ManagerDashboard() {
   // Cargar datos del dashboard
   useEffect(() => {
     const loadDashboardData = async () => {
-      if (!isAuthenticated || !user || (user.role !== 'superadmin' && user.role !== 'gerente')) {
+      if (!isAuthenticated || !user || (user.role !== 'SUPERADMIN' && user.role !== 'GERENTE')) {
         return;
       }
 
