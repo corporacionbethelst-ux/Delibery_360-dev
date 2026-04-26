@@ -100,7 +100,12 @@ class Delivery(Base):
     # Relationships
     order = relationship("Order", back_populates="delivery")
     rider = relationship("Rider", back_populates="deliveries")
-    route = relationship("Route", back_populates="delivery", uselist=False)
+    route = relationship(
+        "Route",
+        back_populates="delivery",
+        uselist=False,
+        primaryjoin="Route.delivery_id == Delivery.id"
+    )
     
     def __repr__(self):
         return f"<Delivery(id={self.id}, order={self.order_id}, status={self.status})>"
