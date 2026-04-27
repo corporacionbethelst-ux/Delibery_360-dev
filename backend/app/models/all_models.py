@@ -22,7 +22,7 @@ except ImportError:
     pass
 
 try:
-    from app.models.productivity import Productivity
+    from app.models.productivity import ProductivityRecord
 except ImportError:
     pass
 
@@ -48,6 +48,7 @@ __all__ = [
     "Delivery",
     "DeliveryStatus",
     "ProofType",
+    "ProductivityRecord",
     "Route",
     "RoutePoint",
     "RouteDeviation",

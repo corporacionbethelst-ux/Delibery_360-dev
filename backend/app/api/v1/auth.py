@@ -79,13 +79,14 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(User).where(User.email == form_data.username, User.is_active.is_(True), User.is_deleted.is_(False))
+        select(User).where(User.email == form_data.username, User.is_active.is_(True))
     )
     user = result.scalar_one_or_none()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Email o contraseña incorrectos")
 
-    user.last_login = datetime.now(timezone.utc)
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    user.last_login = now_naive
     await db.commit()
 
     return TokenResponse(
@@ -93,7 +94,7 @@ async def login(
         refresh_token=create_refresh_token(str(user.id)),
         user_id=str(user.id),
         role=user.role.value,
-        full_name=user.full_name,
+        full_name=f"{user.first_name} {user.last_name}",
         email=user.email,
     )
 
