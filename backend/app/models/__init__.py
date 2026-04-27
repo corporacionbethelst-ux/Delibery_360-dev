@@ -3,7 +3,7 @@
 # Importaciones directas de modelos existentes
 from app.models.user import User, UserRole
 from app.models.rider import Rider, RiderStatus, VehicleType
-from app.models.order import Order, OrderStatus, OrderPriority
+from app.models.order import Order, OrderStatus  # <--- CORREGIDO
 from app.models.delivery import Delivery, DeliveryStatus, ProofType
 from app.models.route import Route, RoutePoint, RouteDeviation, RouteStatus
 

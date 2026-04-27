@@ -10,6 +10,9 @@ import enum
 
 from app.core.database import Base
 
+def utc_now_naive():
+    """Devuelve la hora actual en UTC sin zona horaria (naive) para compatibilidad con PostgreSQL."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class IntegrationType(str, enum.Enum):
     ERP = "erp"
@@ -64,8 +67,8 @@ class Integration(Base):
     sync_next_run = Column(DateTime)
     
     # Timestamps - CORREGIDOS PARA USAR TIMEZONE AWARE
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
     
     # created_by como UUID para coincidir con User.id
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)

@@ -193,14 +193,13 @@ async def seed_orders(db_session: AsyncSession, riders, count: int = 25):
     statuses = ["pendiente", "asignado", "en_recoleccion", "recolectado", "en_ruta", "entregado", "fallido", "cancelado"]
     rider_ids = [r.id for r in riders] if riders else []
 
-    # Fecha base consciente de zona horaria
-    now = datetime.now(timezone.utc)
+    # Fecha base NAIVE (sin zona horaria) para coincidir con los modelos actualizados
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     for i in range(count):
         status = random.choice(statuses)
         assigned_rider = random.choice(rider_ids) if rider_ids and status in ["asignado", "en_recoleccion", "en_ruta", "entregado"] else None
         
-        # Calculamos ordered_at hacia atrás desde ahora
         hours_ago = random.randint(1, 72)
         ordered_at = now - timedelta(hours=hours_ago)
         
@@ -223,18 +222,16 @@ async def seed_orders(db_session: AsyncSession, riders, count: int = 25):
             status=status,
             priority=random.choice(["normal", "alta", "urgente"]),
             assigned_rider_id=assigned_rider,
-            ordered_at=ordered_at,
+            ordered_at=ordered_at, # Ya es naive
             source="app"
         )
         order.total = order.subtotal + order.delivery_fee
         
-        # Inicializar variables de tiempo como None por defecto
         accepted_at = None
         picked_up_at = None
         estimated_delivery_time = None
         delivered_at = None
         
-        # Asignar tiempos solo si el estado lo requiere, siempre sumando a ordered_at (que tiene tz)
         if status in ["en_recoleccion", "recolectado", "en_ruta", "entregado"]:
             accepted_at = ordered_at + timedelta(minutes=random.randint(5, 15))
         
@@ -247,7 +244,6 @@ async def seed_orders(db_session: AsyncSession, riders, count: int = 25):
         if status == "entregado":
             delivered_at = estimated_delivery_time - timedelta(minutes=random.randint(0, 10)) if estimated_delivery_time else ordered_at + timedelta(minutes=50)
         
-        # Asignar explícitamente los valores calculados (todos son aware o None)
         order.accepted_at = accepted_at
         order.picked_up_at = picked_up_at
         order.estimated_delivery_time = estimated_delivery_time
@@ -278,7 +274,8 @@ async def seed_deliveries(db_session: AsyncSession, orders, riders):
         "cancelado": "fallida"
     }
     
-    now = datetime.now(timezone.utc)
+    # Fecha base NAIVE
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     for order in assigned_orders:
         delivery_status = status_map.get(order.status, "pendiente")
@@ -299,7 +296,7 @@ async def seed_deliveries(db_session: AsyncSession, orders, riders):
             completed_at=order.delivered_at,
             current_latitude=-23.5505 + random.uniform(-0.1, 0.1),
             current_longitude=-46.6333 + random.uniform(-0.1, 0.1),
-            last_location_update=now, # Usar fecha consciente
+            last_location_update=now, # Naive
             distance_total=random.uniform(2.0, 15.0),
             proof_notes="Entrega sin novedades" if delivery_status == "completada" else None
         )

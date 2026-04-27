@@ -1,8 +1,8 @@
-"""final_fixed_schema
+"""final_clean_schema_aware_dates
 
-Revision ID: 8941125dfa07
+Revision ID: ce243c81bc0e
 Revises: 
-Create Date: 2026-04-26 23:13:44.943760
+Create Date: 2026-04-27 01:20:14.352457
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8941125dfa07'
+revision: str = 'ce243c81bc0e'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -79,7 +79,7 @@ def upgrade() -> None:
     sa.Column('user_role', sa.String(length=50), nullable=True),
     sa.Column('action_type', sa.Enum('LOGIN', 'LOGOUT', 'CREATE', 'READ', 'UPDATE', 'DELETE', 'ASSIGN', 'REASSIGN', 'STATUS_CHANGE', 'PAYMENT', 'EXPORT', 'IMPORT', 'CONFIG_CHANGE', 'ACCESS_DENIED', name='actiontype'), nullable=False),
     sa.Column('resource_type', sa.String(length=50), nullable=True),
-    sa.Column('resource_id', sa.UUID(), nullable=True),
+    sa.Column('resource_id', sa.String(length=100), nullable=True),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('old_values', sa.JSON(), nullable=True),
     sa.Column('new_values', sa.JSON(), nullable=True),
@@ -94,7 +94,7 @@ def upgrade() -> None:
     sa.Column('success', sa.Boolean(), nullable=True),
     sa.Column('error_message', sa.Text(), nullable=True),
     sa.Column('contains_personal_data', sa.Boolean(), nullable=True),
-    sa.Column('data_subject_id', sa.UUID(), nullable=True),
+    sa.Column('data_subject_id', sa.Integer(), nullable=True),
     sa.Column('retention_until', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
@@ -158,7 +158,7 @@ def upgrade() -> None:
     sa.Column('action_url', sa.String(length=500), nullable=True),
     sa.Column('action_type', sa.String(length=50), nullable=True),
     sa.Column('related_type', sa.String(length=50), nullable=True),
-    sa.Column('related_id', sa.UUID(), nullable=True),
+    sa.Column('related_id', sa.String(length=100), nullable=True),
     sa.Column('scheduled_for', sa.DateTime(), nullable=True),
     sa.Column('expires_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
@@ -182,17 +182,17 @@ def upgrade() -> None:
     sa.Column('delivery_address', sa.Text(), nullable=False),
     sa.Column('delivery_reference', sa.String(length=255), nullable=True),
     sa.Column('delivery_instructions', sa.Text(), nullable=True),
-    sa.Column('pickup_lat', sa.Float(), nullable=True),
-    sa.Column('pickup_lng', sa.Float(), nullable=True),
-    sa.Column('delivery_lat', sa.Float(), nullable=True),
-    sa.Column('delivery_lng', sa.Float(), nullable=True),
+    sa.Column('pickup_latitude', sa.Float(), nullable=True),
+    sa.Column('pickup_longitude', sa.Float(), nullable=True),
+    sa.Column('delivery_latitude', sa.Float(), nullable=True),
+    sa.Column('delivery_longitude', sa.Float(), nullable=True),
     sa.Column('items', sa.JSON(), nullable=True),
     sa.Column('subtotal', sa.Float(), nullable=True),
     sa.Column('delivery_fee', sa.Float(), nullable=True),
     sa.Column('total', sa.Float(), nullable=True),
     sa.Column('payment_method', sa.String(length=50), nullable=True),
     sa.Column('payment_status', sa.String(length=20), nullable=True),
-    sa.Column('status', sa.Enum('PENDIENTE', 'ASIGNADO', 'EN_RECOLECCION', 'RECOLECTADO', 'EN_RUTA', 'EN_ENTREGA', 'ENTREGADO', 'FALLIDO', 'CANCELADO', name='orderstatus'), nullable=True),
+    sa.Column('status', sa.Enum('PENDIENTE', 'ASIGNADO', 'EN_RECOLECCION', 'RECOLECTADO', 'EN_RUTA', 'ENTREGADO', 'FALLIDO', 'CANCELADO', name='orderstatus'), nullable=True),
     sa.Column('priority', sa.String(length=20), nullable=True),
     sa.Column('assigned_rider_id', sa.UUID(), nullable=True),
     sa.Column('ordered_at', sa.DateTime(), nullable=False),
@@ -254,6 +254,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_audit_actions_audit_log_id'), 'audit_actions', ['audit_log_id'], unique=False)
+    op.create_index(op.f('ix_audit_actions_created_at'), 'audit_actions', ['created_at'], unique=False)
     op.create_index(op.f('ix_audit_actions_id'), 'audit_actions', ['id'], unique=False)
     op.create_table('check_in_out',
     sa.Column('id', sa.UUID(), nullable=False),
@@ -493,6 +494,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_check_in_out_id'), table_name='check_in_out')
     op.drop_table('check_in_out')
     op.drop_index(op.f('ix_audit_actions_id'), table_name='audit_actions')
+    op.drop_index(op.f('ix_audit_actions_created_at'), table_name='audit_actions')
     op.drop_index(op.f('ix_audit_actions_audit_log_id'), table_name='audit_actions')
     op.drop_table('audit_actions')
     op.drop_index(op.f('ix_shifts_shift_date'), table_name='shifts')

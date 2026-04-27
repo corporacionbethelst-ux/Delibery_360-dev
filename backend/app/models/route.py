@@ -7,6 +7,10 @@ from sqlalchemy.dialects.postgresql import UUID
 import enum
 from app.core.database import Base
 
+def utc_now_naive():
+    """Devuelve la hora actual en UTC sin zona horaria (naive) para compatibilidad con PostgreSQL."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 class RouteStatus(str, enum.Enum):
     PLANIFICADA = "planificada"
     EN_PROGRESO = "en_progreso"
@@ -45,8 +49,8 @@ class Route(Base):
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
     
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
     
     delivery = relationship("Delivery", back_populates="route", primaryjoin="Route.delivery_id == Delivery.id", foreign_keys="[Route.delivery_id]")
     points = relationship("RoutePoint", back_populates="route", cascade="all, delete-orphan")
@@ -70,7 +74,7 @@ class RoutePoint(Base):
     is_charging = Column(Boolean, default=False)
     network_type = Column(String(20))
     source = Column(String(50), default="gps")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
     route = relationship("Route", back_populates="points")
 
     def __repr__(self):
@@ -95,8 +99,8 @@ class RouteDeviation(Base):
     resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.id")) # Asegúrate que sea UUID si users.id es UUID
     alert_sent = Column(Boolean, default=False)
     alert_channels = Column(JSON)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
     route = relationship("Route", back_populates="deviations")
 
     def __repr__(self):

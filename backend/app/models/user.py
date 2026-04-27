@@ -11,6 +11,10 @@ from passlib.context import CryptContext
 
 from app.core.database import Base
 
+def utc_now_naive():
+    """Devuelve la hora actual en UTC sin zona horaria (naive) para compatibilidad con PostgreSQL."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class UserRole(str, enum.Enum):
@@ -43,8 +47,8 @@ class User(Base):
     locked_until = Column(DateTime)
     
     # CORREGIDO: Uso de lambda y timezone.utc
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
 
     def verify_password(self, password: str) -> bool:
         return pwd_context.verify(password, self.hashed_password)

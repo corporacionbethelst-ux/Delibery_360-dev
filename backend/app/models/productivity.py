@@ -8,6 +8,10 @@ from sqlalchemy.dialects.postgresql import UUID
 import enum
 from app.core.database import Base
 
+def utc_now_naive():
+    """Devuelve la hora actual en UTC sin zona horaria (naive) para compatibilidad con PostgreSQL."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 class MetricType(str, enum.Enum):
     ENTREGAS_TOTAL = "entregas_total"
     TIEMPO_PROMEDIO = "tiempo_promedio"
@@ -29,7 +33,7 @@ class ProductivityRecord(Base):
     date = Column(DateTime, nullable=False)
     notes = Column(String(500))
     
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
     
     rider = relationship("Rider")
     shift = relationship("Shift", back_populates="productivity_records")

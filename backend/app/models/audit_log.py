@@ -1,12 +1,22 @@
-"""AuditLog model."""
-from datetime import datetime, timezone  # CORREGIDO
+"""AuditLog model for tracking system actions and compliance."""
+
+from datetime import datetime, timezone
 from typing import Any
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON, Index, Float
+from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON, Index, Float, Integer
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
 import enum
+
 from app.core.database import Base
 
+def utc_now_naive():
+    """Devuelve la hora actual en UTC sin zona horaria (naive) para compatibilidad con PostgreSQL."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+# CORRECCIÓN CRÍTICA: Definir el ENUM antes de usarlo en la clase
 class ActionType(str, enum.Enum):
+    """Types of auditable actions."""
     LOGIN = "login"
     LOGOUT = "logout"
     CREATE = "create"
@@ -22,18 +32,30 @@ class ActionType(str, enum.Enum):
     CONFIG_CHANGE = "config_change"
     ACCESS_DENIED = "access_denied"
 
+
 class AuditLog(Base):
+    """Audit log for tracking all system actions (LGPD compliance)."""
+    
     __tablename__ = "audit_logs"
     
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    # CORRECCIÓN: El ID debe ser UUID
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    
+    # Actor Information
+    # CORRECCIÓN: user_id debe ser UUID para coincidir con users.id
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
+    
     user_email = Column(String(255))
     user_role = Column(String(50))
     
+    # Action Details
+    # Ahora ActionType ya está definido arriba
     action_type: Any = Column(SQLEnum(ActionType), nullable=False, index=True)
     resource_type = Column(String(50), index=True)
-    resource_id = Column(Integer, index=True)
     
+    # Resource ID genérico (String es más seguro si apunta a varias tablas)
+    resource_id = Column(String(100), index=True) 
+
     description = Column(Text)
     old_values = Column(JSON)
     new_values = Column(JSON)
@@ -55,28 +77,39 @@ class AuditLog(Base):
     data_subject_id = Column(Integer)
     retention_until = Column(DateTime)
     
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    # Timestamps con timezone
+    created_at = Column(DateTime, default=utc_now_naive, index=True)
     
+    # Relationships
     user = relationship("User")
+    
+    # Relación con AuditAction definida abajo
     actions = relationship("AuditAction", back_populates="audit_log", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_audit_resource', 'resource_type', 'resource_id'),
         Index('idx_audit_user_date', 'user_id', 'created_at'),
     )
-
+    
     def __repr__(self):
         return f"<AuditLog(id={self.id}, action={self.action_type}, user={self.user_email})>"
 
+
 class AuditAction(Base):
     __tablename__ = "audit_actions"
-    id = Column(Integer, primary_key=True, index=True)
-    audit_log_id = Column(Integer, ForeignKey("audit_logs.id"), index=True)
+    
+    # CORRECCIÓN: ID como UUID
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    
+    # CORRECCIÓN: audit_log_id como UUID para coincidir con audit_logs.id
+    audit_log_id = Column(UUID(as_uuid=True), ForeignKey("audit_logs.id"), index=True)
+    
     field_name = Column(String(100))
     old_value = Column(Text)
     new_value = Column(Text)
     change_type = Column(String(20))
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive, index=True)
+    
     audit_log = relationship("AuditLog", back_populates="actions")
 
     def __repr__(self):

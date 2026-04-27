@@ -15,7 +15,7 @@ import string
 from app.core.database import get_db
 from app.models.all_models import (
     Delivery, Shift, ShiftStatus, Financial,
-    Route, AuditLog, Integration, Productivity
+    Route, AuditLog, Integration, ProductivityRecord
 )
 from app.models.order import Order, OrderStatus
 from app.models.rider import Rider
@@ -27,7 +27,6 @@ from app.api.v1.auth import get_current_user, require_role
 # ─────────────────────────────────────────────────────────────────────────────
 deliveries_router = APIRouter(prefix="/deliveries")
 
-
 class DeliveryProof(BaseModel):
     otp_code: Optional[str] = None
     delivery_lat: Optional[float] = None
@@ -35,27 +34,23 @@ class DeliveryProof(BaseModel):
     customer_rating: Optional[int] = None
     notes: Optional[str] = None
 
-
 def _parse_uuid(value: str, field_name: str) -> uuid.UUID:
     try:
         return uuid.UUID(value)
     except ValueError:
         raise HTTPException(status_code=400, detail=f"{field_name} inválido")
 
-
 async def _ensure_rider_scope(
     db: AsyncSession,
     current_user: User,
     rider_id: uuid.UUID,
 ) -> None:
-    """Si el usuario es repartidor, solo puede operar sobre su propio rider_id."""
     if current_user.role != UserRole.REPARTIDOR:
         return
     result = await db.execute(select(Rider).where(Rider.user_id == current_user.id))
     rider = result.scalar_one_or_none()
     if not rider or rider.id != rider_id:
         raise HTTPException(status_code=403, detail="No tienes permiso para acceder a este recurso")
-
 
 @deliveries_router.get("")
 async def list_deliveries(
@@ -95,7 +90,6 @@ async def list_deliveries(
         for d in items
     ]
 
-
 @deliveries_router.post("/{order_id}/start")
 async def start_delivery(
     order_id: str,
@@ -115,20 +109,22 @@ async def start_delivery(
     if not order.assigned_rider_id:
         raise HTTPException(status_code=400, detail="El pedido no tiene repartidor asignado")
 
+    # CORRECCIÓN: Fecha naive
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+
     delivery = Delivery(
         order_id=order.id,
         rider_id=order.assigned_rider_id,
         otp_code=otp,
-        pickup_at=datetime.now(timezone.utc),
+        pickup_at=now_naive,
     )
     db.add(delivery)
 
     order.status = OrderStatus.EN_RUTA  # type: ignore[assignment]
-    order.picked_up_at = datetime.now(timezone.utc)  # type: ignore[assignment]
+    order.picked_up_at = now_naive  # type: ignore[assignment]
     await db.commit()
 
     return {"otp_code": otp, "message": "Entrega iniciada. Comparte el OTP con el cliente."}
-
 
 @deliveries_router.patch("/{delivery_id}/complete")
 async def complete_delivery(
@@ -147,33 +143,33 @@ async def complete_delivery(
             raise HTTPException(status_code=400, detail="OTP incorrecto")
         delivery.otp_verified = True
 
-    now = datetime.now(timezone.utc)
-    delivery.delivered_at = now
+    # CORRECCIÓN: Fecha naive
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    
+    delivery.delivered_at = now_naive
     delivery.delivery_lat = body.delivery_lat
     delivery.delivery_lng = body.delivery_lng
     delivery.customer_rating = body.customer_rating
     delivery.notes = body.notes
 
     if delivery.pickup_at:
-        diff = now - delivery.pickup_at
+        diff = now_naive - delivery.pickup_at
         delivery.duration_minutes = diff.total_seconds() / 60
 
     result2 = await db.execute(select(Order).where(Order.id == delivery.order_id))
     order = result2.scalar_one_or_none()
     if order:
         order.status = OrderStatus.ENTREGADO  # type: ignore[assignment]
-        order.delivered_at = now  # type: ignore[assignment]
-        delivery.on_time = now <= order.estimated_delivery_time if order.estimated_delivery_time else True
+        order.delivered_at = now_naive  # type: ignore[assignment]
+        delivery.on_time = now_naive <= order.estimated_delivery_time if order.estimated_delivery_time else True
 
     await db.commit()
     return {"message": "Entrega completada exitosamente", "duration_minutes": delivery.duration_minutes}
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SHIFTS
 # ─────────────────────────────────────────────────────────────────────────────
 shifts_router = APIRouter(prefix="/shifts")
-
 
 @shifts_router.post("/checkin")
 async def checkin(
@@ -193,9 +189,12 @@ async def checkin(
     if active.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Ya tienes un turno activo")
 
+    # CORRECCIÓN: Fecha naive
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+
     shift = Shift(
         rider_id=rider.id,
-        checkin_at=datetime.now(timezone.utc),
+        checkin_at=now_naive,
         checkin_lat=lat,
         checkin_lng=lng,
     )
@@ -203,7 +202,6 @@ async def checkin(
     rider.is_online = True
     await db.commit()
     return {"message": "Check-in exitoso", "shift_id": str(shift.id)}
-
 
 @shifts_router.post("/checkout/{shift_id}")
 async def checkout(
@@ -216,10 +214,12 @@ async def checkout(
     if not shift:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
 
-    now = datetime.now(timezone.utc)
-    shift.checkout_at = now
+    # CORRECCIÓN: Fecha naive
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    
+    shift.checkout_at = now_naive
     shift.status = ShiftStatus.CERRADO
-    diff = now - shift.checkin_at
+    diff = now_naive - shift.checkin_at
     shift.duration_hours = diff.total_seconds() / 3600
 
     result2 = await db.execute(select(Rider).where(Rider.id == shift.rider_id))
@@ -234,7 +234,6 @@ async def checkout(
         "total_orders": shift.total_orders,
         "total_earnings": shift.total_earnings,
     }
-
 
 @shifts_router.get("")
 async def list_shifts(
@@ -263,12 +262,10 @@ async def list_shifts(
         for s in items
     ]
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # FINANCIAL
 # ─────────────────────────────────────────────────────────────────────────────
 financial_router = APIRouter(prefix="/financial")
-
 
 @financial_router.get("/summary")
 async def financial_summary(
@@ -276,14 +273,13 @@ async def financial_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
-    """Obtener resumen financiero del periodo"""
-    now = datetime.now(timezone.utc)
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
     if period == "today":
-        start = now.replace(hour=0, minute=0, second=0)
+        start = now_naive.replace(hour=0, minute=0, second=0)
     elif period == "week":
-        start = now - timedelta(days=7)
+        start = now_naive - timedelta(days=7)
     else:
-        start = now - timedelta(days=30)
+        start = now_naive - timedelta(days=30)
     
     result = await db.execute(
         select(
@@ -303,7 +299,6 @@ async def financial_summary(
         "margin": round(float((row[1] or 0) - (row[2] or 0)), 2),
     }
 
-
 @financial_router.get("/rider/{rider_id}")
 async def rider_earnings(
     rider_id: str,
@@ -314,8 +309,8 @@ async def rider_earnings(
     rider_uuid = _parse_uuid(rider_id, "rider_id")
     await _ensure_rider_scope(db, current_user, rider_uuid)
 
-    now = datetime.now(timezone.utc)
-    start = now.replace(hour=0, minute=0, second=0) if period == "today" else now - timedelta(days=30)
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    start = now_naive.replace(hour=0, minute=0, second=0) if period == "today" else now_naive - timedelta(days=30)
     result = await db.execute(
         select(func.sum(Financial.total_amount), func.count(Financial.id))
         .where(Financial.rider_id == rider_uuid, Financial.period_date >= start)
@@ -328,12 +323,10 @@ async def rider_earnings(
         "total_deliveries": row[1] or 0,
     }
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # PRODUCTIVITY
 # ─────────────────────────────────────────────────────────────────────────────
 productivity_router = APIRouter(prefix="/productivity")
-
 
 @productivity_router.get("/rider/{rider_id}")
 async def rider_productivity(
@@ -345,9 +338,9 @@ async def rider_productivity(
     await _ensure_rider_scope(db, current_user, rider_uuid)
 
     result = await db.execute(
-        select(Productivity)
-        .where(Productivity.rider_id == rider_uuid)
-        .order_by(Productivity.date.desc())
+        select(ProductivityRecord)
+        .where(ProductivityRecord.rider_id == rider_uuid)
+        .order_by(ProductivityRecord.date.desc())
         .limit(30)
     )
     items = result.scalars().all()
@@ -365,18 +358,17 @@ async def rider_productivity(
         for p in items
     ]
 
-
 @productivity_router.get("/ranking")
 async def performance_ranking(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE, UserRole.OPERADOR)),
 ):
-    """Obtener ranking de repartidores por rendimiento"""
-    today = datetime.now(timezone.utc).date()
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    today = now_naive.date()
     result = await db.execute(
-        select(Productivity)
-        .where(Productivity.date == today)
-        .order_by(Productivity.performance_score.desc())
+        select(ProductivityRecord)
+        .where(ProductivityRecord.date == today)
+        .order_by(ProductivityRecord.performance_score.desc())
         .limit(50)
     )
     items = result.scalars().all()
@@ -393,17 +385,14 @@ async def performance_ranking(
         for i, p in enumerate(items)
     ]
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # ROUTES GPS
 # ─────────────────────────────────────────────────────────────────────────────
 routes_router = APIRouter(prefix="/routes")
 
-
 class GPSPoint(BaseModel):
     lat: float
     lng: float
-
 
 @routes_router.post("/{rider_id}/track")
 async def add_gps_point(
@@ -422,17 +411,20 @@ async def add_gps_point(
     )
     route = result.scalar_one_or_none()
 
+    # CORRECCIÓN: Fecha naive
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+
     if not route:
         route = Route(
             rider_id=rider_uuid,
             gps_points=[],
-            started_at=datetime.now(timezone.utc),
+            started_at=now_naive,
         )
         db.add(route)
         await db.flush()
 
     points = list(route.gps_points or [])
-    points.append({"lat": point.lat, "lng": point.lng, "ts": datetime.now(timezone.utc).isoformat()})
+    points.append({"lat": point.lat, "lng": point.lng, "ts": now_naive.isoformat()})
     route.gps_points = points
 
     result2 = await db.execute(select(Rider).where(Rider.id == rider_uuid))
@@ -440,24 +432,23 @@ async def add_gps_point(
     if rider:
         rider.last_lat = point.lat
         rider.last_lng = point.lng
-        rider.last_location_at = datetime.now(timezone.utc)
+        rider.last_location_at = now_naive
 
     await db.commit()
     return {"ok": True, "points_count": len(points)}
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DASHBOARD
 # ─────────────────────────────────────────────────────────────────────────────
 dashboard_router = APIRouter(prefix="/dashboard")
 
-
 @dashboard_router.get("/manager")
 async def manager_dashboard(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
-    today = datetime.now(timezone.utc).date()
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    today = now_naive.date()
 
     orders_today = await db.execute(
         select(func.count(Order.id)).where(func.date(Order.created_at) == today)
@@ -499,7 +490,6 @@ async def manager_dashboard(
         "avg_delivery_time_min": round(float(avg_time.scalar() or 0), 1),
     }
 
-
 @dashboard_router.get("/operator")
 async def operator_dashboard(
     db: AsyncSession = Depends(get_db),
@@ -523,12 +513,10 @@ async def operator_dashboard(
         ],
     }
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # ALERTS
 # ─────────────────────────────────────────────────────────────────────────────
 alerts_router = APIRouter(prefix="/alerts")
-
 
 @alerts_router.get("")
 async def get_alerts(
@@ -550,12 +538,10 @@ async def get_alerts(
         ]
     }
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # AUDIT
 # ─────────────────────────────────────────────────────────────────────────────
 audit_router = APIRouter(prefix="/audit")
-
 
 @audit_router.get("")
 async def get_audit_logs(
@@ -580,19 +566,16 @@ async def get_audit_logs(
         for a in items
     ]
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # INTEGRATIONS
 # ─────────────────────────────────────────────────────────────────────────────
 integrations_router = APIRouter(prefix="/integrations")
-
 
 @integrations_router.get("")
 async def list_integrations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
-    """Listar integraciones activas"""
     result = await db.execute(
         select(Integration).order_by(Integration.name)
     )
@@ -608,27 +591,26 @@ async def list_integrations(
         for i in items
     ]
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # USERS
 # ─────────────────────────────────────────────────────────────────────────────
 users_router = APIRouter(prefix="/users")
-
 
 @users_router.get("")
 async def list_users(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
+    # CORRECCIÓN: Se eliminó el filtro is_deleted y se concatenan nombres
     result = await db.execute(
-        select(User).where(User.is_deleted.is_(False)).order_by(User.created_at.desc())
+        select(User).order_by(User.created_at.desc())
     )
     items = result.scalars().all()
     return [
         {
             "id": str(u.id),
             "email": u.email,
-            "full_name": u.full_name,
+            "full_name": f"{u.first_name} {u.last_name}",
             "role": u.role.value,
             "is_active": u.is_active,
             "created_at": u.created_at.isoformat(),

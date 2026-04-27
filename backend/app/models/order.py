@@ -8,6 +8,10 @@ from sqlalchemy.dialects.postgresql import UUID
 import enum
 from app.core.database import Base
 
+def utc_now_naive():
+    """Devuelve la hora actual en UTC sin zona horaria (naive) para compatibilidad con PostgreSQL."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 class OrderStatus(str, enum.Enum):
     PENDIENTE = "pendiente"
     ASIGNADO = "asignado"
@@ -17,6 +21,11 @@ class OrderStatus(str, enum.Enum):
     ENTREGADO = "entregado"
     FALLIDO = "fallido"
     CANCELADO = "cancelado"
+
+class OrderPriority(str, enum.Enum):
+    NORMAL = "normal"
+    ALTA = "alta"
+    URGENTE = "urgente"
 
 class Order(Base):
     __tablename__ = "orders"
@@ -47,12 +56,12 @@ class Order(Base):
     payment_method = Column(String(50))
     payment_status = Column(String(20), default="pendiente")
     status: Any = Column(SQLEnum(OrderStatus), default=OrderStatus.PENDIENTE)
-    priority = Column(String(20), default="normal")
+    priority: Any = Column(SQLEnum(OrderPriority), default=OrderPriority.NORMAL)
     
     assigned_rider_id = Column(UUID(as_uuid=True), ForeignKey("riders.id"), index=True)
     
     # CORREGIDO: Fechas con timezone
-    ordered_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    ordered_at = Column(DateTime, default=utc_now_naive, nullable=False)
     accepted_at = Column(DateTime)
     picked_up_at = Column(DateTime)
     delivered_at = Column(DateTime)
@@ -67,8 +76,8 @@ class Order(Base):
     integration_id = Column(String(100))
     webhook_sent = Column(Boolean, default=False)
     
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
     
     rider = relationship("Rider", back_populates="orders")
     delivery = relationship("Delivery", back_populates="order", uselist=False)

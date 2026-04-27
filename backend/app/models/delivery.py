@@ -8,6 +8,10 @@ from sqlalchemy.dialects.postgresql import UUID
 import enum
 from app.core.database import Base
 
+def utc_now_naive():
+    """Devuelve la hora actual en UTC sin zona horaria (naive) para compatibilidad con PostgreSQL."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 class DeliveryStatus(str, enum.Enum):
     PENDIENTE = "pendiente"
     INICIADA = "iniciada"
@@ -70,8 +74,8 @@ class Delivery(Base):
     sla_actual_minutes = Column(Integer)
     sla_compliant = Column(Boolean)
     
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
     
     order = relationship("Order", back_populates="delivery")
     rider = relationship("Rider", back_populates="deliveries")

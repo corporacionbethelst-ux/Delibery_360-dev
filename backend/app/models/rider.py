@@ -10,6 +10,10 @@ import enum
 
 from app.core.database import Base
 
+def utc_now_naive():
+    """Devuelve la hora actual en UTC sin zona horaria (naive) para compatibilidad con PostgreSQL."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 class RiderStatus(str, enum.Enum):
     ACTIVO = "activo"
     INACTIVO = "inactivo"
@@ -67,8 +71,8 @@ class Rider(Base):
     profile_photo_url = Column(String(500))
     
     # CORREGIDO
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
     
     orders = relationship("Order", back_populates="rider")
     deliveries = relationship("Delivery", back_populates="rider")

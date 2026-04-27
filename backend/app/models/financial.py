@@ -10,6 +10,9 @@ import enum
 
 from app.core.database import Base
 
+def utc_now_naive():
+    """Devuelve la hora actual en UTC sin zona horaria (naive) para compatibilidad con PostgreSQL."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class TransactionType(str, enum.Enum):
     """Transaction types."""
@@ -26,7 +29,6 @@ class PaymentStatus(str, enum.Enum):
     PROCESADO = "procesado"
     PAGADO = "pagado"
     RECHAZADO = "rechazado"
-
 
 class Financial(Base):
     """Financial transaction record for riders."""
@@ -50,8 +52,8 @@ class Financial(Base):
     reference_id = Column(String(100))
     
     # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now_naive)
+    updated_at = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
     
     # Relationships (Unidireccionales para evitar errores de configuración)
     rider = relationship("Rider")
