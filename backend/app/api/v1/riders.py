@@ -82,9 +82,18 @@ async def _ensure_rider_self_scope(db: AsyncSession, current_user: User, rider: 
 
 
 def _rider_to_dict(r: Rider, include_user: bool = False) -> dict:
+    # Obtenemos datos del usuario relacionado si es necesario para full_name
+    full_name = "Desconocido"
+    email = ""
+    phone = ""
+    if hasattr(r, 'user') and r.user:
+        full_name = f"{r.user.first_name} {r.user.last_name}"
+        email = r.user.email
+        phone = r.user.phone
+
     d: dict[str, Any] = {
         "id": str(r.id),
-        "user_id": str(r.user_id),
+        "user_id": str(r.user_id),  # Ahora sí existe en el modelo
         "status": r.status.value,
         "vehicle_type": r.vehicle_type.value if r.vehicle_type else None,
         "vehicle_plate": r.vehicle_plate,
@@ -99,6 +108,10 @@ def _rider_to_dict(r: Rider, include_user: bool = False) -> dict:
         "badges": r.badges or [],
         "created_at": r.created_at.isoformat() if r.created_at else None,
         "approved_at": r.approved_at.isoformat() if r.approved_at else None,
+        # Datos adicionales útiles para el frontend
+        "full_name": full_name,
+        "email": email,
+        "phone": phone
     }
     return d
 
@@ -109,20 +122,32 @@ async def create_rider(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.GERENTE)),
 ):
-    """Crear un nuevo repartidor (requiere aprobación)"""
-    # Crear usuario con rol repartidor
-    user = await user_service.create_user(
-        db=db,
+    from app.core.security import hash_password
+    
+    # Verificar si el email ya existe
+    existing_user = await db.execute(select(User).where(User.email == body.email))
+    if existing_user.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
+
+    # Separar nombre completo
+    names = body.full_name.split(maxsplit=1)
+    first_name = names[0]
+    last_name = names[1] if len(names) > 1 else ""
+
+    # 1. Crear Usuario
+    user = User(
         email=body.email,
-        password=body.password,
-        full_name=body.full_name,
+        hashed_password=hash_password(body.password),
+        first_name=first_name,
+        last_name=last_name,
         phone=body.phone,
-        role=UserRole.REPARTIDOR
+        role=UserRole.REPARTIDOR,
+        is_active=True
     )
     db.add(user)
-    await db.flush()
+    await db.flush()  # Para obtener el ID generado
     
-    # Crear perfil de repartidor
+    # 2. Crear Perfil Rider
     rider = Rider(
         user_id=user.id,
         vehicle_type=_parse_vehicle_type(body.vehicle_type),
@@ -136,6 +161,9 @@ async def create_rider(
     db.add(rider)
     await db.commit()
     await db.refresh(rider)
+    
+    # Cargar relación user para el diccionario
+    await db.refresh(rider, attribute_names=['user'])
     
     return _rider_to_dict(rider, include_user=True)
 

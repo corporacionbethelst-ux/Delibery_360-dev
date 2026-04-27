@@ -59,3 +59,5 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
+    
+    rider_profile = relationship("Rider", back_populates="user", uselist=False, cascade="all, delete-orphan")

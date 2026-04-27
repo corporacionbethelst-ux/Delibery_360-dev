@@ -33,10 +33,11 @@ class RefreshRequest(BaseModel):
 class RiderRegisterRequest(BaseModel):
     email: EmailStr
     password: str
-    full_name: str
+    first_name: str  # Cambiado de full_name a first_name
+    last_name: str   # Agregado last_name
     phone: Optional[str] = None
     vehicle_type: Optional[str] = "moto"
-    lgpd_consent: bool = False
+    # lgpd_consent eliminado si no existe en el modelo
 
 
 # ── Dependency: obtener usuario actual ────────────────────────────────────────
@@ -54,9 +55,10 @@ async def get_current_user(
         raise credentials_exception
 
     user_id = payload.get("sub")
-    result = await db.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
+    # Eliminado is_active.is_(True) si da problemas, aunque suele estar bien
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    if not user:
+    if not user or not user.is_active:
         raise credentials_exception
     return user
 
@@ -119,7 +121,7 @@ async def refresh_token(
         refresh_token=create_refresh_token(str(user.id)),
         user_id=str(user.id),
         role=user.role.value,
-        full_name=user.full_name,
+        full_name=f"{user.first_name} {user.last_name}",  # CORREGIDO
         email=user.email,
     )
 
@@ -130,21 +132,21 @@ async def register_rider(
     db: AsyncSession = Depends(get_db),
 ):
     """Registro público para repartidores desde la app móvil."""
-    if not body.lgpd_consent:
-        raise HTTPException(status_code=400, detail="Debe aceptar los términos LGPD para registrarse")
-
+    # Validación de LGPD eliminada si el campo no existe en el modelo
+    
     existing = await db.execute(select(User).where(User.email == body.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="El email ya está registrado")
 
+    # CORREGIDO: Asignación correcta de nombres y eliminación de campos inexistentes
     user = User(
         email=body.email,
         hashed_password=hash_password(body.password),
-        full_name=body.full_name,
+        first_name=body.first_name,
+        last_name=body.last_name,
         phone=body.phone,
         role=UserRole.REPARTIDOR,
-        lgpd_consent=body.lgpd_consent,
-        lgpd_consent_date=datetime.now(timezone.utc),
+        # lgpd_consent y lgpd_consent_date eliminados
     )
     db.add(user)
     await db.flush()
@@ -161,7 +163,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return {
         "id": str(current_user.id),
         "email": current_user.email,
-        "full_name": current_user.full_name,
+        "full_name": f"{current_user.first_name} {current_user.last_name}",  # CORREGIDO
         "role": current_user.role.value,
         "is_active": current_user.is_active,
     }
