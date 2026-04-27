@@ -1,7 +1,7 @@
 """Integration model for external system connections."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 from sqlalchemy import Column, String, Boolean, DateTime, Enum as SQLEnum, Integer, Text, ForeignKey
 from sqlalchemy.orm import relationship
@@ -31,7 +31,7 @@ class Integration(Base):
     
     __tablename__ = "integrations"
     
-    # CORRECCIÓN: ID como UUID
+    # ID como UUID
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     name = Column(String(100), nullable=False)
@@ -63,11 +63,11 @@ class Integration(Base):
     sync_last_run = Column(DateTime)
     sync_next_run = Column(DateTime)
     
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Timestamps - CORREGIDOS PARA USAR TIMEZONE AWARE
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
-    # CORRECCIÓN: created_by como UUID para coincidir con User.id
+    # created_by como UUID para coincidir con User.id
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
     
     # Relationships

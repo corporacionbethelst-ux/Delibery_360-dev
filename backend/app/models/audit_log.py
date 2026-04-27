@@ -1,10 +1,8 @@
-"""AuditLog model for tracking system actions and compliance."""
-from datetime import datetime
+"""AuditLog model."""
+from datetime import datetime, timezone  # CORREGIDO
 from typing import Any
-import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON, Index, Float, Integer
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, Text, Boolean, JSON, Index, Float
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
 import enum
 from app.core.database import Base
 
@@ -27,17 +25,14 @@ class ActionType(str, enum.Enum):
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     
-    # CORRECCIÓN: Usar UUID para el ID
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    
-    # CORRECCIÓN: Usar UUID para la foreign key
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
     user_email = Column(String(255))
     user_role = Column(String(50))
     
     action_type: Any = Column(SQLEnum(ActionType), nullable=False, index=True)
     resource_type = Column(String(50), index=True)
-    resource_id = Column(UUID(as_uuid=True), index=True) # También debería ser UUID si referencia a otras tablas UUID
+    resource_id = Column(Integer, index=True)
     
     description = Column(Text)
     old_values = Column(JSON)
@@ -57,32 +52,32 @@ class AuditLog(Base):
     error_message = Column(Text)
     
     contains_personal_data = Column(Boolean, default=False)
-    data_subject_id = Column(UUID(as_uuid=True)) # Si referencia a users, debe ser UUID
+    data_subject_id = Column(Integer)
     retention_until = Column(DateTime)
     
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     
     user = relationship("User")
     actions = relationship("AuditAction", back_populates="audit_log", cascade="all, delete-orphan")
-
+    
     __table_args__ = (
         Index('idx_audit_resource', 'resource_type', 'resource_id'),
         Index('idx_audit_user_date', 'user_id', 'created_at'),
     )
 
+    def __repr__(self):
+        return f"<AuditLog(id={self.id}, action={self.action_type}, user={self.user_email})>"
+
 class AuditAction(Base):
     __tablename__ = "audit_actions"
-    
-    # CORRECCIÓN: Usar UUID
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    
-    # CORRECCIÓN: Usar UUID para la foreign key
-    audit_log_id = Column(UUID(as_uuid=True), ForeignKey("audit_logs.id"), index=True)
-    
+    id = Column(Integer, primary_key=True, index=True)
+    audit_log_id = Column(Integer, ForeignKey("audit_logs.id"), index=True)
     field_name = Column(String(100))
     old_value = Column(Text)
     new_value = Column(Text)
     change_type = Column(String(20))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     audit_log = relationship("AuditLog", back_populates="actions")
+
+    def __repr__(self):
+        return f"<AuditAction(audit={self.audit_log_id}, field={self.field_name})>"

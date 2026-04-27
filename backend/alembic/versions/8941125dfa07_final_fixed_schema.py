@@ -1,8 +1,8 @@
-"""fix_route_deviation_uuid
+"""final_fixed_schema
 
-Revision ID: 194dffa5e355
+Revision ID: 8941125dfa07
 Revises: 
-Create Date: 2026-04-26 21:14:53.661491
+Create Date: 2026-04-26 23:13:44.943760
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '194dffa5e355'
+revision: str = '8941125dfa07'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -32,7 +32,7 @@ def upgrade() -> None:
     sa.Column('vehicle_plate', sa.String(length=20), nullable=True),
     sa.Column('vehicle_model', sa.String(length=100), nullable=True),
     sa.Column('vehicle_color', sa.String(length=50), nullable=True),
-    sa.Column('status', sa.Enum('ACTIVO', 'INACTIVO', 'OCUPADO', 'VACACIONES', 'SUSPENDIDO', name='riderstatus'), nullable=True),
+    sa.Column('status', sa.Enum('ACTIVO', 'INACTIVO', 'OCUPADO', 'VACACIONES', 'SUSPENDIDO', 'PENDIENTE', name='riderstatus'), nullable=True),
     sa.Column('is_available', sa.Boolean(), nullable=True),
     sa.Column('current_lat', sa.Float(), nullable=True),
     sa.Column('current_lng', sa.Float(), nullable=True),

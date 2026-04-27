@@ -1,7 +1,7 @@
 """Financial models for rider payments and transactions."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any  # <--- IMPORTACIÓN AGREGADA
 from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Enum as SQLEnum, Numeric, Text
 from sqlalchemy.orm import relationship
@@ -50,8 +50,8 @@ class Financial(Base):
     reference_id = Column(String(100))
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships (Unidireccionales para evitar errores de configuración)
     rider = relationship("Rider")
